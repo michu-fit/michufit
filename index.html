@@ -1196,6 +1196,17 @@
         <button type="button" class="btn btn-sm" id="btnOpenAccountModal" onclick="window.openModal && window.openModal('modalAccount')" style="border-color:var(--purple);background:var(--purple-soft);color:var(--text);">
           👤 Perfil / Cuenta: <strong id="currentUserTopLabel" style="margin-left:auto;">Mi Cuenta</strong>
         </button>
+        <div style="display:flex;flex-direction:column;gap:5px;padding:6px 4px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+          <span style="font-size:0.74rem;font-weight:700;color:var(--text-muted);">🎭 Personalidad de Michu:</span>
+          <div class="mood-switch" role="group" aria-label="Personalidad de Michu" style="display:grid;grid-template-columns:1fr 1fr;width:100%;">
+            <button type="button" class="mood-btn sarcastic active" id="btnMoodSarcastic" style="justify-content:center;text-align:center;">
+              🔥 Sarcástico
+            </button>
+            <button type="button" class="mood-btn cute" id="btnMoodCute" style="justify-content:center;text-align:center;">
+              🌿 Tierno
+            </button>
+          </div>
+        </div>
         <button type="button" class="btn btn-sm" id="btnToggleTheme">
           🌓 Cambiar Tema (Claro / Oscuro)
         </button>
@@ -1370,16 +1381,8 @@
       <div class="raccoon-dialogue">
         <div class="raccoon-header-row">
           <div>
-            <strong style="font-size:1.05rem;">Michu el Gato Nutricionista</strong>
-            <span style="font-size:0.78rem;color:var(--text-muted);margin-left:6px;">(1 clic: zarpazo • 2 clics: panza arriba • Mantener: modo ataque)</span>
-          </div>
-          <div class="mood-switch" role="group" aria-label="Personalidad de Michu">
-            <button type="button" class="mood-btn sarcastic active" id="btnMoodSarcastic">
-              🔥 Sarcástico / Sin filtro
-            </button>
-            <button type="button" class="mood-btn cute" id="btnMoodCute">
-              🌿 Tierno / Ronroneador
-            </button>
+            <strong style="font-size:1.0rem;">Michu el Gato Nutricionista</strong>
+            <span style="font-size:0.75rem;color:var(--text-muted);margin-left:6px;">(1 clic: zarpazo • 2 clics: panza • Mantener: ataque)</span>
           </div>
         </div>
 
