@@ -1180,10 +1180,17 @@
         </div>
       </div>
 
-      <!-- Botón Hamburguesa -->
-      <button type="button" class="hamburger-btn" id="btnToggleHamburger" aria-label="Abrir menú de opciones" aria-expanded="false">
-        ☰
-      </button>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <button type="button" class="tab-btn" data-tab="tab-admin-coach" id="navTabAdminCoach" style="flex:0 0 auto;white-space:nowrap;padding:7px 12px;font-size:0.82rem;border-color:rgba(168,85,247,0.45);">
+          <span id="navTabAdminCoachText">👑 Admin & Usuarios</span>
+          <span id="navPendingUsersBadge" style="display:none;margin-left:5px;font-size:0.7rem;padding:2px 7px;border-radius:999px;background:var(--danger);color:#fff;font-weight:800;">0</span>
+        </button>
+
+        <!-- Botón Hamburguesa -->
+        <button type="button" class="hamburger-btn" id="btnToggleHamburger" aria-label="Abrir menú de opciones" aria-expanded="false">
+          ☰
+        </button>
+      </div>
 
       <!-- Menú desplegable Hamburguesa -->
       <div class="hamburger-dropdown" id="topHamburgerDropdown">
@@ -1415,18 +1422,11 @@
       <button type="button" class="tab-btn" data-tab="tab-fasting" id="navTabFasting">
         ⏳ Ayuno Intermitente <span id="navFastingBadge" style="display:none;margin-left:5px;font-size:0.7rem;padding:2px 7px;border-radius:999px;background:var(--purple-soft);color:var(--purple);font-weight:800;">EN CURSO</span>
       </button>
-      <button type="button" class="tab-btn" data-tab="tab-scanner">
-        📸 Escáner IA (Foto / Texto)
-      </button>
       <button type="button" class="tab-btn" data-tab="tab-calculator">
         ⚖️ Calculadora TDEE & Metas
       </button>
       <button type="button" class="tab-btn" data-tab="tab-progress">
         📈 Seguimiento de Peso y Gráficos
-      </button>
-      <button type="button" class="tab-btn" data-tab="tab-admin-coach" id="navTabAdminCoach" style="border-color:rgba(168,85,247,0.45);">
-        <span id="navTabAdminCoachText">👑 Admin & Usuarios</span>
-        <span id="navPendingUsersBadge" style="display:none;margin-left:5px;font-size:0.7rem;padding:2px 7px;border-radius:999px;background:var(--danger);color:#fff;font-weight:800;">0</span>
       </button>
     </nav>
 
