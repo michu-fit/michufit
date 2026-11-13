@@ -1194,7 +1194,30 @@
       padding: 10px 13px;
       font-size: 0.88rem;
     }
+
+    html[data-auth-state="logged-out"] .app-shell {
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      max-height: 0 !important;
+      overflow: hidden !important;
+    }
+
+    html[data-auth-state="logged-out"] #modalAuthOverlay {
+      display: flex !important;
+      background: var(--bg) !important;
+    }
   </style>
+  <script>
+    (function () {
+      try {
+        var tok = localStorage.getItem("michufit_auth_token");
+        document.documentElement.setAttribute("data-auth-state", tok ? "logged-in" : "logged-out");
+      } catch (e) {
+        document.documentElement.setAttribute("data-auth-state", "logged-out");
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="app-shell">
@@ -3847,6 +3870,10 @@
     }
 
     async function loadFromServer() {
+      if (!currentAuthToken) {
+        document.documentElement.setAttribute("data-auth-state", "logged-out");
+        showAuthModal("login");
+      }
       renderLocalQrSvg(document.getElementById("mobileLanUrlText").textContent);
       const storageKey = getBackupStorageKey();
       const savedRaw = localStorage.getItem(storageKey) || (storageKey === "michufit_backup_v1" ? localStorage.getItem("pachofit_backup_v1") : null);
@@ -4336,6 +4363,9 @@
     }
 
     function closeModal(id) {
+      if (id === "modalAuthOverlay") {
+        document.documentElement.setAttribute("data-auth-state", "logged-in");
+      }
       const el = document.getElementById(id);
       if (!el) return;
       el.classList.remove("active");
@@ -6701,6 +6731,7 @@
     }
 
     function showAuthModal(mode = "login") {
+      document.documentElement.setAttribute("data-auth-state", "logged-out");
       const formsView = document.getElementById("authFormsView");
       const pendingView = document.getElementById("authPendingView");
       const loginForm = document.getElementById("authLoginForm");
