@@ -1524,17 +1524,24 @@
           </div>
         </div>
 
-        <!-- Card Hidratación + Catálogo Rápido -->
+        <!-- Card Hidratación (Desplegable) + Catálogo Rápido -->
         <div style="display:flex;flex-direction:column;gap:18px;">
-          <div class="card">
-            <div class="card-header" style="margin-bottom:8px;">
-              <div class="card-title">💧 Hidratación Diaria</div>
-              <span style="font-size:0.84rem;font-weight:700;color:var(--info);" id="waterSummaryText">3 / 8 vasos (0.75 L)</span>
+          <div class="card" id="waterCardContainer" style="padding:12px 16px;">
+            <div class="card-header" id="waterCardHeaderToggle" onclick="window.toggleWaterCard && window.toggleWaterCard()" style="margin-bottom:0;cursor:pointer;user-select:none;">
+              <div class="card-title" style="display:flex;align-items:center;gap:6px;">
+                <span>💧 Hidratación Diaria</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:0.84rem;font-weight:700;color:var(--info);" id="waterSummaryText">3 / 8 vasos (0.75 L)</span>
+                <span id="waterCollapseChevron" style="font-size:0.75rem;color:var(--text-muted);background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;padding:2px 6px;line-height:1;">▼</span>
+              </div>
             </div>
-            <p style="font-size:0.8rem;color:var(--text-muted);">
-              Tocá un vaso (250 ml) para sumar o quitar agua. Estar hidratado evita confundir sed con hambre.
-            </p>
-            <div class="water-cups" id="waterCupsGrid"></div>
+            <div id="waterCollapsibleBody" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+              <p style="font-size:0.8rem;color:var(--text-muted);">
+                Tocá un vaso (250 ml) para sumar o quitar agua. Estar hidratado evita confundir sed con hambre.
+              </p>
+              <div class="water-cups" id="waterCupsGrid"></div>
+            </div>
           </div>
 
           <div class="card">
@@ -4011,6 +4018,15 @@
         grid.appendChild(btn);
       }
     }
+
+    window.toggleWaterCard = function () {
+      const body = document.getElementById("waterCollapsibleBody");
+      const chev = document.getElementById("waterCollapseChevron");
+      if (!body) return;
+      const isHidden = body.style.display === "none" || !body.style.display;
+      body.style.display = isHidden ? "block" : "none";
+      if (chev) chev.textContent = isHidden ? "▲" : "▼";
+    };
 
     function renderQuickCatalog() {
       const query = (document.getElementById("quickCatalogSearch").value || "").toLowerCase().trim();
