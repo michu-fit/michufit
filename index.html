@@ -953,6 +953,53 @@
       box-shadow: 0 0 8px var(--accent);
     }
 
+    /* Compact ON/OFF Slide Switch inside top Ayuno Intermitente tab button */
+    .nav-if-switch {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .nav-if-switch input {
+      display: none;
+    }
+
+    .nav-if-slider {
+      width: 34px;
+      height: 18px;
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      position: relative;
+      transition: all 0.22s ease;
+      display: inline-block;
+    }
+
+    .nav-if-slider::after {
+      content: "";
+      position: absolute;
+      top: 1.5px;
+      left: 2px;
+      width: 12px;
+      height: 12px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      transition: all 0.22s ease;
+    }
+
+    .nav-if-switch input:checked + .nav-if-slider {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .nav-if-switch input:checked + .nav-if-slider::after {
+      transform: translateX(15px);
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+    }
+
     .if-protocol-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
@@ -1423,7 +1470,12 @@
         🍽️ Diario y Déficit de Hoy
       </button>
       <button type="button" class="tab-btn" data-tab="tab-fasting" id="navTabFasting">
-        ⏳ Ayuno Intermitente <span id="navFastingBadge" style="display:none;margin-left:5px;font-size:0.7rem;padding:2px 7px;border-radius:999px;background:var(--purple-soft);color:var(--purple);font-weight:800;">EN CURSO</span>
+        <span>⏳ Ayuno Intermitente</span>
+        <span id="navFastingBadge" style="display:none;font-size:0.68rem;padding:2px 6px;border-radius:999px;background:var(--purple-soft);color:var(--purple);font-weight:800;">EN CURSO</span>
+        <label class="nav-if-switch" id="navFastingSlideLabel" onclick="event.stopPropagation();" title="Activar o desactivar Ayuno Intermitente">
+          <input type="checkbox" id="navFastingSlideInput" aria-label="Activar o desactivar Ayuno Intermitente" />
+          <span class="nav-if-slider"></span>
+        </label>
       </button>
       <button type="button" class="tab-btn" data-tab="tab-progress">
         📈 Seguimiento de Peso y Gráficos
@@ -1434,8 +1486,6 @@
     <section class="tab-panel active" id="tab-diary">
       <!-- Nota del Nutricionista / Coach si tiene una asignada -->
       <div id="coachNoteBannerWrap"></div>
-      <!-- Banner de Ayuno Intermitente en el Diario (activo o acceso para activarlo) -->
-      <div id="diaryFastingBannerWrap"></div>
 
       <div class="dashboard-grid">
         <!-- Card Calorías & Macros -->
@@ -5023,7 +5073,11 @@
       const targetMs = targetH * 3600000;
       const isFasting = Boolean(f.activeStart);
 
-      // 1. Insignia en la pestaña de navegación superior
+      // 1. Insignia y switch ON/OFF en la pestaña de navegación superior
+      const navSlideInp = document.getElementById("navFastingSlideInput");
+      if (navSlideInp) {
+        navSlideInp.checked = Boolean(f.enabled || isFasting);
+      }
       const navBadge = document.getElementById("navFastingBadge");
       if (navBadge) {
         if (isFasting) {
@@ -5032,11 +5086,6 @@
           navBadge.textContent = `${elH.toFixed(1)}h / ${targetH}h`;
           navBadge.style.background = elH >= targetH ? "var(--accent-soft)" : "var(--purple-soft)";
           navBadge.style.color = elH >= targetH ? "var(--accent)" : "var(--purple)";
-        } else if (f.enabled) {
-          navBadge.style.display = "inline-block";
-          navBadge.textContent = f.protocol || "16:8";
-          navBadge.style.background = "var(--bg-card)";
-          navBadge.style.color = "var(--text-muted)";
         } else {
           navBadge.style.display = "none";
         }
@@ -5167,94 +5216,17 @@
           `;
         }).join("");
       }
-
-      // 4. Actualizar el Banner de Ayuno en la Pestaña 1 (Diario de Hoy)
-      const diaryBanner = document.getElementById("diaryFastingBannerWrap");
-      if (diaryBanner) {
-        if (!f.enabled && !isFasting) {
-          diaryBanner.innerHTML = `
-            <div class="if-diary-banner" style="padding:10px 16px;background:var(--bg-elev);border-color:var(--border);">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <span style="font-size:1.3rem;">⏳</span>
-                <div>
-                  <strong style="font-size:0.86rem;">¿Hacés Ayuno Intermitente?</strong>
-                  <span style="font-size:0.77rem;color:var(--text-muted);display:block;">Podés activarlo para monitorear tus horas de ayuno, lipólisis y autofagia junto a tu déficit.</span>
-                </div>
-              </div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <button type="button" class="btn btn-sm btn-purple" id="btnDiaryActivateFasting">⚡ Activar Ayuno (16:8)</button>
-                <button type="button" class="btn btn-sm" id="btnDiaryGoToFastingTab">Ver panel ⏳</button>
-              </div>
-            </div>
-          `;
-          const bAct = document.getElementById("btnDiaryActivateFasting");
-          if (bAct) {
-            bAct.onclick = () => {
-              f.enabled = true;
-              f.updatedAt = Date.now();
-              saveToServer();
-              renderAll();
-              switchTab("tab-fasting");
-            };
-          }
-          const bGo = document.getElementById("btnDiaryGoToFastingTab");
-          if (bGo) bGo.onclick = () => switchTab("tab-fasting");
-        } else if (isFasting) {
-          const clampedPct = Math.min(100, Math.round((elapsedMs / Math.max(1, targetMs)) * 100));
-          diaryBanner.innerHTML = `
-            <div class="if-diary-banner">
-              <div style="flex:1;min-width:240px;">
-                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                  <span style="font-size:0.75rem;font-weight:900;padding:2px 8px;border-radius:999px;background:var(--purple);color:#fff;">⏳ AYUNO ${f.protocol} EN CURSO</span>
-                  <strong style="font-size:0.98rem;font-variant-numeric:tabular-nums;">${formatHMS(elapsedMs)} / ${targetH}h (${pct}%)</strong>
-                  <span style="font-size:0.8rem;color:${activePhase.color};font-weight:800;">${activePhase.icon} ${activePhase.title}</span>
-                </div>
-                <div class="progress-track" style="height:8px;margin-top:8px;">
-                  <div class="progress-fill" style="width:${clampedPct}%;background:${elapsedHours >= targetH ? "#22c55e" : activePhase.color};"></div>
-                </div>
-              </div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <button type="button" class="btn btn-sm btn-primary" id="btnDiaryFinishFast">🏁 Cortar Ayuno</button>
-                <button type="button" class="btn btn-sm" id="btnDiaryOpenFastTab">Ver fases y reloj ⏳</button>
-              </div>
-            </div>
-          `;
-          const bFin = document.getElementById("btnDiaryFinishFast");
-          if (bFin) bFin.onclick = () => finishFastingSession();
-          const bOpen = document.getElementById("btnDiaryOpenFastTab");
-          if (bOpen) bOpen.onclick = () => switchTab("tab-fasting");
-        } else {
-          // Habilitado pero actualmente en ventana de alimentación
-          diaryBanner.innerHTML = `
-            <div class="if-diary-banner">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <span style="font-size:1.4rem;">🍽️</span>
-                <div>
-                  <strong style="font-size:0.9rem;">Ayuno Intermitente (${f.protocol}) • En ventana de alimentación</strong>
-                  <span style="font-size:0.78rem;color:var(--text-muted);display:block;">Cuando termines tu última comida del día, iniciá el cronómetro de ${targetH}h.</span>
-                </div>
-              </div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <button type="button" class="btn btn-sm btn-primary" id="btnDiaryStartFastNow">▶️ Iniciar Ayuno (${targetH}h)</button>
-                <button type="button" class="btn btn-sm" id="btnDiaryOpenFastTab2">Panel de Ayuno ⏳</button>
-              </div>
-            </div>
-          `;
-          const bStart = document.getElementById("btnDiaryStartFastNow");
-          if (bStart) bStart.onclick = () => startFastingSession();
-          const bOpen2 = document.getElementById("btnDiaryOpenFastTab2");
-          if (bOpen2) bOpen2.onclick = () => switchTab("tab-fasting");
-        }
-      }
     }
 
     function renderFastingTab() {
       const f = ensureFastingData();
       const chk = document.getElementById("ifEnabledCheckbox");
+      const navSlideInp = document.getElementById("navFastingSlideInput");
       const statusTxt = document.getElementById("ifEnabledStatusText");
-      if (chk) chk.checked = Boolean(f.enabled || f.activeStart);
+      const isOn = Boolean(f.enabled || f.activeStart);
+      if (chk) chk.checked = isOn;
+      if (navSlideInp) navSlideInp.checked = isOn;
       if (statusTxt) {
-        const isOn = Boolean(f.enabled || f.activeStart);
         statusTxt.textContent = isOn ? "Activo ✅" : "Desactivado";
         statusTxt.style.color = isOn ? "var(--accent)" : "var(--text-muted)";
       }
@@ -6529,28 +6501,31 @@
     // =========================================================================
     (function setupFastingEventListeners() {
       const chk = document.getElementById("ifEnabledCheckbox");
-      if (chk) {
-        chk.addEventListener("change", (e) => {
-          const f = ensureFastingData();
-          f.enabled = e.target.checked;
-          if (!f.enabled && f.activeStart) {
-            if (!confirm("Tenés un ayuno en curso. ¿Querés desactivar el modo ayuno y cancelar el reloj actual?")) {
-              e.target.checked = true;
-              f.enabled = true;
-              return;
-            }
-            f.activeStart = null;
+      const navSlide = document.getElementById("navFastingSlideInput");
+      function handleFastingSwitchChange(e) {
+        const f = ensureFastingData();
+        f.enabled = e.target.checked;
+        if (!f.enabled && f.activeStart) {
+          if (!confirm("Tenés un ayuno en curso. ¿Querés desactivar el modo ayuno y cancelar el reloj actual?")) {
+            e.target.checked = true;
+            if (chk) chk.checked = true;
+            if (navSlide) navSlide.checked = true;
+            f.enabled = true;
+            return;
           }
-          f.updatedAt = Date.now();
-          saveToServer();
-          renderAll();
-          setRaccoonSpeech(
-            f.enabled
-              ? `"⏳ ¡Modo Ayuno Intermitente (${f.protocol}) activado! Elegí tu protocolo o dale a Iniciar cuando termines tu última comida 🐱🔥."`
-              : `"Modo Ayuno Intermitente en pausa. Tu historial queda guardado intacto para cuando quieras volver 🐱🐾."`
-          );
-        });
+          f.activeStart = null;
+        }
+        f.updatedAt = Date.now();
+        saveToServer();
+        renderAll();
+        setRaccoonSpeech(
+          f.enabled
+            ? `"⏳ ¡Modo Ayuno Intermitente (${f.protocol}) activado! Elegí tu protocolo o dale a Iniciar cuando termines tu última comida 🐱🔥."`
+            : `"Modo Ayuno Intermitente en pausa. Tu historial queda guardado intacto para cuando quieras volver 🐱🐾."`
+        );
       }
+      if (chk) chk.addEventListener("change", handleFastingSwitchChange);
+      if (navSlide) navSlide.addEventListener("change", handleFastingSwitchChange);
 
       document.querySelectorAll("#ifProtocolGrid .if-proto-btn").forEach(btn => {
         btn.addEventListener("click", () => {
