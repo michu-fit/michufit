@@ -1,4 +1,4 @@
-const CACHE_NAME = 'michufit-cloud-v6';
+const CACHE_NAME = 'michufit-cloud-v7';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (e) => {
@@ -14,10 +14,29 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+function fetchWithTimeout(req, ms = 2500) {
+  return new Promise((resolve, reject) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => {
+      ctrl.abort();
+      reject(new Error('sw-timeout'));
+    }, ms);
+    fetch(req, { cache: 'no-store', signal: ctrl.signal })
+      .then((res) => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || e.request.url.includes('/api/') || e.request.url.includes('supabase.co')) return;
   e.respondWith(
-    fetch(e.request, { cache: 'no-store' })
+    fetchWithTimeout(e.request, 2500)
       .then((res) => {
         if (res && res.status === 200) {
           const clone = res.clone();
