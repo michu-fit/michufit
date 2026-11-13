@@ -1257,9 +1257,9 @@
   <div class="app-shell">
     <!-- MINIMALIST TOP BAR WITH HAMBURGER MENU -->
     <header class="topbar-minimal">
-      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-        <div class="brand-logo" aria-hidden="true" style="width:36px;height:36px;border-radius:11px;padding:2px;flex-shrink:0;">
-          <svg viewBox="0 0 64 64" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+      <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">
+        <div class="brand-logo" aria-hidden="true" style="width:34px;height:34px;border-radius:10px;padding:2px;flex-shrink:0;">
+          <svg viewBox="0 0 64 64" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 28 L8 8 L26 18 Z" fill="#6b7280" stroke="#1f2937" stroke-width="2.2" stroke-linejoin="round"/>
             <path d="M14 25 L11 12 L23 19 Z" fill="#d8b48a"/>
             <path d="M52 28 L56 8 L38 18 Z" fill="#6b7280" stroke="#1f2937" stroke-width="2.2" stroke-linejoin="round"/>
@@ -1274,20 +1274,20 @@
             <path d="M27 48 Q32 51 37 48" stroke="#1f2937" stroke-width="1.8" stroke-linecap="round" fill="none"/>
           </svg>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;">
-          <span id="userWelcomeGreeting" style="font-size:1.02rem;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;flex:1;">
+          <span id="userWelcomeGreeting" style="font-size:0.95rem;font-weight:800;color:var(--text);line-height:1.2;">
             👋 ¡Hola!
           </span>
-          <span class="streak-pill" id="streakBadge" title="Días seguidos registrando comidas" style="padding:3px 9px;font-size:0.75rem;">
+          <span class="streak-pill" id="streakBadge" title="Días seguidos registrando comidas" style="padding:2px 8px;font-size:0.72rem;flex-shrink:0;">
             🔥 <span id="streakCount">3</span>d
           </span>
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-        <button type="button" class="tab-btn" data-tab="tab-admin-coach" id="navTabAdminCoach" style="flex:0 0 auto;white-space:nowrap;padding:7px 12px;font-size:0.82rem;border-color:rgba(168,85,247,0.45);">
-          <span id="navTabAdminCoachText">👑 Admin & Usuarios</span>
-          <span id="navPendingUsersBadge" style="display:none;margin-left:5px;font-size:0.7rem;padding:2px 7px;border-radius:999px;background:var(--danger);color:#fff;font-weight:800;">0</span>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <button type="button" class="tab-btn" data-tab="tab-admin-coach" id="navTabAdminCoach" style="flex:0 0 auto;white-space:nowrap;padding:6px 10px;font-size:0.78rem;border-color:rgba(168,85,247,0.45);">
+          <span id="navTabAdminCoachText">👑 Admin</span>
+          <span id="navPendingUsersBadge" style="display:none;margin-left:4px;font-size:0.68rem;padding:1px 6px;border-radius:999px;background:var(--danger);color:#fff;font-weight:800;">0</span>
         </button>
 
         <!-- Botón Hamburguesa -->
@@ -5550,11 +5550,11 @@
       const navAdminTxt = document.getElementById("navTabAdminCoachText");
       if (navAdminTxt) {
         if (isAdminMode) {
-          navAdminTxt.textContent = "⬅️ Volver a mi Diario";
+          navAdminTxt.textContent = "⬅️ Volver";
         } else {
           navAdminTxt.textContent = (currentUserInfo && currentUserInfo.role === "nutritionist")
-            ? "🩺 Mis Pacientes"
-            : "👑 Admin & Usuarios";
+            ? "🩺 Pacientes"
+            : "👑 Admin";
         }
       }
 
@@ -6859,7 +6859,7 @@
         const shortRole = currentUserInfo.role === "superadmin" ? "👑 Admin" : (currentUserInfo.role === "nutritionist" ? "🩺 Nutri" : "🐱");
         if (topLabel) topLabel.textContent = `${currentUserInfo.name} (${shortRole})`;
         if (welcomeEl) {
-          welcomeEl.style.display = "inline-flex";
+          welcomeEl.style.display = "inline";
           welcomeEl.textContent = `👋 ¡Hola ${currentUserInfo.name}!`;
         }
 
@@ -6893,8 +6893,8 @@
               const adminPanel = document.getElementById("tab-admin-coach");
               const isAdminOpen = adminPanel && adminPanel.classList.contains("active");
               navAdminTxt.textContent = isAdminOpen
-                ? "⬅️ Volver a mi Diario"
-                : (currentUserInfo.role === "superadmin" ? "👑 Admin & Usuarios" : "🩺 Mis Pacientes");
+                ? "⬅️ Volver"
+                : (currentUserInfo.role === "superadmin" ? "👑 Admin" : "🩺 Pacientes");
             }
             if (pendingBadge) {
               if (currentUserInfo.role === "superadmin" && pendingUsersCount > 0) {
@@ -6912,7 +6912,7 @@
         if (topLabel) topLabel.textContent = "Iniciar Sesión";
         if (welcomeEl) {
           const fallbackName = (appData && appData.profile && appData.profile.name) ? appData.profile.name : "";
-          welcomeEl.style.display = fallbackName ? "inline-flex" : "none";
+          welcomeEl.style.display = fallbackName ? "inline" : "none";
           if (fallbackName) welcomeEl.textContent = `👋 ¡Hola ${fallbackName}!`;
         }
         if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
