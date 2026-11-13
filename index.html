@@ -2113,6 +2113,9 @@
               Código para tus pacientes: <strong id="myNutriInviteCodeText" style="color:var(--purple);font-size:0.95rem;">ADMIN-ANGEL</strong>
             </div>
             <button type="button" class="btn btn-sm" id="btnRefreshUsersPanel">🔄 Actualizar lista</button>
+            <button type="button" class="btn btn-sm btn-primary" id="btnBackFromAdminToDiary" onclick="window.switchTab && window.switchTab('tab-diary')">
+              ⬅️ Volver a mi Diario
+            </button>
           </div>
         </div>
 
@@ -5481,13 +5484,40 @@
       document.querySelectorAll(".tab-panel").forEach(p => {
         p.classList.toggle("active", p.id === tabId);
       });
-      if (tabId === "tab-admin-coach") {
+
+      const isAdminMode = tabId === "tab-admin-coach";
+      const heroStage = document.querySelector(".raccoon-stage");
+      const navTabsBar = document.querySelector(".nav-tabs");
+      if (heroStage) heroStage.style.display = isAdminMode ? "none" : "";
+      if (navTabsBar) navTabsBar.style.display = isAdminMode ? "none" : "";
+
+      const navAdminTxt = document.getElementById("navTabAdminCoachText");
+      if (navAdminTxt) {
+        if (isAdminMode) {
+          navAdminTxt.textContent = "⬅️ Volver a mi Diario";
+        } else {
+          navAdminTxt.textContent = (currentUserInfo && currentUserInfo.role === "nutritionist")
+            ? "🩺 Mis Pacientes"
+            : "👑 Admin & Usuarios";
+        }
+      }
+
+      if (isAdminMode) {
         refreshAdminUsersTable();
       }
     }
+    window.switchTab = switchTab;
 
     document.querySelectorAll(".tab-btn").forEach(btn => {
-      btn.addEventListener("click", () => switchTab(btn.getAttribute("data-tab")));
+      btn.addEventListener("click", () => {
+        const targetTab = btn.getAttribute("data-tab");
+        const adminPanel = document.getElementById("tab-admin-coach");
+        if (targetTab === "tab-admin-coach" && adminPanel && adminPanel.classList.contains("active")) {
+          switchTab("tab-diary");
+        } else {
+          switchTab(targetTab);
+        }
+      });
     });
 
     // Inicializar polyfill y cierre de modales (.custom-modal-overlay)
@@ -6804,9 +6834,11 @@
           if (currentUserInfo.role === "superadmin" || currentUserInfo.role === "nutritionist") {
             navAdminBtn.style.display = "inline-flex";
             if (navAdminTxt) {
-              navAdminTxt.textContent = currentUserInfo.role === "superadmin"
-                ? "👑 Admin & Usuarios"
-                : "🩺 Mis Pacientes";
+              const adminPanel = document.getElementById("tab-admin-coach");
+              const isAdminOpen = adminPanel && adminPanel.classList.contains("active");
+              navAdminTxt.textContent = isAdminOpen
+                ? "⬅️ Volver a mi Diario"
+                : (currentUserInfo.role === "superadmin" ? "👑 Admin & Usuarios" : "🩺 Mis Pacientes");
             }
             if (pendingBadge) {
               if (currentUserInfo.role === "superadmin" && pendingUsersCount > 0) {
