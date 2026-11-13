@@ -1082,15 +1082,80 @@
         display: none !important;
       }
     }
+
+    /* Minimalist Topbar & Hamburger Menu */
+    .topbar-minimal {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 14px;
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1200;
+    }
+
+    .hamburger-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      flex-shrink: 0;
+    }
+
+    .hamburger-btn:hover,
+    .hamburger-btn.open {
+      border-color: var(--accent);
+      background: var(--bg-card-hover);
+      color: var(--accent);
+    }
+
+    .hamburger-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: min(290px, 90vw);
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65);
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1300;
+    }
+
+    .hamburger-dropdown.open {
+      display: flex;
+    }
+
+    .hamburger-dropdown .btn {
+      width: 100%;
+      justify-content: flex-start;
+      padding: 10px 13px;
+      font-size: 0.88rem;
+    }
   </style>
 </head>
 <body>
   <div class="app-shell">
-    <!-- TOP BAR -->
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-logo" aria-hidden="true" style="padding:3px;">
-          <svg viewBox="0 0 64 64" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+    <!-- MINIMALIST TOP BAR WITH HAMBURGER MENU -->
+    <header class="topbar-minimal">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+        <div class="brand-logo" aria-hidden="true" style="width:36px;height:36px;border-radius:11px;padding:2px;flex-shrink:0;">
+          <svg viewBox="0 0 64 64" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 28 L8 8 L26 18 Z" fill="#6b7280" stroke="#1f2937" stroke-width="2.2" stroke-linejoin="round"/>
             <path d="M14 25 L11 12 L23 19 Z" fill="#d8b48a"/>
             <path d="M52 28 L56 8 L38 18 Z" fill="#6b7280" stroke="#1f2937" stroke-width="2.2" stroke-linejoin="round"/>
@@ -1105,34 +1170,40 @@
             <path d="M27 48 Q32 51 37 48" stroke="#1f2937" stroke-width="1.8" stroke-linecap="round" fill="none"/>
           </svg>
         </div>
-        <div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <h1>Michu Fit <span style="font-weight:500;font-size:0.82rem;color:var(--text-muted);">by Michu el Gato</span></h1>
-            <span id="userWelcomeGreeting" style="display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:999px;background:var(--accent-soft);border:1px solid rgba(34,197,94,0.4);color:var(--accent);font-size:0.85rem;font-weight:800;">
-              👋 ¡Hola!
-            </span>
-          </div>
-          <p>Calculadora de Déficit Calórico, Macros y Seguimiento Inteligente</p>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;">
+          <span id="userWelcomeGreeting" style="font-size:1.02rem;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            👋 ¡Hola!
+          </span>
+          <span class="streak-pill" id="streakBadge" title="Días seguidos registrando comidas" style="padding:3px 9px;font-size:0.75rem;">
+            🔥 <span id="streakCount">3</span>d
+          </span>
         </div>
       </div>
-      <div class="topbar-actions">
-        <div class="streak-pill" id="streakBadge" title="Días seguidos registrando comidas">
-          🔥 <span id="streakCount">3</span> días en racha
+
+      <!-- Botón Hamburguesa -->
+      <button type="button" class="hamburger-btn" id="btnToggleHamburger" aria-label="Abrir menú de opciones" aria-expanded="false">
+        ☰
+      </button>
+
+      <!-- Menú desplegable Hamburguesa -->
+      <div class="hamburger-dropdown" id="topHamburgerDropdown">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px 8px;border-bottom:1px solid var(--border);margin-bottom:2px;">
+          <strong style="font-size:0.86rem;color:var(--text);">🐱 Michu Fit</strong>
+          <span class="sync-pill" id="syncBadge" style="padding:3px 8px;font-size:0.7rem;">
+            💾 Sincronizado
+          </span>
         </div>
-        <div class="sync-pill" id="syncBadge">
-          💾 Guardado en servidor
-        </div>
-        <button type="button" class="btn btn-sm" id="btnOpenAccountModal" onclick="window.openModal && window.openModal('modalAccount')" title="Ver mi cuenta, código de nutricionista o cambiar usuario" style="border-color:var(--purple);background:var(--purple-soft);color:var(--text);">
-          👤 <span id="currentUserTopLabel">Mi Cuenta</span>
+        <button type="button" class="btn btn-sm" id="btnOpenAccountModal" onclick="window.openModal && window.openModal('modalAccount')" style="border-color:var(--purple);background:var(--purple-soft);color:var(--text);">
+          👤 Perfil / Cuenta: <strong id="currentUserTopLabel" style="margin-left:auto;">Mi Cuenta</strong>
         </button>
-        <button type="button" class="btn btn-sm btn-primary" id="btnOpenMobileModal" onclick="window.openModal && window.openModal('modalMobileApp')" title="Abrir e instalar la app en tu celular">
-          📱 Instalar en Celu
+        <button type="button" class="btn btn-sm" id="btnToggleTheme">
+          🌓 Cambiar Tema (Claro / Oscuro)
         </button>
-        <button type="button" class="btn btn-sm" id="btnOpenSettings" onclick="window.openModal && window.openModal('modalSettings')" title="Configurar Gemini API Key y Backup">
+        <button type="button" class="btn btn-sm" id="btnOpenSettings" onclick="window.openModal && window.openModal('modalSettings')">
           ⚙️ IA & Backup
         </button>
-        <button type="button" class="btn btn-sm" id="btnToggleTheme" title="Cambiar tema claro/oscuro">
-          🌓 Tema
+        <button type="button" class="btn btn-sm btn-primary" id="btnOpenMobileModal" onclick="window.openModal && window.openModal('modalMobileApp')">
+          📱 Instalar en Celu
         </button>
       </div>
     </header>
@@ -6316,6 +6387,35 @@
       };
       reader.readAsText(file);
     });
+
+    // Menú Hamburguesa minimalista
+    const btnHamburger = document.getElementById("btnToggleHamburger");
+    const menuHamburger = document.getElementById("topHamburgerDropdown");
+    function closeHamburgerMenu() {
+      if (menuHamburger) menuHamburger.classList.remove("open");
+      if (btnHamburger) {
+        btnHamburger.classList.remove("open");
+        btnHamburger.setAttribute("aria-expanded", "false");
+        btnHamburger.textContent = "☰";
+      }
+    }
+    if (btnHamburger && menuHamburger) {
+      btnHamburger.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = menuHamburger.classList.toggle("open");
+        btnHamburger.classList.toggle("open", isOpen);
+        btnHamburger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        btnHamburger.textContent = isOpen ? "✕" : "☰";
+      });
+      menuHamburger.querySelectorAll("button").forEach(b => {
+        b.addEventListener("click", () => closeHamburgerMenu());
+      });
+      document.addEventListener("click", (e) => {
+        if (!menuHamburger.contains(e.target) && e.target !== btnHamburger) {
+          closeHamburgerMenu();
+        }
+      });
+    }
 
     // Tema claro / oscuro
     document.getElementById("btnToggleTheme").addEventListener("click", () => {
