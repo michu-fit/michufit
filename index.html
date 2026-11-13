@@ -738,25 +738,34 @@
     /* Forms & Inputs */
     .form-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 14px;
+      width: 100%;
     }
 
     .field {
       display: flex;
       flex-direction: column;
       gap: 5px;
+      min-width: 0;
+      width: 100%;
     }
 
     .field label {
       font-size: 0.8rem;
       font-weight: 700;
       color: var(--text-muted);
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
 
     .field input,
     .field select,
     .field textarea {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       padding: 10px 12px;
       border-radius: 10px;
       border: 1px solid var(--border);
@@ -835,23 +844,48 @@
       border-radius: var(--radius);
       padding: 20px;
       width: min(620px, 95vw);
+      max-width: 100%;
       max-height: 90dvh;
       overflow-y: auto;
+      overflow-x: hidden;
+      box-sizing: border-box;
       -webkit-overflow-scrolling: touch;
       box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
       margin: auto;
       position: relative;
     }
 
+    .modal-inner > .card-header {
+      flex-wrap: nowrap;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
     @media (max-width: 600px) {
       .modal-inner {
-        padding: 15px;
+        padding: 14px;
         width: 96vw;
         max-height: 92dvh;
+        overflow-x: hidden;
       }
       .modal-inner .form-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
+      }
+      .modal-inner .field label {
+        font-size: 0.76rem;
+        line-height: 1.25;
+      }
+      .modal-inner .field input,
+      .modal-inner .field select,
+      .modal-inner .field textarea {
+        padding: 9px 10px;
+        font-size: 0.84rem;
+      }
+      .modal-inner .btn {
+        max-width: 100%;
+        white-space: normal;
+        text-align: center;
       }
     }
 
@@ -2250,9 +2284,9 @@
             <option value="20">20:4 (20 horas)</option>
           </select>
         </div>
-        <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+        <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; gap:8px; margin-top:8px; flex-wrap:wrap;">
           <button type="button" class="btn" data-close-modal="modalCoachEditPatient">Cancelar</button>
-          <button type="submit" class="btn btn-primary">💾 Guardar Plan y Nota en el Paciente</button>
+          <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;min-width:170px;">💾 Guardar Plan y Nota</button>
         </div>
       </form>
     </div>
