@@ -1077,6 +1077,11 @@
       gap: 10px;
       margin-bottom: 14px;
     }
+    @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+      #btnOpenMobileModal {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1101,7 +1106,12 @@
           </svg>
         </div>
         <div>
-          <h1>Michu Fit <span style="font-weight:500;font-size:0.82rem;color:var(--text-muted);">by Michu el Gato</span></h1>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <h1>Michu Fit <span style="font-weight:500;font-size:0.82rem;color:var(--text-muted);">by Michu el Gato</span></h1>
+            <span id="userWelcomeGreeting" style="display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:999px;background:var(--accent-soft);border:1px solid rgba(34,197,94,0.4);color:var(--accent);font-size:0.85rem;font-weight:800;">
+              👋 ¡Hola!
+            </span>
+          </div>
           <p>Calculadora de Déficit Calórico, Macros y Seguimiento Inteligente</p>
         </div>
       </div>
@@ -6328,6 +6338,24 @@
     });
 
     let deferredPwaPrompt = null;
+    function updateMobileInstallButtonVisibility() {
+      const btnMobile = document.getElementById("btnOpenMobileModal");
+      if (!btnMobile) return;
+      const isStandalone =
+        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+        (window.matchMedia && window.matchMedia("(display-mode: fullscreen)").matches) ||
+        window.navigator.standalone === true ||
+        document.referrer.includes("android-app://") ||
+        localStorage.getItem("michufit_pwa_installed") === "1";
+      btnMobile.style.display = isStandalone ? "none" : "inline-flex";
+    }
+    updateMobileInstallButtonVisibility();
+    window.addEventListener("appinstalled", () => {
+      localStorage.setItem("michufit_pwa_installed", "1");
+      updateMobileInstallButtonVisibility();
+      closeModal("modalMobileApp");
+    });
+
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
       deferredPwaPrompt = e;
@@ -6338,7 +6366,11 @@
     document.getElementById("btnTriggerPwaInstall").addEventListener("click", async () => {
       if (!deferredPwaPrompt) return;
       deferredPwaPrompt.prompt();
-      await deferredPwaPrompt.userChoice;
+      const choice = await deferredPwaPrompt.userChoice;
+      if (choice && choice.outcome === "accepted") {
+        localStorage.setItem("michufit_pwa_installed", "1");
+        updateMobileInstallButtonVisibility();
+      }
       deferredPwaPrompt = null;
       document.getElementById("btnTriggerPwaInstall").style.display = "none";
     });
@@ -6593,15 +6625,24 @@
 
     function renderUserSessionAndCoachUI() {
       const topLabel = document.getElementById("currentUserTopLabel");
+      const welcomeEl = document.getElementById("userWelcomeGreeting");
       const navAdminBtn = document.getElementById("navTabAdminCoach");
       const navAdminTxt = document.getElementById("navTabAdminCoachText");
       const pendingBadge = document.getElementById("navPendingUsersBadge");
       const supBanner = document.getElementById("supervisionBannerWrap");
       const coachBanner = document.getElementById("coachNoteBannerWrap");
 
+      if (typeof updateMobileInstallButtonVisibility === "function") {
+        updateMobileInstallButtonVisibility();
+      }
+
       if (currentUserInfo) {
         const shortRole = currentUserInfo.role === "superadmin" ? "👑 Admin" : (currentUserInfo.role === "nutritionist" ? "🩺 Nutri" : "🐱");
         if (topLabel) topLabel.textContent = `${currentUserInfo.name} (${shortRole})`;
+        if (welcomeEl) {
+          welcomeEl.style.display = "inline-flex";
+          welcomeEl.textContent = `👋 ¡Hola ${currentUserInfo.name}!`;
+        }
 
         // Llenar modal Mi Cuenta
         const accName = document.getElementById("accModalUserName");
@@ -6648,6 +6689,11 @@
         }
       } else {
         if (topLabel) topLabel.textContent = "Iniciar Sesión";
+        if (welcomeEl) {
+          const fallbackName = (appData && appData.profile && appData.profile.name) ? appData.profile.name : "";
+          welcomeEl.style.display = fallbackName ? "inline-flex" : "none";
+          if (fallbackName) welcomeEl.textContent = `👋 ¡Hola ${fallbackName}!`;
+        }
         if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
       }
 
