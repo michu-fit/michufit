@@ -1274,12 +1274,12 @@
             <path d="M27 48 Q32 51 37 48" stroke="#1f2937" stroke-width="1.8" stroke-linecap="round" fill="none"/>
           </svg>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;flex:1;">
-          <span id="userWelcomeGreeting" style="font-size:0.95rem;font-weight:800;color:var(--text);line-height:1.2;">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-width:0;flex:1;">
+          <span id="userWelcomeGreeting" style="font-size:0.95rem;font-weight:800;color:var(--text);line-height:1.15;word-break:break-word;">
             👋 ¡Hola!
           </span>
-          <span class="streak-pill" id="streakBadge" title="Días seguidos registrando comidas" style="padding:2px 8px;font-size:0.72rem;flex-shrink:0;">
-            🔥 <span id="streakCount">3</span>d
+          <span class="streak-pill" id="streakBadge" title="Días seguidos registrando comidas" style="padding:2px 8px;font-size:0.7rem;flex-shrink:0;">
+            🔥 <span id="streakCount">3</span> días en racha
           </span>
         </div>
       </div>
@@ -6593,11 +6593,17 @@
     if ("caches" in window) {
       caches.keys().then(keys => {
         keys.forEach(k => {
-          if (k === "pachofit-pwa-v1") caches.delete(k);
+          if (k !== "michufit-cloud-v9") caches.delete(k);
         });
       }).catch(() => {});
     }
     if ("serviceWorker" in navigator) {
+      let swRefreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (swRefreshing) return;
+        swRefreshing = true;
+        window.location.reload();
+      });
       navigator.serviceWorker.register("./sw.js").then(reg => {
         reg.update();
       }).catch(() => {});

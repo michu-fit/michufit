@@ -1,8 +1,19 @@
-const CACHE_NAME = 'michufit-cloud-v8';
+const CACHE_NAME = 'michufit-cloud-v9';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(ASSETS)).catch(() => {}));
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (const asset of ASSETS) {
+        try {
+          const freshRes = await fetch(asset, { cache: 'reload' });
+          if (freshRes && freshRes.ok) {
+            await cache.put(asset, freshRes);
+          }
+        } catch (_) {}
+      }
+    })
+  );
   self.skipWaiting();
 });
 
@@ -14,14 +25,15 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-function fetchWithTimeout(req, ms = 2500) {
+function fetchWithTimeout(urlStr, ms = 3500) {
   return new Promise((resolve, reject) => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => {
       ctrl.abort();
       reject(new Error('sw-timeout'));
     }, ms);
-    fetch(req, { cache: 'no-store', signal: ctrl.signal })
+    const bustUrl = urlStr + (urlStr.includes('?') ? '&' : '?') + '_v=' + Date.now();
+    fetch(bustUrl, { cache: 'no-store', signal: ctrl.signal })
       .then((res) => {
         clearTimeout(timer);
         resolve(res);
@@ -36,11 +48,17 @@ function fetchWithTimeout(req, ms = 2500) {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || e.request.url.includes('/api/') || e.request.url.includes('supabase.co')) return;
   e.respondWith(
-    fetchWithTimeout(e.request, 2500)
+    fetchWithTimeout(e.request.url, 3500)
       .then((res) => {
         if (res && res.status === 200) {
           const clone = res.clone();
-          caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
+          caches.open(CACHE_NAME).then((c) => {
+            c.put(e.request, clone);
+            if (e.request.mode === 'navigate') {
+              c.put('./', res.clone());
+              c.put('./index.html', res.clone());
+            }
+          });
           return res;
         }
         return caches.match(e.request).then((c) => c || caches.match('./index.html') || caches.match('./'));
