@@ -415,13 +415,13 @@
     @media (max-width: 768px) {
       .nav-tabs {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 7px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
       }
       .tab-btn {
         min-width: 0;
-        padding: 10px 8px;
-        font-size: 0.8rem;
+        padding: 9px 6px;
+        font-size: 0.76rem;
       }
     }
 
@@ -1203,6 +1203,9 @@
         <button type="button" class="btn btn-sm" id="btnOpenAccountModal" onclick="window.openModal && window.openModal('modalAccount')" style="border-color:var(--purple);background:var(--purple-soft);color:var(--text);">
           👤 Perfil / Cuenta: <strong id="currentUserTopLabel" style="margin-left:auto;">Mi Cuenta</strong>
         </button>
+        <button type="button" class="btn btn-sm tab-btn" data-tab="tab-calculator" style="flex:0 0 auto;">
+          ⚖️ Calculadora TDEE & Metas
+        </button>
         <div style="display:flex;flex-direction:column;gap:5px;padding:6px 4px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
           <span style="font-size:0.74rem;font-weight:700;color:var(--text-muted);">🎭 Personalidad de Michu:</span>
           <div class="mood-switch" role="group" aria-label="Personalidad de Michu" style="display:grid;grid-template-columns:1fr 1fr;width:100%;">
@@ -1421,9 +1424,6 @@
       </button>
       <button type="button" class="tab-btn" data-tab="tab-fasting" id="navTabFasting">
         ⏳ Ayuno Intermitente <span id="navFastingBadge" style="display:none;margin-left:5px;font-size:0.7rem;padding:2px 7px;border-radius:999px;background:var(--purple-soft);color:var(--purple);font-weight:800;">EN CURSO</span>
-      </button>
-      <button type="button" class="tab-btn" data-tab="tab-calculator">
-        ⚖️ Calculadora TDEE & Metas
       </button>
       <button type="button" class="tab-btn" data-tab="tab-progress">
         📈 Seguimiento de Peso y Gráficos
