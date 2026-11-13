@@ -2277,7 +2277,7 @@
         <form id="authLoginForm" style="display:flex;flex-direction:column;gap:12px;">
           <div class="field">
             <label for="loginIdentifier">Usuario o Email</label>
-            <input type="text" id="loginIdentifier" placeholder="Ej: angel o tu@email.com" required autocomplete="username" />
+            <input type="text" id="loginIdentifier" placeholder="Ej: tu_usuario o tu@email.com" required autocomplete="username" />
           </div>
           <div class="field">
             <label for="loginPassword">Contraseña</label>
@@ -2286,15 +2286,6 @@
           <button type="submit" class="btn btn-primary" style="justify-content:center;padding:12px;margin-top:4px;">
             🚀 Entrar a Michu Fit
           </button>
-
-          <!-- Accesos rápidos de prueba para el dueño -->
-          <div style="margin-top:8px;padding-top:10px;border-top:1px dashed var(--border);font-size:0.77rem;color:var(--text-muted);">
-            <strong style="display:block;margin-bottom:6px;">⚡ Acceso rápido (modo prueba / dueño):</strong>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <button type="button" class="chip" id="btnQuickLoginAngel">👑 Entrar como Angel (Admin)</button>
-              <button type="button" class="chip" id="btnQuickLoginNutri">🩺 Probar Demo Nutricionista</button>
-            </div>
-          </div>
         </form>
 
         <!-- FORMULARIO REGISTRO (CON APROBACIÓN DEL ADMINISTRADOR) -->
@@ -7264,15 +7255,6 @@
           const pwVal = document.getElementById("loginPassword").value.trim();
           performLogin(idVal, pwVal);
         });
-      }
-
-      const btnQuickAngel = document.getElementById("btnQuickLoginAngel");
-      if (btnQuickAngel) {
-        btnQuickAngel.addEventListener("click", () => performLogin("angel", "michu123"));
-      }
-      const btnQuickNutri = document.getElementById("btnQuickLoginNutri");
-      if (btnQuickNutri) {
-        btnQuickNutri.addEventListener("click", () => performLogin("nutri", "nutri123"));
       }
 
       const regForm = document.getElementById("authRegisterForm");
