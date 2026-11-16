@@ -2738,6 +2738,87 @@
         <small style="color:var(--text-muted);font-size:0.78rem;">
           💡 <strong>Tip:</strong> Todo lo que cargues se sincroniza con tu PC cuando el túnel o Wi-Fi está activo, y además funciona 100% offline con IA integrada en el celular.
         </small>
+
+        <div style="background:var(--purple-soft);border:1.5px solid var(--purple);padding:13px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div>
+            <strong style="color:var(--purple);display:block;font-size:0.88rem;">🤖 App Android Nativa (.apk) con Samsung Health</strong>
+            <span style="font-size:0.76rem;color:var(--text-muted);">Sincroniza automáticamente tus pasos y ejercicios con Health Connect</span>
+          </div>
+          <a href="https://michu-fit.github.io/michufit/MichuFit.apk" download="MichuFit.apk" class="btn btn-purple btn-sm" style="text-decoration:none;">
+            ⬇️ Descargar MichuFit.apk
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SINCRONIZAR SAMSUNG HEALTH / GOOGLE HEALTH CONNECT + APP ANDROID (.APK) -->
+  <div class="custom-modal-overlay" id="modalSamsungHealthSync" role="dialog" aria-modal="true">
+    <div class="modal-inner" style="max-width:540px;">
+      <div class="card-header">
+        <div class="card-title">⌚ Sincronizar Samsung Health y Google Fit</div>
+        <button type="button" class="btn btn-sm" data-close-modal="modalSamsungHealthSync">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:13px;font-size:0.85rem;">
+        <div id="nativeApkHealthBox" style="display:none;background:var(--accent-soft);border:1.5px solid var(--accent);padding:13px;border-radius:12px;">
+          <strong style="color:var(--accent);display:block;margin-bottom:4px;">🟢 App Android Nativa Detectada</strong>
+          <p style="font-size:0.79rem;color:var(--text);margin-bottom:10px;">
+            Estás usando la versión nativa de Michu Fit. Tocá abajo para leer tus pasos y ejercicios de hoy directamente desde <strong>Samsung Health / Health Connect</strong>:
+          </p>
+          <button type="button" class="btn btn-primary" id="btnTriggerNativeHealthRead" style="width:100%;justify-content:center;">
+            🔄 Leer Pasos y Ejercicios de Samsung Health Ahora
+          </button>
+        </div>
+
+        <div id="webDownloadApkBox" style="background:var(--purple-soft);border:1.5px solid rgba(168,85,247,0.45);padding:13px 14px;border-radius:12px;">
+          <strong style="color:var(--purple);display:block;margin-bottom:5px;font-size:0.92rem;">
+            🤖 1️⃣ Sincronización Automática con App Android (.apk)
+          </strong>
+          <p style="font-size:0.79rem;color:var(--text);line-height:1.45;margin-bottom:10px;">
+            Instalá <strong>MichuFit.apk</strong> en tu Android para que lea automáticamente tus pasos y entrenamientos desde <strong>Samsung Health / Health Connect</strong> (solo lectura, 100% privado en tu teléfono):
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <a href="https://michu-fit.github.io/michufit/MichuFit.apk" download="MichuFit.apk" class="btn btn-purple" style="flex:1;justify-content:center;text-decoration:none;">
+              ⬇️ Descargar MichuFit.apk (Android)
+            </a>
+          </div>
+          <small style="display:block;margin-top:8px;font-size:0.74rem;color:var(--text-muted);">
+            📌 En tu Samsung: abrí <em>Samsung Health → Ajustes → Health Connect</em> y activalo una sola vez.
+          </small>
+        </div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:13px 14px;border-radius:12px;">
+          <strong style="display:block;margin-bottom:5px;font-size:0.88rem;">
+            🍎 2️⃣ ¿Tenés iPhone? Sincronizá Apple Health (Salud) con 1 toque
+          </strong>
+          <p style="font-size:0.77rem;color:var(--text-muted);line-height:1.45;margin-bottom:8px;">
+            En iPhone no se usan archivos <code>.apk</code>: instalá Michu Fit desde <strong>Safari → Compartir → Agregar a inicio</strong> y conectá la app <strong>Salud (Apple Health)</strong> creando un Atajo en la app <em>Atajos (Shortcuts)</em> de tu iPhone:
+          </p>
+          <ol style="margin:0 0 8px 18px;font-size:0.75rem;color:var(--text);line-height:1.45;">
+            <li>En la app <strong>Atajos</strong> de iPhone: agregá <em>"Buscar muestras de Salud"</em> (Tipo: <strong>Pasos</strong>, Fecha de inicio: <em>es hoy</em>) + <em>"Calcular estadística"</em> (<strong>Suma</strong>).</li>
+            <li>Agregá la acción <em>"Abrir URLs"</em> pegando este enlace con la variable <em>Suma</em> al final:</li>
+          </ol>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <code style="flex:1;padding:7px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--border);font-size:0.73rem;word-break:break-all;">https://michu-fit.github.io/michufit/?syncSteps=</code>
+            <button type="button" class="btn btn-sm" id="btnCopyIphoneShortcutUrl">📋 Copiar URL</button>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:13px 14px;border-radius:12px;">
+          <strong style="display:block;margin-bottom:6px;font-size:0.88rem;">
+            👟 3️⃣ Sincronización Rápida de Pasos de Hoy (Android o iPhone)
+          </strong>
+          <p style="font-size:0.77rem;color:var(--text-muted);margin-bottom:9px;">
+            Ingresá cuántos pasos te marca hoy Samsung Health, Google Fit o Salud de iPhone y Michu actualiza el gasto calórico exacto para tu peso actual:
+          </p>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="number" id="quickSamsungStepsInput" min="100" max="100000" step="50" placeholder="Ej: 8500 pasos"
+              style="flex:1;min-width:140px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.9rem;font-weight:700;" />
+            <button type="button" class="btn btn-primary" id="btnApplyQuickSamsungSteps">
+              ✅ Sincronizar Pasos
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -4749,14 +4830,24 @@
           </div>
         </div>
         <div class="meal-items">${exItemsHtml}</div>
-        <button type="button" class="btn btn-sm" id="btnCardOpenAddExercise">
-          + Agregar ejercicio con IA
-        </button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-sm" id="btnCardOpenAddExercise" style="flex:1;">
+            + Agregar ejercicio con IA
+          </button>
+          <button type="button" class="btn btn-sm btn-purple" id="btnCardSyncSamsungHealth" title="Sincronizar pasos y ejercicios desde Samsung Health / Health Connect">
+            ⌚ Samsung Health / Pasos
+          </button>
+        </div>
       `;
       grid.appendChild(exCard);
 
       exCard.querySelector("#btnCardOpenAddExercise").addEventListener("click", () => {
         openExerciseModal();
+      });
+      exCard.querySelector("#btnCardSyncSamsungHealth").addEventListener("click", () => {
+        if (typeof window.syncSamsungHealthSteps === "function") {
+          window.syncSamsungHealthSteps();
+        }
       });
 
       grid.querySelectorAll("[data-del-ex-id]").forEach(btn => {
@@ -8920,6 +9011,164 @@
           }
         });
       }
+    })();
+
+    // =========================================================================
+    // PUENTE NATIVO ANDROID (.APK) CON SAMSUNG HEALTH / HEALTH CONNECT
+    // =========================================================================
+    (function setupSamsungHealthBridge() {
+      function applySyncedStepsAndExercises(dateKey, stepsCount, activeKcalFromHc, sessionsList, sourceLabel = "Samsung Health") {
+        const day = ensureDayRecord(dateKey || selectedDate || todayStr());
+        day.exercises = day.exercises || [];
+        const weightKg = Math.max(40, Math.min(220, Number(appData?.profile?.weight) || 78));
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+        let updatedAnything = false;
+        const steps = Math.round(Number(stepsCount) || 0);
+        if (steps >= 50) {
+          const estMinutes = Math.max(5, Math.round(steps / 105));
+          const calcKcal = Math.max(10, Math.round(2.9 * weightKg * (estMinutes / 60)));
+          const finalKcal = Number(activeKcalFromHc) > calcKcal ? Math.round(Number(activeKcalFromHc)) : calcKcal;
+
+          // Reemplaza el registro de pasos sincronizado previo del mismo día para no duplicar
+          day.exercises = day.exercises.filter(ex => !String(ex.id || "").startsWith("ex-sh-steps") && !/pasos.*samsung|pasos.*health/i.test(ex.name || ""));
+          day.exercises.unshift({
+            id: "ex-sh-steps-" + (dateKey || todayStr()),
+            name: `${steps.toLocaleString("es-AR")} pasos (${sourceLabel})`,
+            kcal: finalKcal,
+            minutes: estMinutes,
+            emoji: "👟",
+            time: timeStr
+          });
+          updatedAnything = true;
+        }
+
+        if (Array.isArray(sessionsList) && sessionsList.length > 0) {
+          day.exercises = day.exercises.filter(ex => !String(ex.id || "").startsWith("ex-sh-sess-"));
+          sessionsList.forEach((sess, idx) => {
+            const mins = Math.max(5, Math.round(Number(sess.minutes) || 30));
+            const title = (sess.title || "Entrenamiento Samsung Health").trim();
+            const kcal = Number(sess.kcal) > 0
+              ? Math.round(Number(sess.kcal))
+              : Math.max(20, Math.round(5.0 * weightKg * (mins / 60)));
+            day.exercises.push({
+              id: `ex-sh-sess-${idx}-${Date.now()}`,
+              name: `${title} (${sourceLabel})`,
+              kcal,
+              minutes: mins,
+              emoji: "⌚",
+              time: sess.time || timeStr
+            });
+            updatedAnything = true;
+          });
+        }
+
+        if (updatedAnything) {
+          day.exerciseKcal = day.exercises.reduce((acc, x) => acc + (Number(x.kcal) || 0), 0);
+          saveToServer();
+          renderAll();
+          setRaccoonSpeech(`"⌚ ¡Sincronizado con ${sourceLabel}! Sumaste ${steps.toLocaleString("es-AR")} pasos y un total de -${day.exerciseKcal} kcal activas hoy 🐱🔥."`);
+        }
+      }
+
+      // Callback global que invoca la App Android nativa (MainActivity.kt) al leer Health Connect / Sensor
+      window.onMichuHealthDataReceived = function (payload) {
+        try {
+          const data = typeof payload === "string" ? JSON.parse(payload) : payload;
+          if (!data) return;
+          if (data.error) {
+            alert(data.error);
+            return;
+          }
+          const targetDate = data.date || selectedDate || todayStr();
+          applySyncedStepsAndExercises(
+            targetDate,
+            data.steps || 0,
+            data.activeCalories || 0,
+            data.exercises || [],
+            data.source || "Samsung Health"
+          );
+          closeModal("modalSamsungHealthSync");
+        } catch (e) {
+          console.warn("Error procesando datos de Health Connect:", e);
+        }
+      };
+
+      window.syncSamsungHealthSteps = function () {
+        const hasNativeBridge = Boolean(window.MichuAndroidHealth && typeof window.MichuAndroidHealth.requestAndReadTodayHealth === "function");
+        const nativeBox = document.getElementById("nativeApkHealthBox");
+        const webBox = document.getElementById("webDownloadApkBox");
+        if (nativeBox) nativeBox.style.display = hasNativeBridge ? "block" : "none";
+        if (webBox) webBox.style.display = hasNativeBridge ? "none" : "block";
+
+        if (hasNativeBridge) {
+          try {
+            window.MichuAndroidHealth.requestAndReadTodayHealth(selectedDate || todayStr());
+            return;
+          } catch (e) {
+            console.warn("Error llamando puente nativo:", e);
+          }
+        }
+        openModal("modalSamsungHealthSync");
+      };
+
+      const btnNativeRead = document.getElementById("btnTriggerNativeHealthRead");
+      if (btnNativeRead) {
+        btnNativeRead.addEventListener("click", () => {
+          if (window.MichuAndroidHealth && typeof window.MichuAndroidHealth.requestAndReadTodayHealth === "function") {
+            window.MichuAndroidHealth.requestAndReadTodayHealth(selectedDate || todayStr());
+          }
+        });
+      }
+
+      const btnQuickSteps = document.getElementById("btnApplyQuickSamsungSteps");
+      if (btnQuickSteps) {
+        btnQuickSteps.addEventListener("click", () => {
+          const inp = document.getElementById("quickSamsungStepsInput");
+          const steps = Math.round(Number(inp?.value) || 0);
+          if (steps < 50) {
+            alert("Ingresá una cantidad de pasos válida (ej: 6500).");
+            return;
+          }
+          applySyncedStepsAndExercises(selectedDate || todayStr(), steps, 0, [], "Salud / Pasos");
+          if (inp) inp.value = "";
+          closeModal("modalSamsungHealthSync");
+        });
+      }
+
+      const btnCopyIphoneUrl = document.getElementById("btnCopyIphoneShortcutUrl");
+      if (btnCopyIphoneUrl) {
+        btnCopyIphoneUrl.addEventListener("click", () => {
+          const urlText = "https://michu-fit.github.io/michufit/?syncSteps=";
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(urlText).then(() => {
+              btnCopyIphoneUrl.textContent = "✅ ¡Copiado!";
+              setTimeout(() => { btnCopyIphoneUrl.textContent = "📋 Copiar URL"; }, 2200);
+            });
+          }
+        });
+      }
+
+      // Soporte automático para Atajos de iPhone (Apple Health / Salud): ?syncSteps=8500
+      setTimeout(() => {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const rawSteps = params.get("syncSteps");
+          if (rawSteps) {
+            const parsedSteps = Math.round(Number(String(rawSteps).replace(/[^\d.]/g, "")) || 0);
+            const rawKcal = Math.round(Number(params.get("syncKcal")) || 0);
+            const src = params.get("syncSource") || "Apple Health (iPhone)";
+            if (parsedSteps >= 50 && state && state.currentUserId) {
+              applySyncedStepsAndExercises(todayStr(), parsedSteps, rawKcal, [], src);
+              const cleanUrl = window.location.pathname + window.location.hash;
+              window.history.replaceState({}, document.title, cleanUrl);
+            }
+          }
+        } catch (err) {
+          console.warn("Error leyendo syncSteps de URL:", err);
+        }
+      }, 1800);
     })();
 
     // Inicializar aplicación

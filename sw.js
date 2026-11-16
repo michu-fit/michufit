@@ -1,4 +1,4 @@
-const CACHE_NAME = 'michufit-cloud-v11';
+const CACHE_NAME = 'michufit-cloud-v12';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (e) => {
@@ -46,7 +46,7 @@ function fetchWithTimeout(urlStr, ms = 3500) {
 }
 
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET' || e.request.url.includes('/api/') || e.request.url.includes('supabase.co') || e.request.url.includes('openfoodfacts.org')) return;
+  if (e.request.method !== 'GET' || e.request.url.includes('/api/') || e.request.url.includes('supabase.co') || e.request.url.includes('openfoodfacts.org') || e.request.url.endsWith('.apk')) return;
   e.respondWith(
     fetchWithTimeout(e.request.url, 3500)
       .then((res) => {
