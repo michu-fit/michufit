@@ -11,6 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="./icon.svg" />
   <link rel="apple-touch-icon" href="./icon.svg" />
   <title>Michu Fit 🐱 | Calculadora de Déficit y Seguimiento Calórico</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <style>
     :root {
       color-scheme: light dark;
@@ -733,6 +734,69 @@
     .icon-del:hover {
       color: var(--danger);
       background: var(--danger-soft);
+    }
+
+    /* Estilos de Comidas Precargadas (Plan Excel + Check Diario) */
+    .meal-item.planned-pending {
+      border: 1.5px dashed rgba(168, 85, 247, 0.55);
+      background: rgba(168, 85, 247, 0.06);
+      opacity: 0.92;
+    }
+
+    .meal-item.planned-checked {
+      border: 1.5px solid rgba(34, 197, 94, 0.6);
+      background: rgba(34, 197, 94, 0.09);
+    }
+
+    .plan-check-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 2px solid var(--purple);
+      background: var(--bg-elev);
+      color: transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.92rem;
+      font-weight: 900;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .plan-check-btn:hover {
+      border-color: var(--accent);
+      transform: scale(1.06);
+    }
+
+    .plan-check-btn.checked {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #052e14;
+    }
+
+    .plan-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 999px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .plan-badge.pending {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .plan-badge.done {
+      background: var(--accent-soft);
+      color: var(--accent);
     }
 
     /* Forms & Inputs */
@@ -1549,11 +1613,14 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title">🔥 Balance Calórico y Déficit</div>
-            <div class="date-nav">
+            <div class="date-nav" style="flex-wrap:wrap;gap:6px;">
               <button type="button" class="btn btn-sm" id="btnPrevDay" title="Día anterior">◀</button>
               <input type="date" id="currentDateInput" aria-label="Fecha seleccionada" />
               <button type="button" class="btn btn-sm" id="btnNextDay" title="Día siguiente">▶</button>
               <button type="button" class="btn btn-sm" id="btnToday">Hoy</button>
+              <button type="button" class="btn btn-sm btn-purple" id="btnOpenExcelPlanDiary" onclick="window.openExcelPlanModal && window.openExcelPlanModal()" title="Precargar comidas del mes mediante Excel">
+                📅 Plan Excel
+              </button>
             </div>
           </div>
 
@@ -1681,6 +1748,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Avance del Plan Precargado (Excel) y Acceso Rápido -->
+      <div id="dailyPlanProgressWrap" style="margin-top:16px;margin-bottom:4px;"></div>
 
       <!-- Meals Breakdown -->
       <div class="meals-grid" id="mealsSectionsGrid"></div>
@@ -2284,11 +2354,100 @@
             <option value="20">20:4 (20 horas)</option>
           </select>
         </div>
+
+        <!-- SECCIÓN PLAN MENSUAL EXCEL PARA EL PACIENTE -->
+        <div class="field" style="grid-column: 1 / -1; background:var(--bg); border:1.5px dashed var(--purple); border-radius:12px; padding:12px; margin-top:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+            <strong style="font-size:0.86rem;color:var(--purple);">📅 Precargar Comidas del Mes (Excel) para este Paciente</strong>
+            <button type="button" class="btn btn-sm" onclick="window.downloadMealPlanExcelTemplate && window.downloadMealPlanExcelTemplate()" style="font-size:0.75rem;padding:4px 9px;">
+              📥 Bajar Plantilla Excel
+            </button>
+          </div>
+          <p style="font-size:0.76rem;color:var(--text-muted);margin-bottom:8px;">
+            Subí el Excel con el menú del mes (o de la semana). Al paciente le aparecerán las comidas día por día para ir dándoles <strong>check (✅)</strong> a medida que las ingiera.
+          </p>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="month" id="cepExcelMonthInput" style="width:145px;padding:7px 10px;font-size:0.82rem;" title="Mes de destino para días numéricos o semanales" />
+            <label class="btn btn-sm btn-purple" style="cursor:pointer;flex:1;justify-content:center;min-width:160px;">
+              📤 Seleccionar Excel (.xlsx / .csv)
+              <input type="file" id="cepExcelFileInput" accept=".xlsx,.xls,.csv,.tsv" style="display:none;" />
+            </label>
+          </div>
+          <div id="cepExcelPreviewStatus" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--accent-soft);border:1px solid var(--accent);font-size:0.77rem;color:var(--text);"></div>
+        </div>
+
         <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; gap:8px; margin-top:8px; flex-wrap:wrap;">
           <button type="button" class="btn" data-close-modal="modalCoachEditPatient">Cancelar</button>
           <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;min-width:170px;">💾 Guardar Plan y Nota</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PRECARGAR COMIDAS DEL MES DESDE EXCEL (USO PERSONAL O SUPERVISIÓN) -->
+  <div class="custom-modal-overlay" id="modalExcelPlan" role="dialog" aria-modal="true">
+    <div class="modal-inner" style="max-width:580px;">
+      <div class="card-header">
+        <div class="card-title">📅 Plan Mensual de Comidas (Excel + Checklist)</div>
+        <button type="button" class="btn btn-sm" data-close-modal="modalExcelPlan">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:13px;font-size:0.86rem;">
+        <div style="background:var(--purple-soft);border:1px solid rgba(168,85,247,0.35);padding:12px 14px;border-radius:12px;">
+          <strong style="color:var(--purple);display:block;margin-bottom:4px;">💡 ¿Cómo funciona la precarga mensual?</strong>
+          <p style="font-size:0.79rem;color:var(--text);line-height:1.45;">
+            1. Descargá la plantilla Excel (o usá tu propio archivo con columnas <code>Fecha/Día</code>, <code>Desayuno</code>, <code>Almuerzo</code>, <code>Merienda</code>, <code>Cena</code>, <code>Snack</code> — o por fila <code>Fecha | Momento | Comida</code>).<br/>
+            2. No hace falta que pongas las calorías: <strong>Michu calcula automáticamente las calorías y proteínas</strong> de cada plato.<br/>
+            3. En cada día del Diario te aparecerán tus comidas con un casillero <strong>⬜ Planificado</strong>. Al tocarlo pasa a <strong>✅ Ingerido</strong> y suma al progreso real del día.
+          </p>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:var(--bg-card);padding:11px 13px;border-radius:11px;border:1px solid var(--border);">
+          <div>
+            <strong style="font-size:0.84rem;display:block;">1️⃣ Plantilla de ejemplo lista para usar</strong>
+            <span style="font-size:0.75rem;color:var(--text-muted);">Incluye formato tabla mensual (Día 1 al 31) y lista detallada</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" onclick="window.downloadMealPlanExcelTemplate && window.downloadMealPlanExcelTemplate()">
+            📥 Descargar Plantilla (.xlsx)
+          </button>
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="excelPlanMonthInput">2️⃣ Mes de aplicación</label>
+            <input type="month" id="excelPlanMonthInput" />
+          </div>
+          <div class="field">
+            <label for="excelPlanMergeMode">Modo de carga</label>
+            <select id="excelPlanMergeMode">
+              <option value="replace_pending">Actualizar pendientes (conservar comidas ya ingeridas)</option>
+              <option value="append">Sumar a lo que ya exista en cada día</option>
+              <option value="overwrite_all">Reemplazar todas las comidas de esos días</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="border:2px dashed var(--purple);border-radius:13px;padding:16px;text-align:center;background:var(--bg-card);">
+          <div style="font-size:1.8rem;margin-bottom:4px;">📊</div>
+          <strong style="display:block;font-size:0.92rem;margin-bottom:6px;">3️⃣ Subí tu archivo Excel (.xlsx, .xls o .csv)</strong>
+          <label class="btn btn-purple" style="cursor:pointer;display:inline-flex;">
+            📤 Elegir archivo Excel de comidas
+            <input type="file" id="excelPlanFileInput" accept=".xlsx,.xls,.csv,.tsv" style="display:none;" />
+          </label>
+          <div id="excelPlanPreviewBox" style="display:none;margin-top:12px;text-align:left;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;max-height:190px;overflow-y:auto;font-size:0.78rem;"></div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--border);">
+          <button type="button" class="btn btn-sm btn-danger" id="btnClearPendingPlanMonth" title="Borra únicamente las comidas precargadas que aún no fueron tildadas como ingeridas">
+            🗑️ Limpiar pendientes sin comer
+          </button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;">
+            <button type="button" class="btn" data-close-modal="modalExcelPlan">Cerrar</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmApplyExcelPlan" disabled>
+              ✅ Cargar Plan en mi Calendario
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2846,11 +3005,14 @@
       const d = new Date();
       const todayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const todayRec = days[todayKey] || {};
-      const mealsToday = todayRec.meals || [];
+      const allMealsToday = todayRec.meals || [];
+      const mealsToday = allMealsToday.filter(m => !m.planned || m.checked);
+      const plannedToday = allMealsToday.filter(m => m.planned);
+      const plannedCheckedToday = plannedToday.filter(m => m.checked);
       const kcalToday = Math.round(mealsToday.reduce((s, m) => s + (Number(m.kcal) || 0), 0));
       const protToday = Math.round(mealsToday.reduce((s, m) => s + (Number(m.p) || 0), 0) * 10) / 10;
 
-      const activeDates = Object.keys(days).filter(k => (days[k]?.meals || []).length > 0).sort();
+      const activeDates = Object.keys(days).filter(k => (days[k]?.meals || []).some(m => !m.planned || m.checked)).sort();
       const lastActive = activeDates.length > 0 ? activeDates[activeDates.length - 1] : "Sin registros";
 
       const fasting = td.fasting || {};
@@ -2866,6 +3028,8 @@
         todayKcal: kcalToday,
         todayProtein: protToday,
         todayMealsCount: mealsToday.length,
+        plannedTodayTotal: plannedToday.length,
+        plannedTodayChecked: plannedCheckedToday.length,
         waterToday: todayRec.water || 0,
         lastActiveDate: lastActive,
         totalLoggedDays: activeDates.length,
@@ -3252,6 +3416,18 @@
               fObj.updatedAt = Date.now();
             }
           }
+          if (body.plannedDays && typeof body.plannedDays === "object") {
+            patient.trackerData = patient.trackerData || sbCreateEmptyTrackerData(patient.name);
+            patient.trackerData.days = patient.trackerData.days || {};
+            for (const [dateKey, newPlannedMeals] of Object.entries(body.plannedDays)) {
+              if (!Array.isArray(newPlannedMeals)) continue;
+              const dayObj = patient.trackerData.days[dateKey] = patient.trackerData.days[dateKey] || {
+                water: 0, exerciseKcal: 0, meals: []
+              };
+              const keptMeals = (dayObj.meals || []).filter(m => !m.planned || m.checked);
+              dayObj.meals = [...keptMeals, ...newPlannedMeals];
+            }
+          }
           await sbUpsertUser(patient);
           return sbJsonResponse({ ok: true, patient: sbSummarizeUserForPanel(users, patient) });
         }
@@ -3518,18 +3694,43 @@
       return appData.days[dateKey];
     }
 
+    function isMealConsumed(m) {
+      return !m.planned || Boolean(m.checked);
+    }
+
     function getDayTotals(dateKey) {
       const day = appData.days[dateKey];
       if (!day) {
-        return { kcal: 0, p: 0, c: 0, f: 0, water: 0, exerciseKcal: 0, mealCount: 0 };
+        return {
+          kcal: 0, p: 0, c: 0, f: 0, water: 0, exerciseKcal: 0, mealCount: 0,
+          plannedTotalCount: 0, plannedCheckedCount: 0, plannedTotalKcal: 0, plannedCheckedKcal: 0,
+          plannedTotalP: 0, plannedCheckedP: 0
+        };
       }
-      let kcal = 0, p = 0, c = 0, f = 0;
+      let kcal = 0, p = 0, c = 0, f = 0, eatenCount = 0;
+      let plannedTotalCount = 0, plannedCheckedCount = 0, plannedTotalKcal = 0, plannedCheckedKcal = 0;
+      let plannedTotalP = 0, plannedCheckedP = 0;
       const meals = day.meals || [];
       for (const m of meals) {
-        kcal += Number(m.kcal) || 0;
-        p += Number(m.p) || 0;
-        c += Number(m.c) || 0;
-        f += Number(m.f) || 0;
+        const mk = Number(m.kcal) || 0;
+        const mp = Number(m.p) || 0;
+        if (m.planned) {
+          plannedTotalCount++;
+          plannedTotalKcal += mk;
+          plannedTotalP += mp;
+          if (m.checked) {
+            plannedCheckedCount++;
+            plannedCheckedKcal += mk;
+            plannedCheckedP += mp;
+          }
+        }
+        if (isMealConsumed(m)) {
+          kcal += mk;
+          p += mp;
+          c += Number(m.c) || 0;
+          f += Number(m.f) || 0;
+          eatenCount++;
+        }
       }
       return {
         kcal: Math.round(kcal),
@@ -3538,14 +3739,20 @@
         f: Math.round(f * 10) / 10,
         water: Number(day.water) || 0,
         exerciseKcal: Number(day.exerciseKcal) || 0,
-        mealCount: meals.length
+        mealCount: eatenCount,
+        plannedTotalCount,
+        plannedCheckedCount,
+        plannedTotalKcal: Math.round(plannedTotalKcal),
+        plannedCheckedKcal: Math.round(plannedCheckedKcal),
+        plannedTotalP: Math.round(plannedTotalP * 10) / 10,
+        plannedCheckedP: Math.round(plannedCheckedP * 10) / 10
       };
     }
 
     function getFirstDataDate() {
       const datesWithMeals = Object.keys(appData.days || {}).filter(k => {
         const d = appData.days[k];
-        return d && Array.isArray(d.meals) && d.meals.length > 0;
+        return d && Array.isArray(d.meals) && d.meals.some(m => isMealConsumed(m));
       });
       const weightDates = (appData.weightLog || []).map(w => w.date).filter(Boolean);
       const allDates = [...datesWithMeals, ...weightDates].sort();
@@ -3568,7 +3775,7 @@
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         if (key < startLimit) break;
         const rec = appData.days[key];
-        if (rec && Array.isArray(rec.meals) && rec.meals.length > 0) {
+        if (rec && Array.isArray(rec.meals) && rec.meals.some(m => isMealConsumed(m))) {
           streak++;
         } else if (i > 0) {
           break;
@@ -4324,15 +4531,95 @@
       }
     }
 
+    function renderDailyPlanProgressBanner() {
+      const wrap = document.getElementById("dailyPlanProgressWrap");
+      if (!wrap) return;
+      const t = getDayTotals(selectedDate);
+      const anyMonthPlanned = Object.values(appData.days || {}).some(d => (d.meals || []).some(m => m.planned));
+
+      if (t.plannedTotalCount > 0) {
+        const pct = Math.min(100, Math.round((t.plannedCheckedCount / t.plannedTotalCount) * 100));
+        wrap.innerHTML = `
+          <div class="card" style="padding:13px 16px;background:var(--bg-elev);border:1.5px solid ${pct === 100 ? 'var(--accent)' : 'rgba(168,85,247,0.45)'};">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+              <div>
+                <strong style="font-size:0.92rem;color:${pct === 100 ? 'var(--accent)' : 'var(--purple)'};">
+                  📋 Avance de tu Plan Precargado (${selectedDate})
+                </strong>
+                <div style="font-size:0.77rem;color:var(--text-muted);margin-top:2px;">
+                  Ingerido del plan: <strong>${t.plannedCheckedKcal} / ${t.plannedTotalKcal} kcal</strong> (${t.plannedCheckedP}g / ${t.plannedTotalP}g P) • Tocá el casillero de cada comida al ingerirla
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span class="chip" style="font-weight:800;background:${pct === 100 ? 'var(--accent-soft)' : 'var(--purple-soft)'};color:${pct === 100 ? 'var(--accent)' : 'var(--purple)'};">
+                  ✅ ${t.plannedCheckedCount} de ${t.plannedTotalCount} comidas (${pct}%)
+                </span>
+                <button type="button" class="btn btn-sm" onclick="window.openExcelPlanModal && window.openExcelPlanModal()">
+                  📅 Plan Excel
+                </button>
+              </div>
+            </div>
+            <div class="progress-track" style="height:9px;">
+              <div class="progress-fill" style="width:${pct}%;background:${pct === 100 ? 'var(--accent)' : 'linear-gradient(90deg, var(--purple), var(--accent))'};"></div>
+            </div>
+          </div>
+        `;
+      } else if (anyMonthPlanned) {
+        wrap.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:12px;background:var(--bg-elev);border:1px dashed var(--border);font-size:0.8rem;">
+            <span style="color:var(--text-muted);">📅 Este día (${selectedDate}) no tiene comidas precargadas en el plan Excel.</span>
+            <button type="button" class="btn btn-sm btn-purple" onclick="window.openExcelPlanModal && window.openExcelPlanModal()">
+              📅 Gestionar Plan Excel
+            </button>
+          </div>
+        `;
+      } else {
+        wrap.innerHTML = "";
+      }
+    }
+
+    function toggleMealConsumedCheck(mealId) {
+      const day = ensureDayRecord(selectedDate);
+      const item = (day.meals || []).find(m => m.id === mealId);
+      if (!item) return;
+
+      const wasConsumed = isMealConsumed(item);
+      item.planned = true;
+      item.checked = !wasConsumed;
+
+      if (item.checked) {
+        const now = new Date();
+        item.time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        const f = ensureFastingData();
+        if (f.activeStart && selectedDate === todayStr() && (Number(item.kcal) || 0) > 15) {
+          const hrs = Math.round(((Date.now() - new Date(f.activeStart).getTime()) / 3600000) * 10) / 10;
+          if (confirm(`⏳ Tenés un ayuno intermitente en curso (${hrs} hs).\n\n¿Querés cortar y guardar tu ayuno ahora al marcar "${item.name}" como ingerido?`)) {
+            finishFastingSession();
+            return;
+          }
+        }
+      }
+
+      saveToServer();
+      renderAll();
+      if (item.checked) {
+        setRaccoonSpeech(generateContextualRaccoonComment({ type: "food_added", item }));
+      }
+    }
+
     function renderMealSections() {
+      renderDailyPlanProgressBanner();
       const day = ensureDayRecord(selectedDate);
       const grid = document.getElementById("mealsSectionsGrid");
       grid.innerHTML = "";
 
       for (const sec of MEAL_SECTIONS) {
         const items = day.meals.filter(m => m.mealType === sec.key);
-        const secKcal = items.reduce((acc, m) => acc + (Number(m.kcal) || 0), 0);
-        const secP = Math.round(items.reduce((acc, m) => acc + (Number(m.p) || 0), 0));
+        const eatenItems = items.filter(m => isMealConsumed(m));
+        const pendingPlannedItems = items.filter(m => m.planned && !m.checked);
+        const secKcal = eatenItems.reduce((acc, m) => acc + (Number(m.kcal) || 0), 0);
+        const secP = Math.round(eatenItems.reduce((acc, m) => acc + (Number(m.p) || 0), 0));
+        const pendingSecKcal = pendingPlannedItems.reduce((acc, m) => acc + (Number(m.kcal) || 0), 0);
 
         const card = document.createElement("div");
         card.className = "meal-card";
@@ -4341,21 +4628,39 @@
         if (items.length === 0) {
           itemsHtml = `<div style="font-size:0.8rem;color:var(--text-muted);padding:10px 4px;">Sin registros todavía en ${sec.title.toLowerCase()}.</div>`;
         } else {
-          itemsHtml = items.map(item => `
-            <div class="meal-item">
-              <div class="meal-item-left">
-                <span style="font-size:1.25rem;">${item.emoji || "🍽️"}</span>
-                <div>
-                  <div class="meal-item-title">${item.name}</div>
-                  <div class="meal-item-macros">${item.p}g P • ${item.c}g C • ${item.f}g G ${item.time ? `• 🕒 ${item.time}` : ""}</div>
+          itemsHtml = items.map(item => {
+            const consumed = isMealConsumed(item);
+            const rowClass = item.planned
+              ? (consumed ? "meal-item planned-checked" : "meal-item planned-pending")
+              : "meal-item";
+            const badgeHtml = item.planned
+              ? (consumed
+                  ? `<span class="plan-badge done">✅ Ingerido</span>`
+                  : `<span class="plan-badge pending">📋 Planificado</span>`)
+              : "";
+            return `
+              <div class="${rowClass}">
+                <div class="meal-item-left">
+                  <button type="button" class="plan-check-btn ${consumed ? "checked" : ""}" data-toggle-plan-id="${item.id}" title="${consumed ? "Desmarcar como ingerido" : "Marcar comida como ingerida"}">
+                    ${consumed ? "✓" : ""}
+                  </button>
+                  <span style="font-size:1.22rem;">${item.emoji || "🍽️"}</span>
+                  <div>
+                    <div class="meal-item-title" style="${!consumed ? 'color:var(--text-muted);' : ''}">
+                      ${item.name}${badgeHtml}
+                    </div>
+                    <div class="meal-item-macros">
+                      ${item.p}g P • ${item.c}g C • ${item.f}g G ${consumed && item.time ? `• 🕒 ${item.time}` : (!consumed ? "• Tocá el check al comerlo" : "")}
+                    </div>
+                  </div>
+                </div>
+                <div class="meal-item-right">
+                  <strong style="${!consumed ? 'color:var(--text-muted);font-weight:600;' : ''}">${item.kcal} kcal</strong>
+                  <button type="button" class="icon-del" data-del-id="${item.id}" title="Eliminar alimento">🗑️</button>
                 </div>
               </div>
-              <div class="meal-item-right">
-                <strong>${item.kcal} kcal</strong>
-                <button type="button" class="icon-del" data-del-id="${item.id}" title="Eliminar alimento">🗑️</button>
-              </div>
-            </div>
-          `).join("");
+            `;
+          }).join("");
         }
 
         card.innerHTML = `
@@ -4366,7 +4671,9 @@
             </div>
             <div style="text-align:right;">
               <strong style="color:var(--accent);font-size:0.95rem;">${secKcal} kcal</strong>
-              <span style="display:block;font-size:0.73rem;color:var(--text-muted);">${secP}g proteína</span>
+              <span style="display:block;font-size:0.73rem;color:var(--text-muted);">
+                ${secP}g proteína${pendingSecKcal > 0 ? ` • <span style="color:var(--purple);">📋 +${pendingSecKcal} kcal plan</span>` : ""}
+              </span>
             </div>
           </div>
           <div class="meal-items">${itemsHtml}</div>
@@ -4376,6 +4683,12 @@
         `;
         grid.appendChild(card);
       }
+
+      grid.querySelectorAll("[data-toggle-plan-id]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          toggleMealConsumedCheck(btn.getAttribute("data-toggle-plan-id"));
+        });
+      });
 
       grid.querySelectorAll("[data-del-id]").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -7732,6 +8045,7 @@
                 <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:0.81rem;">
                   <span>⚖️ Peso: <strong>${u.weight} kg</strong> → Meta: <strong>${u.goalWeight} kg</strong></span>
                   <span>🔥 Hoy: <strong>${u.todayKcal} kcal</strong> (${u.todayProtein}g P)</span>
+                  ${u.plannedTodayTotal > 0 ? `<span style="color:var(--purple);">📋 Plan hoy: <strong>${u.plannedTodayChecked}/${u.plannedTodayTotal} checks</strong></span>` : ""}
                   <span>💧 Agua hoy: <strong>${u.waterToday} vasos</strong></span>
                   <span>⏳ Ayuno: <strong>${u.fastingActiveStart ? "🟢 En curso" : (u.fastingEnabled ? u.fastingProtocol : "Inactivo")}</strong> (${u.fastingCompletedCount} cumplidos)</span>
                   <span style="color:var(--text-muted);">📅 Últ. actividad: ${u.lastActiveDate}</span>
@@ -7870,15 +8184,32 @@
       }
     }
 
+    let pendingCoachParsedPlan = null;
+
     function openCoachPatientModal(patientId) {
       const u = cachedAdminUsersList.find(x => x.id === patientId) || inspectedUserInfo;
       if (!u) return;
+      pendingCoachParsedPlan = null;
       document.getElementById("cepPatientId").value = u.id;
       document.getElementById("cepCoachNote").value = u.coachNote || "";
       document.getElementById("cepWeight").value = u.weight || 78;
       document.getElementById("cepGoalWeight").value = u.goalWeight || 72;
       document.getElementById("cepDeficitType").value = u.deficitType || "recommended";
       document.getElementById("cepFastingTarget").value = "";
+      const monthInp = document.getElementById("cepExcelMonthInput");
+      if (monthInp) monthInp.value = todayStr().slice(0, 7);
+      const fileInp = document.getElementById("cepExcelFileInput");
+      if (fileInp) fileInp.value = "";
+      const prevEl = document.getElementById("cepExcelPreviewStatus");
+      if (prevEl) {
+        if (u.plannedTodayTotal > 0) {
+          prevEl.style.display = "block";
+          prevEl.innerHTML = `📋 Este paciente ya tiene un plan activo hoy (${u.plannedTodayChecked}/${u.plannedTodayTotal} comidas completadas). Podés subir un nuevo Excel para actualizarlo.`;
+        } else {
+          prevEl.style.display = "none";
+          prevEl.innerHTML = "";
+        }
+      }
       openModal("modalCoachEditPatient");
     }
 
@@ -8089,21 +8420,503 @@
             profileUpdates.fastingProtocol = `${h}:${24 - h}`;
           }
 
+          const payloadBody = { patientId, coachNote, profileUpdates };
+          if (pendingCoachParsedPlan && pendingCoachParsedPlan.daysMap) {
+            payloadBody.plannedDays = pendingCoachParsedPlan.daysMap;
+          }
+
           const res = await fetch("/api/coach/update-patient", {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-Michu-Token": currentAuthToken },
-            body: JSON.stringify({ patientId, coachNote, profileUpdates })
+            body: JSON.stringify(payloadBody)
           });
           const data = await res.json();
           if (res.ok && data.ok) {
+            const hadPlan = Boolean(pendingCoachParsedPlan && pendingCoachParsedPlan.totalMeals);
+            const mealsCnt = hadPlan ? pendingCoachParsedPlan.totalMeals : 0;
+            pendingCoachParsedPlan = null;
             closeModal("modalCoachEditPatient");
             await refreshAdminUsersTable();
             if (inspectedUserId === patientId) {
               await loadFromServer();
             }
-            setRaccoonSpeech(`"🩺 ¡Plan nutricional y nota actualizados para el paciente! 🐱✨"`);
+            setRaccoonSpeech(
+              hadPlan
+                ? `"🩺 ¡Plan mensual Excel (${mealsCnt} comidas) y ajustes guardados en el calendario del paciente! 🐱📅✨"`
+                : `"🩺 ¡Plan nutricional y nota actualizados para el paciente! 🐱✨"`
+            );
           } else {
             alert(data.error || "No se pudo guardar el ajuste.");
+          }
+        });
+      }
+    })();
+
+    // =========================================================================
+    // MOTOR DE PRECARGA MENSUAL DESDE EXCEL (.XLSX / .CSV) + CHECKLIST DIARIO
+    // =========================================================================
+    (function setupExcelMealPlanEngine() {
+      let pendingPersonalPlan = null;
+
+      window.openExcelPlanModal = function () {
+        pendingPersonalPlan = null;
+        const mInp = document.getElementById("excelPlanMonthInput");
+        if (mInp) mInp.value = (selectedDate || todayStr()).slice(0, 7);
+        const fInp = document.getElementById("excelPlanFileInput");
+        if (fInp) fInp.value = "";
+        const prev = document.getElementById("excelPlanPreviewBox");
+        if (prev) {
+          prev.style.display = "none";
+          prev.innerHTML = "";
+        }
+        const btnApply = document.getElementById("btnConfirmApplyExcelPlan");
+        if (btnApply) btnApply.disabled = true;
+        openModal("modalExcelPlan");
+      };
+
+      window.downloadMealPlanExcelTemplate = function () {
+        const refYm =
+          (document.getElementById("excelPlanMonthInput")?.value) ||
+          (document.getElementById("cepExcelMonthInput")?.value) ||
+          todayStr().slice(0, 7);
+        const [yrStr, moStr] = refYm.split("-");
+        const year = Number(yrStr) || new Date().getFullYear();
+        const month = Number(moStr) || (new Date().getMonth() + 1);
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const weekdayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+        const sampleMenu = [
+          {
+            d: "Café con leche + 2 tostadas integrales con queso untable",
+            a: "150g pechuga de pollo con ensalada de tomate y lechuga + 1 manzana",
+            m: "1 yogur griego con 10 almendras y frutillas",
+            c: "1 medallón blend 150g con puré de calabaza",
+            s: "1 mandarina"
+          },
+          {
+            d: "Mate amargo + 2 huevos revueltos con media palta y 1 tostada",
+            a: "1 lata de atún al natural con 150g arroz integral y brócoli",
+            m: "Café con leche + 1 banana",
+            c: "160g filet de merluza al horno con verduras asadas",
+            s: "1 porción de gelatina light"
+          },
+          {
+            d: "Café con leche + 40g avena con arándanos",
+            a: "150g bife magro vacuno con ensalada mixta y 1 pera",
+            m: "1 scoop whey protein con agua o leche descremada",
+            c: "Omelette de 2 huevos con jamón y queso + ensalada",
+            s: "1 kiwi"
+          }
+        ];
+
+        const calendarRows = [];
+        for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+          const dt = new Date(year, month - 1, dayNum);
+          const wName = weekdayNames[dt.getDay()];
+          const dd = String(dayNum).padStart(2, "0");
+          const mm = String(month).padStart(2, "0");
+          const samp = sampleMenu[(dayNum - 1) % sampleMenu.length];
+          calendarRows.push({
+            Fecha: `${dd}/${mm}/${year}`,
+            Dia: wName,
+            Desayuno: samp.d,
+            Almuerzo: samp.a,
+            Merienda: samp.m,
+            Cena: samp.c,
+            Snack: samp.s
+          });
+        }
+
+        const detailedRows = [
+          { Fecha: `01/${String(month).padStart(2, "0")}/${year}`, Momento: "Desayuno", Comida: "Café con leche + 2 tostadas integrales con queso untable", Kcal_Opcional: "", Proteinas_Opcional: "" },
+          { Fecha: `01/${String(month).padStart(2, "0")}/${year}`, Momento: "Almuerzo", Comida: "150g pechuga de pollo con ensalada de tomate y 1 manzana", Kcal_Opcional: "", Proteinas_Opcional: "" },
+          { Fecha: `01/${String(month).padStart(2, "0")}/${year}`, Momento: "Merienda", Comida: "1 yogur griego con 10 almendras y frutillas", Kcal_Opcional: "", Proteinas_Opcional: "" },
+          { Fecha: `01/${String(month).padStart(2, "0")}/${year}`, Momento: "Cena", Comida: "1 medallón blend 150g con puré de calabaza", Kcal_Opcional: "", Proteinas_Opcional: "" }
+        ];
+
+        if (window.XLSX && window.XLSX.utils) {
+          const wb = window.XLSX.utils.book_new();
+          const wsCal = window.XLSX.utils.json_to_sheet(calendarRows);
+          wsCal["!cols"] = [
+            { wch: 13 }, { wch: 12 }, { wch: 48 }, { wch: 52 }, { wch: 44 }, { wch: 48 }, { wch: 28 }
+          ];
+          window.XLSX.utils.book_append_sheet(wb, wsCal, "Calendario_Mensual");
+
+          const wsDet = window.XLSX.utils.json_to_sheet(detailedRows);
+          wsDet["!cols"] = [{ wch: 13 }, { wch: 14 }, { wch: 55 }, { wch: 15 }, { wch: 18 }];
+          window.XLSX.utils.book_append_sheet(wb, wsDet, "Lista_Por_Comida");
+
+          window.XLSX.writeFile(wb, `Plantilla_Plan_Mensual_MichuFit_${refYm}.xlsx`);
+          return;
+        }
+
+        // Fallback CSV compatible con Excel en Español
+        const header = "Fecha;Dia;Desayuno;Almuerzo;Merienda;Cena;Snack";
+        const csvLines = calendarRows.map(r =>
+          [r.Fecha, r.Dia, r.Desayuno, r.Almuerzo, r.Merienda, r.Cena, r.Snack]
+            .map(v => `"${String(v || "").replace(/"/g, '""')}"`).join(";")
+        );
+        const blob = new Blob(["\uFEFF" + [header, ...csvLines].join("\r\n")], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Plantilla_Plan_Mensual_MichuFit_${refYm}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      function resolveExcelPlanDates(rawVal, fallbackYm) {
+        if (rawVal === undefined || rawVal === null || rawVal === "") return [];
+        const ym = fallbackYm || todayStr().slice(0, 7);
+        const [defY, defM] = ym.split("-").map(Number);
+        const daysInMonth = new Date(defY, defM, 0).getDate();
+
+        // 1. Número serial de fecha de Excel (ej: 46342) o día del mes (1..31)
+        if (typeof rawVal === "number" || /^\d+$/.test(String(rawVal).trim())) {
+          const num = Number(String(rawVal).trim());
+          if (num >= 1 && num <= 31) {
+            if (num > daysInMonth) return [];
+            return [`${defY}-${String(defM).padStart(2, "0")}-${String(num).padStart(2, "0")}`];
+          }
+          if (num > 38000 && num < 65000) {
+            const utcDays = Math.floor(num - 25569);
+            const dt = new Date(utcDays * 86400 * 1000);
+            const y = dt.getUTCFullYear();
+            const m = String(dt.getUTCMonth() + 1).padStart(2, "0");
+            const d = String(dt.getUTCDate()).padStart(2, "0");
+            return [`${y}-${m}-${d}`];
+          }
+        }
+
+        const str = String(rawVal).trim();
+
+        // 2. Formato YYYY-MM-DD
+        const mIso = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+        if (mIso) {
+          return [`${mIso[1]}-${String(mIso[2]).padStart(2, "0")}-${String(mIso[3]).padStart(2, "0")}`];
+        }
+
+        // 3. Formato DD/MM/YYYY o DD-MM-YYYY o DD/MM
+        const mLat = str.match(/^(\d{1,2})[-/](\d{1,2})(?:[-/](\d{2,4}))?/);
+        if (mLat) {
+          const d = Number(mLat[1]);
+          const m = Number(mLat[2]);
+          let y = mLat[3] ? Number(mLat[3]) : defY;
+          if (y < 100) y += 2000;
+          if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+            return [`${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`];
+          }
+        }
+
+        // 4. "Día 15" / "Dia 3"
+        const mDiaNum = normalizeFoodText(str).match(/^(?:dia|day)\s+(\d{1,2})$/);
+        if (mDiaNum) {
+          const d = Number(mDiaNum[1]);
+          if (d >= 1 && d <= daysInMonth) {
+            return [`${defY}-${String(defM).padStart(2, "0")}-${String(d).padStart(2, "0")}`];
+          }
+        }
+
+        // 5. Día de la semana ("Lunes", "Martes", etc. -> aplica a todos esos días del mes)
+        const norm = normalizeFoodText(str);
+        const wMap = {
+          domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6
+        };
+        if (norm in wMap) {
+          const targetDow = wMap[norm];
+          const out = [];
+          for (let d = 1; d <= daysInMonth; d++) {
+            const dt = new Date(defY, defM - 1, d);
+            if (dt.getDay() === targetDow) {
+              out.push(`${defY}-${String(defM).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+            }
+          }
+          return out;
+        }
+        if (norm === "todos" || norm === "diario" || norm === "todos los dias") {
+          const out = [];
+          for (let d = 1; d <= daysInMonth; d++) {
+            out.push(`${defY}-${String(defM).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+          }
+          return out;
+        }
+
+        return [];
+      }
+
+      function mapMealTypeKey(rawType) {
+        const n = normalizeFoodText(rawType);
+        if (n.includes("desayuno") || n.includes("breakfast")) return "breakfast";
+        if (n.includes("almuerzo") || n.includes("mediodia") || n.includes("lunch")) return "lunch";
+        if (n.includes("merienda") || n.includes("tarde")) return "merienda";
+        if (n.includes("cena") || n.includes("noche") || n.includes("dinner")) return "dinner";
+        if (n.includes("snack") || n.includes("colacion") || n.includes("picoteo") || n.includes("media manana")) return "snack";
+        return null;
+      }
+
+      function createPlannedMealObject(mealType, rawText, explicitKcal, explicitP, explicitC, explicitF) {
+        const clean = String(rawText || "").trim();
+        if (!clean || clean === "-" || clean.toLowerCase() === "libre") return null;
+        const est = estimateFoodOffline(clean);
+        const kcal = Number(explicitKcal) > 0 ? Math.round(Number(explicitKcal)) : Math.round(est.total.kcal || 250);
+        const p = Number(explicitP) > 0 ? Math.round(Number(explicitP) * 10) / 10 : Math.round((est.total.p || 0) * 10) / 10;
+        const c = Number(explicitC) > 0 ? Math.round(Number(explicitC) * 10) / 10 : Math.round((est.total.c || 0) * 10) / 10;
+        const f = Number(explicitF) > 0 ? Math.round(Number(explicitF) * 10) / 10 : Math.round((est.total.f || 0) * 10) / 10;
+        return {
+          id: "plan-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+          mealType,
+          name: clean,
+          kcal,
+          p,
+          c,
+          f,
+          emoji: est.emoji || "🍽️",
+          planned: true,
+          checked: false
+        };
+      }
+
+      function parseCsvFallbackToObjects(text) {
+        const lines = String(text || "").replace(/^\uFEFF/, "").split(/\r?\n/).filter(l => l.trim().length > 0);
+        if (lines.length < 2) return [];
+        const first = lines[0];
+        const sep = first.includes(";") ? ";" : (first.includes("\t") ? "\t" : ",");
+        const splitRow = (line) => {
+          const res = [];
+          let cur = "", inQ = false;
+          for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+              if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+              else inQ = !inQ;
+            } else if (ch === sep && !inQ) {
+              res.push(cur.trim());
+              cur = "";
+            } else {
+              cur += ch;
+            }
+          }
+          res.push(cur.trim());
+          return res;
+        };
+        const headers = splitRow(lines[0]);
+        return lines.slice(1).map(l => {
+          const vals = splitRow(l);
+          const obj = {};
+          headers.forEach((h, idx) => { obj[h] = vals[idx] ?? ""; });
+          return obj;
+        });
+      }
+
+      async function parseMealPlanExcelFile(file, targetYm) {
+        const buf = await file.arrayBuffer();
+        let sheetRowsList = [];
+
+        if (window.XLSX && !file.name.toLowerCase().endsWith(".csv") && !file.name.toLowerCase().endsWith(".tsv")) {
+          const wb = window.XLSX.read(buf, { type: "array", cellDates: false });
+          for (const sName of wb.SheetNames) {
+            const rows = window.XLSX.utils.sheet_to_json(wb.Sheets[sName], { defval: "" });
+            if (rows && rows.length > 0) sheetRowsList.push(rows);
+          }
+        } else {
+          const txt = new TextDecoder("utf-8").decode(buf);
+          const rows = parseCsvFallbackToObjects(txt);
+          if (rows.length > 0) sheetRowsList.push(rows);
+        }
+
+        const daysMap = {};
+        let totalMeals = 0;
+        const sampleRows = [];
+
+        for (const rows of sheetRowsList) {
+          let sheetAddedMeals = 0;
+          for (const row of rows) {
+            const normRow = {};
+            for (const [k, v] of Object.entries(row)) {
+              normRow[normalizeFoodText(k)] = v;
+            }
+
+            const rawDate =
+              normRow["fecha"] || normRow["dia"] || normRow["date"] || normRow["day"] || Object.values(row)[0];
+            const dates = resolveExcelPlanDates(rawDate, targetYm);
+            if (!dates.length) continue;
+
+            // ¿Es formato tabla por día (columnas Desayuno, Almuerzo, Merienda, Cena, Snack)?
+            const wideCols = [
+              { colKeys: ["desayuno", "breakfast"], mealType: "breakfast" },
+              { colKeys: ["almuerzo", "comida", "mediodia", "lunch"], mealType: "lunch" },
+              { colKeys: ["merienda", "tarde"], mealType: "merienda" },
+              { colKeys: ["cena", "noche", "dinner"], mealType: "dinner" },
+              { colKeys: ["snack", "snacks", "colacion", "colaciones", "picoteo"], mealType: "snack" }
+            ];
+
+            const hasWideCols = wideCols.some(wc => wc.colKeys.some(ck => ck in normRow && String(normRow[ck]).trim() !== ""));
+            if (hasWideCols) {
+              for (const wc of wideCols) {
+                const foundKey = wc.colKeys.find(ck => ck in normRow && String(normRow[ck]).trim() !== "");
+                if (!foundKey) continue;
+                const cellText = String(normRow[foundKey]).trim();
+                for (const dKey of dates) {
+                  const mealObj = createPlannedMealObject(wc.mealType, cellText);
+                  if (mealObj) {
+                    daysMap[dKey] = daysMap[dKey] || [];
+                    daysMap[dKey].push(mealObj);
+                    totalMeals++;
+                    sheetAddedMeals++;
+                    if (sampleRows.length < 10) {
+                      sampleRows.push({ date: dKey, meal: mealObj });
+                    }
+                  }
+                }
+              }
+              continue;
+            }
+
+            // ¿Es formato lista detallada (Fecha | Momento | Comida | Kcal)?
+            const rawMomento = normRow["momento"] || normRow["turno"] || normRow["tipo"] || normRow["comida"] || "";
+            const mealType = mapMealTypeKey(rawMomento) || "lunch";
+            const rawFood =
+              normRow["plato"] || normRow["descripcion"] || normRow["alimento"] || normRow["menu"] ||
+              (mapMealTypeKey(normRow["momento"] || "") ? normRow["comida"] : "");
+            if (!rawFood) continue;
+
+            const expKcal = normRow["kcal"] || normRow["calorias"] || normRow["kcal opcional"];
+            const expP = normRow["proteinas"] || normRow["proteina"] || normRow["p"] || normRow["proteinas opcional"];
+            const expC = normRow["carbohidratos"] || normRow["carbos"] || normRow["c"];
+            const expF = normRow["grasas"] || normRow["grasa"] || normRow["f"] || normRow["g"];
+
+            for (const dKey of dates) {
+              const mealObj = createPlannedMealObject(mealType, rawFood, expKcal, expP, expC, expF);
+              if (mealObj) {
+                daysMap[dKey] = daysMap[dKey] || [];
+                daysMap[dKey].push(mealObj);
+                totalMeals++;
+                sheetAddedMeals++;
+                if (sampleRows.length < 10) {
+                  sampleRows.push({ date: dKey, meal: mealObj });
+                }
+              }
+            }
+          }
+          // Si la primera hoja ya tenía el calendario completo, no duplicamos con la hoja 2 de ejemplo
+          if (sheetAddedMeals > 0) break;
+        }
+
+        return {
+          daysMap,
+          totalDays: Object.keys(daysMap).length,
+          totalMeals,
+          sampleRows
+        };
+      }
+
+      const personalFileInp = document.getElementById("excelPlanFileInput");
+      if (personalFileInp) {
+        personalFileInp.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const ym = document.getElementById("excelPlanMonthInput")?.value || todayStr().slice(0, 7);
+          const prev = document.getElementById("excelPlanPreviewBox");
+          const btnApply = document.getElementById("btnConfirmApplyExcelPlan");
+          try {
+            const parsed = await parseMealPlanExcelFile(file, ym);
+            if (parsed.totalMeals === 0) {
+              alert("No se detectaron comidas válidas en el archivo. Descargá la plantilla para ver el formato de columnas.");
+              return;
+            }
+            pendingPersonalPlan = parsed;
+            if (btnApply) btnApply.disabled = false;
+            if (prev) {
+              prev.style.display = "block";
+              const samplesHtml = parsed.sampleRows.slice(0, 6).map(sr =>
+                `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed var(--border);">
+                  <span>📅 <strong>${sr.date}</strong> • ${sr.meal.emoji} ${sr.meal.name}</span>
+                  <span style="white-space:nowrap;color:var(--accent);font-weight:700;">${sr.meal.kcal} kcal (${sr.meal.p}g P)</span>
+                </div>`
+              ).join("");
+              prev.innerHTML = `
+                <div style="color:var(--accent);font-weight:800;margin-bottom:6px;">
+                  ✅ Archivo leído: ${parsed.totalDays} días y ${parsed.totalMeals} comidas calculadas con IA
+                </div>
+                ${samplesHtml}
+                ${parsed.totalMeals > 6 ? `<div style="margin-top:4px;color:var(--text-muted);font-size:0.74rem;">...y ${parsed.totalMeals - 6} comidas más listas para precargar.</div>` : ""}
+              `;
+            }
+          } catch (err) {
+            console.error("Error leyendo Excel:", err);
+            alert("No se pudo leer el archivo Excel. Probá guardarlo como .xlsx o .csv.");
+          }
+        });
+      }
+
+      const btnConfirmPersonal = document.getElementById("btnConfirmApplyExcelPlan");
+      if (btnConfirmPersonal) {
+        btnConfirmPersonal.addEventListener("click", () => {
+          if (!pendingPersonalPlan || !pendingPersonalPlan.daysMap) return;
+          const mode = document.getElementById("excelPlanMergeMode")?.value || "replace_pending";
+          appData.days = appData.days || {};
+
+          for (const [dKey, newMeals] of Object.entries(pendingPersonalPlan.daysMap)) {
+            const dayRec = ensureDayRecord(dKey);
+            if (mode === "overwrite_all") {
+              dayRec.meals = [...newMeals];
+            } else if (mode === "append") {
+              dayRec.meals = [...(dayRec.meals || []), ...newMeals];
+            } else {
+              // replace_pending: conserva lo ya comido (manual o con check) y actualiza las pendientes
+              const eaten = (dayRec.meals || []).filter(m => isMealConsumed(m));
+              dayRec.meals = [...eaten, ...newMeals];
+            }
+          }
+
+          const daysCnt = pendingPersonalPlan.totalDays;
+          const mealsCnt = pendingPersonalPlan.totalMeals;
+          pendingPersonalPlan = null;
+          saveToServer();
+          renderAll();
+          closeModal("modalExcelPlan");
+          setRaccoonSpeech(`"📅 ¡Plan mensual cargado! Tenés ${mealsCnt} comidas distribuidas en ${daysCnt} días listas para ir dándoles check (✅) a medida que las comas 🐱🔥."`);
+        });
+      }
+
+      const btnClearPending = document.getElementById("btnClearPendingPlanMonth");
+      if (btnClearPending) {
+        btnClearPending.addEventListener("click", () => {
+          if (!confirm("¿Querés borrar todas las comidas precargadas que todavía NO fueron marcadas como ingeridas? (Lo que ya comiste se conserva intacto).")) {
+            return;
+          }
+          for (const dRec of Object.values(appData.days || {})) {
+            if (dRec && Array.isArray(dRec.meals)) {
+              dRec.meals = dRec.meals.filter(m => isMealConsumed(m));
+            }
+          }
+          saveToServer();
+          renderAll();
+          closeModal("modalExcelPlan");
+        });
+      }
+
+      // Input de Excel dentro del Modal del Nutricionista (#modalCoachEditPatient)
+      const coachFileInp = document.getElementById("cepExcelFileInput");
+      if (coachFileInp) {
+        coachFileInp.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const ym = document.getElementById("cepExcelMonthInput")?.value || todayStr().slice(0, 7);
+          const prevEl = document.getElementById("cepExcelPreviewStatus");
+          try {
+            const parsed = await parseMealPlanExcelFile(file, ym);
+            if (parsed.totalMeals === 0) {
+              alert("No se detectaron comidas válidas en el archivo.");
+              return;
+            }
+            pendingCoachParsedPlan = parsed;
+            if (prevEl) {
+              prevEl.style.display = "block";
+              prevEl.innerHTML = `✅ <strong>Excel listo para aplicar:</strong> ${parsed.totalDays} días y <strong>${parsed.totalMeals} comidas</strong> calculadas. Tocá <strong>"💾 Guardar Plan y Nota"</strong> abajo para enviárselo al paciente.`;
+            }
+          } catch (err) {
+            alert("No se pudo leer el archivo Excel.");
           }
         });
       }
