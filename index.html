@@ -2682,17 +2682,58 @@
       }, 6000);
       if (!res.ok) throw new Error("Supabase fetch error " + res.status);
       const rows = await res.json();
-      return (rows || []).map(r => {
-        const doc = r.user_doc || {};
-        doc.id = r.id || doc.id;
-        doc.username = r.username || doc.username || "";
-        doc.email = r.email || doc.email || "";
-        doc.name = r.name || doc.name || "Usuario";
-        doc.role = r.role || doc.role || "patient";
-        doc.status = r.status || doc.status || "pending";
-        return doc;
-      });
+      const sysFoodRow = (rows || []).find(r => r.id === "sys-food-catalog");
+      if (sysFoodRow && sysFoodRow.user_doc && Array.isArray(sysFoodRow.user_doc.learnedFoods)) {
+        if (typeof window.mergeCloudLearnedFoods === "function") {
+          window.mergeCloudLearnedFoods(sysFoodRow.user_doc.learnedFoods);
+        } else {
+          window._pendingCloudLearnedFoods = sysFoodRow.user_doc.learnedFoods;
+        }
+      }
+      return (rows || [])
+        .filter(r => r.id !== "sys-food-catalog" && r.status !== "system_catalog" && r.role !== "system")
+        .map(r => {
+          const doc = r.user_doc || {};
+          doc.id = r.id || doc.id;
+          doc.username = r.username || doc.username || "";
+          doc.email = r.email || doc.email || "";
+          doc.name = r.name || doc.name || "Usuario";
+          doc.role = r.role || doc.role || "patient";
+          doc.status = r.status || doc.status || "pending";
+          return doc;
+        });
     }
+
+    async function sbSaveLearnedFoodCatalog(learnedList) {
+      try {
+        const row = {
+          id: "sys-food-catalog",
+          username: "_sys_food_catalog",
+          email: "catalog@michufit.system",
+          name: "Catálogo Nutricional Global",
+          role: "system",
+          status: "system_catalog",
+          user_doc: {
+            id: "sys-food-catalog",
+            learnedFoods: (learnedList || []).slice(0, 500)
+          },
+          updated_at: new Date().toISOString()
+        };
+        await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=minimal"
+          },
+          body: JSON.stringify([row])
+        }, 6000);
+      } catch (e) {
+        console.warn("No se pudo guardar alimento aprendido en Supabase:", e);
+      }
+    }
+    window.sbSaveLearnedFoodCatalog = sbSaveLearnedFoodCatalog;
 
     async function sbUpsertUser(u) {
       const row = {
@@ -3259,6 +3300,23 @@
           }
           return sbJsonResponse({ ok: true, hasGeminiKey: Boolean(localStorage.getItem("michufit_gemini_key")) });
         }
+
+        // 11. POST /api/analyze-food (SARA/USDA + Aprendizaje Nube + OpenFoodFacts Live)
+        if (method === "POST" && path.endsWith("/api/analyze-food")) {
+          const desc = (body.description || "").trim();
+          const result = typeof window.analyzeFoodSmart === "function"
+            ? await window.analyzeFoodSmart(desc, body.imageBase64, body.mimeType)
+            : estimateFoodOffline(desc);
+          return sbJsonResponse({ ok: true, result });
+        }
+
+        // 12. POST /api/analyze-exercise
+        if (method === "POST" && path.endsWith("/api/analyze-exercise")) {
+          const desc = (body.description || "").trim();
+          const weightKg = Number(body.weightKg) || 80;
+          const result = estimateExerciseOffline(desc, weightKg);
+          return sbJsonResponse({ ok: true, result });
+        }
       } catch (err) {
         console.warn("Supabase Cloud API fallback:", err);
       }
@@ -3280,8 +3338,15 @@
       { id: "c8", name: "Scoop Whey Protein (30g)", kcal: 120, p: 24, c: 3, f: 1.5, emoji: "🥤" },
       { id: "c9", name: "Yogur griego / proteico (170g)", kcal: 135, p: 15, c: 12, f: 3, emoji: "🥣" },
       { id: "c10", name: "Avena arrollada (40g / media taza)", kcal: 150, p: 5.5, c: 27, f: 2.8, emoji: "🌾" },
-      { id: "c11", name: "Banana mediana (1 u)", kcal: 105, p: 1.3, c: 27, f: 0.4, emoji: "🍌" },
-      { id: "c12", name: "Manzana / Naranja mediana (1 u)", kcal: 82, p: 0.5, c: 21, f: 0.2, emoji: "🍎" },
+      { id: "c11", name: "Banana mediana (1 u - 120g)", kcal: 105, p: 1.3, c: 27, f: 0.4, emoji: "🍌" },
+      { id: "c12", name: "Manzana mediana (1 u - 150g)", kcal: 78, p: 0.4, c: 21, f: 0.3, emoji: "🍎" },
+      { id: "c12b", name: "Naranja mediana (1 u - 140g)", kcal: 66, p: 1.3, c: 16.5, f: 0.2, emoji: "🍊" },
+      { id: "c12c", name: "Mandarina mediana (1 u - 100g)", kcal: 53, p: 0.8, c: 13.3, f: 0.3, emoji: "🍊" },
+      { id: "c12d", name: "Frutillas frescas (1 taza - 150g)", kcal: 48, p: 1.0, c: 11.5, f: 0.4, emoji: "🍓" },
+      { id: "c12e", name: "Arándanos / Frutos rojos (1 taza - 125g)", kcal: 71, p: 0.9, c: 18, f: 0.4, emoji: "🫐" },
+      { id: "c12f", name: "Pera mediana (1 u - 160g)", kcal: 91, p: 0.6, c: 24, f: 0.2, emoji: "🍐" },
+      { id: "c12g", name: "Durazno / Pelón mediano (1 u - 140g)", kcal: 55, p: 1.3, c: 13.5, f: 0.4, emoji: "🍑" },
+      { id: "c12h", name: "Kiwi mediano (1 u - 85g)", kcal: 52, p: 1.0, c: 12.5, f: 0.4, emoji: "🥝" },
       { id: "c13", name: "Café con leche descremada (taza)", kcal: 90, p: 6, c: 9, f: 2.8, emoji: "☕" },
       { id: "c14", name: "Mate cebado amargo (termo)", kcal: 5, p: 0.5, c: 1, f: 0, emoji: "🧉" },
       { id: "c15", name: "Queso untable light (1 cda 25g)", kcal: 42, p: 3.2, c: 1.5, f: 2.6, emoji: "🧀" },
@@ -4172,8 +4237,21 @@
     };
 
     function renderQuickCatalog() {
-      const query = (document.getElementById("quickCatalogSearch").value || "").toLowerCase().trim();
-      const rawFoods = [...BASE_CATALOG.slice(0, 1), ...(appData.customFoods || []), ...BASE_CATALOG.slice(1)];
+      const rawQuery = (document.getElementById("quickCatalogSearch").value || "").trim();
+      const normQ = typeof normalizeFoodText === "function" ? normalizeFoodText(rawQuery) : rawQuery.toLowerCase();
+      const extraFromDb = normQ
+        ? [...(window.michuLearnedFoods || []), ...(typeof OFFLINE_FOOD_DB !== "undefined" ? OFFLINE_FOOD_DB : [])].map(e => ({
+            name: `${e.name} (${e.unitG || 100}g)`,
+            kcal: e.isUnit ? Math.round(e.kcal * (e.defaultMult || 1)) : Math.round((e.kcal * (e.unitG || 140)) / 100),
+            p: e.isUnit ? Math.round(e.p * (e.defaultMult || 1) * 10) / 10 : Math.round(((e.p * (e.unitG || 140)) / 100) * 10) / 10,
+            c: e.isUnit ? Math.round(e.c * (e.defaultMult || 1) * 10) / 10 : Math.round(((e.c * (e.unitG || 140)) / 100) * 10) / 10,
+            f: e.isUnit ? Math.round(e.f * (e.defaultMult || 1) * 10) / 10 : Math.round(((e.f * (e.unitG || 140)) / 100) * 10) / 10,
+            emoji: e.emoji || "🍽️",
+            searchKeys: (e.keys || []).join(" ")
+          }))
+        : [];
+
+      const rawFoods = [...BASE_CATALOG.slice(0, 1), ...(appData.customFoods || []), ...BASE_CATALOG.slice(1), ...extraFromDb];
       const seenNames = new Set();
       const allFoods = rawFoods.filter(f => {
         const k = (f.name || "").toLowerCase();
@@ -4181,7 +4259,13 @@
         seenNames.add(k);
         return true;
       });
-      const filtered = allFoods.filter(f => !query || f.name.toLowerCase().includes(query));
+      const filtered = allFoods.filter(f => {
+        if (!normQ) return true;
+        const target = typeof normalizeFoodText === "function"
+          ? normalizeFoodText(`${f.name} ${f.searchKeys || ""}`)
+          : (f.name || "").toLowerCase();
+        return target.includes(normQ) || (normQ.endsWith("s") && target.includes(normQ.replace(/s$/, "")));
+      });
 
       const container = document.getElementById("quickCatalogContainer");
       container.innerHTML = "";
@@ -4210,6 +4294,33 @@
           });
         });
         container.appendChild(btn);
+      }
+
+      if (normQ && filtered.length === 0) {
+        const aiBtn = document.createElement("button");
+        aiBtn.type = "button";
+        aiBtn.className = "catalog-item";
+        aiBtn.style.gridColumn = "1 / -1";
+        aiBtn.style.borderColor = "var(--purple)";
+        aiBtn.innerHTML = `
+          <div>
+            <div style="font-weight:700;font-size:0.84rem;color:var(--purple);">🔍 Calcular "${rawQuery}" con IA + OpenFoodFacts</div>
+            <div style="font-size:0.73rem;color:var(--text-muted);">Busca automáticamente en la base mundial y lo aprende para todos</div>
+          </div>
+          <span style="color:var(--purple);font-weight:800;font-size:0.86rem;">Abrir →</span>
+        `;
+        aiBtn.addEventListener("click", () => {
+          const mealType = document.getElementById("quickMealTarget").value || "lunch";
+          openFoodModal(mealType);
+          setTimeout(() => {
+            const inp = document.getElementById("mfName");
+            if (inp) {
+              inp.value = rawQuery;
+              autoCompleteModalWithAi(true);
+            }
+          }, 90);
+        });
+        container.appendChild(aiBtn);
       }
     }
 
@@ -4451,121 +4562,520 @@
     window.openExerciseModal = openExerciseModal;
 
     // =========================================================================
-    // MOTOR IA LOCAL INTEGRADO EN EL NAVEGADOR / CELULAR (FUNCIONA 100% OFFLINE)
+    // MOTOR NUTRICIONAL HÍBRIDO (OPCIÓN 1 + 2):
+    // 1. Base SARA Argentina + USDA completa (Frutas, Verduras, Carnes, Lácteos, Platos AR)
+    // 2. Normalizador inteligente (sin tildes, singular/plural, límites de palabra, pesos y unidades)
+    // 3. Fallback en vivo a OpenFoodFacts API + Auto-Aprendizaje compartido en Supabase
     // =========================================================================
     const OFFLINE_FOOD_DB = [
-      { keys: ["picaña", "picana", "tapa de cuadril", "asado de tira", "vacio", "vacío", "entraña", "ojo de bife", "bife de chorizo"], name: "Carne picaña / corte vacuno con grasa", kcal: 245, p: 25, c: 0, f: 16, emoji: "🥩", unitG: 100, sliceCmG: 75 },
-      { keys: ["carne a la olla", "carne vacuna", "bife", "carne", "lomo", "nalga", "peceto", "cuadril", "roast beef"], name: "Carne vacuna cocida", kcal: 215, p: 27, c: 0, f: 11.5, emoji: "🥩", unitG: 150, sliceCmG: 75 },
-      { keys: ["pechuga", "pollo", "suprema", "pata muslo"], name: "Pollo cocido", kcal: 165, p: 31, c: 0, f: 3.6, emoji: "🍗", unitG: 150, sliceCmG: 70 },
-      { keys: ["huevo", "huevos", "clara", "omelette", "revuelto"], name: "Huevo entero", kcal: 78, p: 6.5, c: 0.6, f: 5.3, emoji: "🥚", isUnit: true },
-      { keys: ["atun", "atún", "caballa", "sardina"], name: "Atún al natural", kcal: 120, p: 26, c: 0, f: 1.2, emoji: "🐟", isUnit: true },
-      { keys: ["salmon", "salmón", "merluza", "pescado", "tilapia"], name: "Filet de pescado", kcal: 175, p: 24, c: 0, f: 8, emoji: "🐟", unitG: 150 },
-      { keys: ["cerdo", "bondiola", "carré", "costillita"], name: "Carne de cerdo", kcal: 225, p: 25, c: 0, f: 13.5, emoji: "🥩", unitG: 140, sliceCmG: 70 },
-      { keys: ["jamon", "jamón", "lomito", "pavo"], name: "Jamón cocido", kcal: 55, p: 9, c: 1, f: 1.5, emoji: "🍖", isUnit: true },
-      { keys: ["queso", "muzzarella", "mozzarella", "port salut", "cremoso", "ricota", "untable"], name: "Queso / Ricota", kcal: 145, p: 11, c: 2, f: 10.5, emoji: "🧀", isUnit: true },
-      { keys: ["yogur", "yogurt", "yogourt", "griego"], name: "Yogur natural / proteico", kcal: 130, p: 11, c: 12, f: 3.5, emoji: "🥣", isUnit: true },
-      { keys: ["whey", "proteina", "proteína", "scoop", "batido"], name: "Scoop Whey Protein", kcal: 120, p: 24, c: 3, f: 1.5, emoji: "🥤", isUnit: true },
-      { keys: ["quinoa", "quinua"], name: "Quinoa cocida", kcal: 170, p: 6.2, c: 30, f: 2.6, emoji: "🌾", isUnit: true },
-      { keys: ["arroz"], name: "Arroz cocido", kcal: 185, p: 4, c: 40, f: 0.5, emoji: "🍚", isUnit: true },
-      { keys: ["fideos", "pasta", "tallarines", "ñoquis", "ravioles"], name: "Pasta cocida", kcal: 240, p: 8.5, c: 47, f: 1.8, emoji: "🍝", isUnit: true },
-      { keys: ["papa", "papas", "batata", "boniato", "pure", "puré"], name: "Papa / Batata cocida", kcal: 155, p: 3.5, c: 35, f: 0.2, emoji: "🥔", isUnit: true },
-      { keys: ["lentejas", "garbanzos", "porotos", "frijoles"], name: "Legumbres cocidas", kcal: 185, p: 13, c: 31, f: 0.9, emoji: "🍲", isUnit: true },
-      { keys: ["avena", "granola"], name: "Avena", kcal: 150, p: 5.5, c: 27, f: 2.8, emoji: "🌾", isUnit: true },
-      { keys: ["pan", "tostada", "tostadas", "lactal", "rodaja", "tostado"], name: "Rebanada de pan", kcal: 78, p: 3.2, c: 14, f: 1, emoji: "🍞", isUnit: true },
-      { keys: ["empanada", "empanadas"], name: "Empanada", kcal: 265, p: 11, c: 26, f: 13, emoji: "🥟", isUnit: true },
-      { keys: ["pizza"], name: "Porción de pizza", kcal: 280, p: 12, c: 31, f: 12, emoji: "🍕", isUnit: true },
-      { keys: ["milanesa", "mila", "milanesas"], name: "Milanesa", kcal: 350, p: 30, c: 22, f: 15, emoji: "🥩", isUnit: true },
-      { keys: ["blend", "hamburguesa", "burger", "medallon", "medallón"], name: "Medallón Hamburguesa Blend (150g: Lomo/Bondiola/Corazón)", kcal: 241, p: 29.5, c: 0.5, f: 13.1, emoji: "🍔", isUnit: true },
-      { keys: ["ensalada", "lechuga", "tomate", "pepino", "rucula", "rúcula", "verduras", "vegetales", "brocoli", "brócoli", "zapallito", "calabaza"], name: "Guarnición de vegetales / ensalada", kcal: 65, p: 2.2, c: 10, f: 1.8, emoji: "🥗", isUnit: true },
-      { keys: ["palta", "aguacate", "guacamole"], name: "Palta", kcal: 120, p: 1.5, c: 6, f: 11, emoji: "🥑", isUnit: true },
-      { keys: ["aceite", "oliva", "manteca", "mayonesa"], name: "Grasa / Aderezo (1 cda)", kcal: 90, p: 0, c: 0, f: 10, emoji: "🫒", isUnit: true },
-      { keys: ["banana", "platano", "plátano"], name: "Banana", kcal: 105, p: 1.3, c: 27, f: 0.4, emoji: "🍌", isUnit: true },
-      { keys: ["manzana", "naranja", "pera", "mandarina", "fruta", "frutillas", "arandanos", "arándanos", "kiwi", "durazno"], name: "Fruta fresca", kcal: 80, p: 0.8, c: 19, f: 0.2, emoji: "🍎", isUnit: true },
-      { keys: ["almendras", "nueces", "mani", "maní", "frutos secos", "pasta de mani"], name: "Frutos secos / Maní", kcal: 170, p: 6.5, c: 5.5, f: 14.5, emoji: "🥜", isUnit: true },
-      { keys: ["medialuna", "medialunas", "factura", "facturas", "criollito", "bizcocho"], name: "Medialuna / Factura", kcal: 175, p: 3.5, c: 22, f: 8, emoji: "🥐", isUnit: true },
-      { keys: ["alfajor", "chocolate", "galletita", "galletitas", "dulce de leche"], name: "Dulce / Alfajor", kcal: 240, p: 4, c: 32, f: 10.5, emoji: "🍫", isUnit: true },
-      { keys: ["cafe con leche", "café con leche", "cortado", "capuchino", "latte"], name: "Café con leche", kcal: 90, p: 6, c: 9, f: 2.8, emoji: "☕", isUnit: true },
-      { keys: ["cafe", "café", "mate", "te", "té"], name: "Infusión (Café / Mate / Té)", kcal: 10, p: 0.5, c: 1.5, f: 0, emoji: "🧉", isUnit: true },
-      { keys: ["cerveza", "pinta", "vino", "copa", "fernet"], name: "Bebida alcohólica", kcal: 185, p: 1, c: 14, f: 0, emoji: "🍺", isUnit: true }
+      // --- FRUTAS INDIVIDUALES (Valores exactos USDA / SARA Argentina) ---
+      { keys: ["ensalada de fruta", "ensalada de frutas", "macedonia", "compota de fruta"], name: "Ensalada de frutas frescas", kcal: 115, p: 1.2, c: 28, f: 0.4, emoji: "🍓", isUnit: true, unitG: 200 },
+      { keys: ["manzana", "manzanas", "manzana verde", "manzana roja"], name: "Manzana fresca", kcal: 78, p: 0.4, c: 20.7, f: 0.3, emoji: "🍎", isUnit: true, unitG: 150 },
+      { keys: ["banana", "bananas", "platano", "platanos"], name: "Banana", kcal: 105, p: 1.3, c: 27, f: 0.4, emoji: "🍌", isUnit: true, unitG: 120 },
+      { keys: ["naranja", "naranjas"], name: "Naranja fresca", kcal: 66, p: 1.3, c: 16.5, f: 0.2, emoji: "🍊", isUnit: true, unitG: 140 },
+      { keys: ["mandarina", "mandarinas"], name: "Mandarina", kcal: 53, p: 0.8, c: 13.3, f: 0.3, emoji: "🍊", isUnit: true, unitG: 100 },
+      { keys: ["pera", "peras"], name: "Pera fresca", kcal: 91, p: 0.6, c: 24, f: 0.2, emoji: "🍐", isUnit: true, unitG: 160 },
+      { keys: ["durazno", "duraznos", "melocoton", "pelon", "pelones", "nectarina"], name: "Durazno / Pelón", kcal: 55, p: 1.3, c: 13.5, f: 0.4, emoji: "🍑", isUnit: true, unitG: 140 },
+      { keys: ["ciruela", "ciruelas"], name: "Ciruela fresca", kcal: 30, p: 0.5, c: 7.5, f: 0.2, emoji: "🍑", isUnit: true, unitG: 65 },
+      { keys: ["damasco", "damascos", "chabacano", "albaricoque"], name: "Damasco fresco", kcal: 19, p: 0.6, c: 4.4, f: 0.2, emoji: "🍑", isUnit: true, unitG: 40 },
+      { keys: ["frutilla", "frutillas", "fresa", "fresas"], name: "Frutillas frescas", kcal: 48, p: 1.0, c: 11.5, f: 0.4, emoji: "🍓", isUnit: true, unitG: 150, pieceG: 18 },
+      { keys: ["arandano", "arandanos", "blueberry", "blueberries"], name: "Arándanos", kcal: 71, p: 0.9, c: 18, f: 0.4, emoji: "🫐", isUnit: true, unitG: 125, pieceG: 2 },
+      { keys: ["frambuesa", "frambuesas", "mora", "moras", "frutos rojos", "berries"], name: "Frambuesas / Frutos rojos", kcal: 65, p: 1.5, c: 15, f: 0.8, emoji: "🍓", isUnit: true, unitG: 125, pieceG: 4 },
+      { keys: ["cereza", "cerezas", "guinda", "guindas"], name: "Cerezas frescas", kcal: 75, p: 1.3, c: 19, f: 0.2, emoji: "🍒", isUnit: true, unitG: 120, pieceG: 8 },
+      { keys: ["uva", "uvas"], name: "Uvas frescas", kcal: 90, p: 0.9, c: 23.5, f: 0.2, emoji: "🍇", isUnit: true, unitG: 130, pieceG: 6 },
+      { keys: ["kiwi", "kiwis"], name: "Kiwi", kcal: 52, p: 1.0, c: 12.5, f: 0.4, emoji: "🥝", isUnit: true, unitG: 85 },
+      { keys: ["sandia", "sandias"], name: "Sandía (rodaja/porción)", kcal: 60, p: 1.2, c: 15, f: 0.3, emoji: "🍉", isUnit: true, unitG: 200 },
+      { keys: ["melon", "melones", "rocio de miel"], name: "Melón (rodaja/porción)", kcal: 61, p: 1.5, c: 14.5, f: 0.3, emoji: "🍈", isUnit: true, unitG: 180 },
+      { keys: ["anana", "ananas", "pina", "pinas"], name: "Ananá / Piña", kcal: 70, p: 0.8, c: 18, f: 0.2, emoji: "🍍", isUnit: true, unitG: 140 },
+      { keys: ["mango", "mangos"], name: "Mango fresco", kcal: 99, p: 1.4, c: 25, f: 0.6, emoji: "🥭", isUnit: true, unitG: 165 },
+      { keys: ["pomelo", "pomelos", "toronja"], name: "Pomelo", kcal: 76, p: 1.4, c: 19, f: 0.2, emoji: "🍊", isUnit: true, unitG: 180 },
+      { keys: ["limon", "limones", "lima", "limas"], name: "Limón / Lima", kcal: 19, p: 0.7, c: 6, f: 0.2, emoji: "🍋", isUnit: true, unitG: 65 },
+      { keys: ["higo", "higos", "breva", "brevas"], name: "Higo fresco", kcal: 41, p: 0.4, c: 10.5, f: 0.2, emoji: "🍈", isUnit: true, unitG: 55 },
+      { keys: ["granada", "granadas"], name: "Granada", kcal: 100, p: 2.0, c: 22, f: 1.4, emoji: "🍎", isUnit: true, unitG: 120 },
+      { keys: ["maracuya", "fruta de la pasion", "mburucuya"], name: "Maracuyá", kcal: 97, p: 2.2, c: 23, f: 0.7, emoji: "🥭", isUnit: true, unitG: 100 },
+      { keys: ["papaya", "mamon"], name: "Papaya", kcal: 65, p: 0.7, c: 16, f: 0.4, emoji: "🥭", isUnit: true, unitG: 150 },
+      { keys: ["caqui", "persimon", "nispero", "kinoto", "quinoto", "membrillo", "guayaba", "pitaya", "fruta del dragon"], name: "Fruta tropical / de estación", kcal: 75, p: 0.8, c: 18.5, f: 0.3, emoji: "🍑", isUnit: true, unitG: 130 },
+      { keys: ["coco rallado", "coco"], name: "Coco", kcal: 106, p: 1.0, c: 4.5, f: 10, emoji: "🥥", isUnit: true, unitG: 30 },
+      { keys: ["datil", "datiles", "pasas de uva", "pasa de uva", "ciruela pasa", "ciruelas pasas", "higo seco"], name: "Fruta desecada (Dátiles / Pasas)", kcal: 85, p: 0.8, c: 22, f: 0.1, emoji: "🍇", isUnit: true, unitG: 30, pieceG: 8 },
+      { keys: ["palta", "paltas", "aguacate", "aguacates", "guacamole"], name: "Palta", kcal: 224, p: 2.8, c: 12, f: 20.5, emoji: "🥑", isUnit: true, unitG: 140, defaultMult: 0.5 },
+      { keys: ["fruta", "frutas"], name: "Fruta fresca mediana", kcal: 78, p: 0.8, c: 19, f: 0.3, emoji: "🍎", isUnit: true, unitG: 140 },
+
+      // --- VERDURAS, HORTALIZAS Y ENSALADAS ---
+      { keys: ["ensalada cesar", "ensalada caesar"], name: "Ensalada César con pollo", kcal: 390, p: 32, c: 16, f: 22, emoji: "🥗", isUnit: true, unitG: 280 },
+      { keys: ["ensalada rusa"], name: "Ensalada rusa", kcal: 260, p: 4.0, c: 26, f: 15.5, emoji: "🥗", isUnit: true, unitG: 180 },
+      { keys: ["papas fritas", "papa frita", "batatas fritas", "fritas"], name: "Papas fritas", kcal: 435, p: 5.0, c: 54, f: 22, emoji: "🍟", isUnit: true, unitG: 150 },
+      { keys: ["pure de calabaza", "pure de zapallo"], name: "Puré de calabaza / zapallo", kcal: 95, p: 2.0, c: 19, f: 1.5, emoji: "🎃", isUnit: true, unitG: 200 },
+      { keys: ["pure de papa", "pure de papas", "pure mixto", "pure"], name: "Puré de papa", kcal: 210, p: 4.2, c: 33, f: 6.8, emoji: "🥔", isUnit: true, unitG: 200 },
+      { keys: ["papa", "papas", "batata", "batatas", "boniato", "mandioca"], name: "Papa / Batata cocida", kcal: 155, p: 3.5, c: 35, f: 0.2, emoji: "🥔", isUnit: true, unitG: 180 },
+      { keys: ["calabaza", "zapallo", "cabutia", "anco"], name: "Calabaza / Zapallo cocido", kcal: 72, p: 1.8, c: 17, f: 0.2, emoji: "🎃", isUnit: true, unitG: 180 },
+      { keys: ["zapallito", "zapallitos", "zucchini"], name: "Zapallito / Zucchini", kcal: 26, p: 1.8, c: 4.8, f: 0.4, emoji: "🥒", isUnit: true, unitG: 150 },
+      { keys: ["tomate", "tomates", "cherry", "tomate cherry"], name: "Tomate fresco", kcal: 24, p: 1.1, c: 5, f: 0.3, emoji: "🍅", isUnit: true, unitG: 130 },
+      { keys: ["lechuga", "rucula", "radicheta", "berro", "hojas verdes", "escarola"], name: "Hojas verdes (Lechuga / Rúcula)", kcal: 14, p: 1.1, c: 2.5, f: 0.2, emoji: "🥬", isUnit: true, unitG: 80 },
+      { keys: ["zanahoria", "zanahorias"], name: "Zanahoria", kcal: 41, p: 0.9, c: 9.6, f: 0.2, emoji: "🥕", isUnit: true, unitG: 100 },
+      { keys: ["pepino", "pepinos"], name: "Pepino", kcal: 21, p: 0.9, c: 5, f: 0.2, emoji: "🥒", isUnit: true, unitG: 140 },
+      { keys: ["brocoli", "coliflor", "repollito de bruselas", "repollitos"], name: "Brócoli / Coliflor", kcal: 51, p: 4.2, c: 10, f: 0.6, emoji: "🥦", isUnit: true, unitG: 150 },
+      { keys: ["espinaca", "espinacas", "acelga", "acelgas", "kale"], name: "Espinaca / Acelga", kcal: 35, p: 4.4, c: 5.5, f: 0.4, emoji: "🥬", isUnit: true, unitG: 150 },
+      { keys: ["berenjena", "berenjenas"], name: "Berenjena", kcal: 38, p: 1.5, c: 9, f: 0.3, emoji: "🍆", isUnit: true, unitG: 150 },
+      { keys: ["cebolla", "cebollas", "puerro", "verdeo"], name: "Cebolla", kcal: 40, p: 1.1, c: 9.3, f: 0.1, emoji: "🧅", isUnit: true, unitG: 100 },
+      { keys: ["morron", "morrones", "pimiento", "pimientos", "aji"], name: "Morrón / Pimiento", kcal: 31, p: 1.2, c: 7, f: 0.3, emoji: "🫑", isUnit: true, unitG: 120 },
+      { keys: ["choclo", "choclos", "maiz"], name: "Choclo / Maíz", kcal: 125, p: 4.3, c: 27, f: 1.6, emoji: "🌽", isUnit: true, unitG: 130 },
+      { keys: ["arveja", "arvejas", "guisantes", "edamame"], name: "Arvejas / Edamame", kcal: 88, p: 6.2, c: 14, f: 0.8, emoji: "🫛", isUnit: true, unitG: 100 },
+      { keys: ["chaucha", "chauchas", "judias verdes"], name: "Chauchas", kcal: 40, p: 2.4, c: 9, f: 0.3, emoji: "🫛", isUnit: true, unitG: 130 },
+      { keys: ["remolacha", "remolachas", "betarraga"], name: "Remolacha", kcal: 52, p: 1.9, c: 11.5, f: 0.2, emoji: "🥗", isUnit: true, unitG: 120 },
+      { keys: ["champinon", "champinones", "hongo", "hongos", "portobello", "girgolas", "setas"], name: "Champiñones / Hongos", kcal: 22, p: 3.1, c: 3.3, f: 0.3, emoji: "🍄", isUnit: true, unitG: 100 },
+      { keys: ["esparrago", "esparragos", "alcaucil", "apio", "repollo", "hinojo", "palmito", "palmitos"], name: "Vegetales verdes / Palmitos", kcal: 28, p: 2.5, c: 5, f: 0.2, emoji: "🥬", isUnit: true, unitG: 120 },
+      { keys: ["ensalada", "verduras", "vegetales", "ensalada mixta", "wok de vegetales"], name: "Ensalada / Guarnición de vegetales", kcal: 65, p: 2.2, c: 10, f: 1.8, emoji: "🥗", isUnit: true, unitG: 180 },
+
+      // --- CARNES VACUNAS, CERDO, AVES, PESCADOS Y HUEVOS ---
+      { keys: ["medallon blend", "hamburguesa blend", "blend", "medallon", "hamburguesa casera"], name: "Medallón Hamburguesa Blend (150g: Lomo/Bondiola/Corazón)", kcal: 241, p: 29.5, c: 0.5, f: 13.1, emoji: "🍔", isUnit: true, unitG: 150 },
+      { keys: ["hamburguesa completa", "cheeseburger", "burger con queso"], name: "Hamburguesa con pan y queso", kcal: 520, p: 34, c: 36, f: 26, emoji: "🍔", isUnit: true, unitG: 240 },
+      { keys: ["hamburguesa", "burger", "paty"], name: "Medallón de hamburguesa vacuna", kcal: 235, p: 21, c: 1, f: 16, emoji: "🍔", isUnit: true, unitG: 110 },
+      { keys: ["picana", "tapa de cuadril", "asado de tira", "tira de asado", "asado", "vacio", "entrana", "ojo de bife", "bife de chorizo", "matambre"], name: "Corte vacuno parrillero (Asado/Vacío/Bife de chorizo)", kcal: 245, p: 25, c: 0, f: 16, emoji: "🥩", unitG: 160, sliceCmG: 75 },
+      { keys: ["carne a la olla", "carne al horno", "carne vacuna", "bife", "carne", "lomo", "nalga", "peceto", "cuadril", "colita de cuadril", "bola de lomo", "roast beef", "churrasco"], name: "Carne vacuna magra/media cocida", kcal: 205, p: 28, c: 0, f: 9.8, emoji: "🥩", unitG: 150, sliceCmG: 75 },
+      { keys: ["carne picada", "albondiga", "albondigas", "pan de carne"], name: "Carne picada / Albóndigas", kcal: 220, p: 24, c: 2, f: 13, emoji: "🥩", unitG: 150 },
+      { keys: ["choripan"], name: "Choripán", kcal: 430, p: 21, c: 34, f: 23, emoji: "🌭", isUnit: true, unitG: 180 },
+      { keys: ["chorizo", "morcilla", "salchicha parrillera"], name: "Chorizo / Morcilla", kcal: 310, p: 17, c: 2, f: 25, emoji: "🌭", isUnit: true, unitG: 115 },
+      { keys: ["salchicha", "salchichas", "pancho"], name: "Salchicha de viena", kcal: 135, p: 5.5, c: 1.5, f: 12, emoji: "🌭", isUnit: true, unitG: 50 },
+      { keys: ["pechuga de pollo", "pechuga", "suprema grillada", "suprema"], name: "Pechuga de pollo cocida", kcal: 165, p: 31, c: 0, f: 3.6, emoji: "🍗", unitG: 150, sliceCmG: 70 },
+      { keys: ["pata muslo", "muslo de pollo", "pollo al horno", "pollo"], name: "Pollo cocido", kcal: 185, p: 28, c: 0, f: 7.5, emoji: "🍗", unitG: 150, sliceCmG: 70 },
+      { keys: ["solomillo de cerdo", "carre de cerdo", "lomo de cerdo"], name: "Cerdo magro (Solomillo / Carré)", kcal: 165, p: 27, c: 0, f: 5.8, emoji: "🥩", unitG: 150, sliceCmG: 70 },
+      { keys: ["bondiola", "costillita de cerdo", "pechito de cerdo", "cerdo"], name: "Carne de cerdo / Bondiola", kcal: 235, p: 24, c: 0, f: 15, emoji: "🥩", unitG: 150, sliceCmG: 70 },
+      { keys: ["atun al natural", "lata de atun", "atun"], name: "Atún al natural (porción/lata)", kcal: 125, p: 27, c: 0, f: 1.2, emoji: "🐟", isUnit: true, unitG: 120 },
+      { keys: ["atun en aceite", "caballa", "sardina", "sardinas", "jurel"], name: "Pescado en conserva (Caballa/Sardinas/Atún aceite)", kcal: 195, p: 24, c: 0, f: 10.5, emoji: "🐟", isUnit: true, unitG: 120 },
+      { keys: ["salmon", "trucha"], name: "Salmón / Trucha", kcal: 208, p: 22, c: 0, f: 13, emoji: "🐟", unitG: 150 },
+      { keys: ["merluza", "lenguado", "abadejo", "tilapia", "pejerrey", "surubi", "pacu", "boga", "pescado", "filet de merluza"], name: "Filet de pescado blanco", kcal: 120, p: 22, c: 0, f: 3.0, emoji: "🐟", unitG: 160 },
+      { keys: ["camaron", "camarones", "langostino", "langostinos", "mariscos", "calamar", "mejillones"], name: "Langostinos / Mariscos", kcal: 115, p: 24, c: 1, f: 1.5, emoji: "🦐", isUnit: true, unitG: 120 },
+      { keys: ["rabas", "calamares fritos"], name: "Porción de rabas", kcal: 310, p: 20, c: 22, f: 16, emoji: "🦑", isUnit: true, unitG: 150 },
+      { keys: ["omelette", "tortilla francesa"], name: "Omelette (2 huevos con queso)", kcal: 255, p: 20, c: 2, f: 18, emoji: "🍳", isUnit: true, unitG: 150 },
+      { keys: ["clara de huevo", "clara", "claras"], name: "Clara de huevo", kcal: 17, p: 3.6, c: 0.2, f: 0.1, emoji: "🥚", isUnit: true, unitG: 35 },
+      { keys: ["huevo frito", "huevos fritos"], name: "Huevo frito", kcal: 110, p: 6.5, c: 0.6, f: 9.2, emoji: "🍳", isUnit: true, unitG: 60 },
+      { keys: ["huevo", "huevos", "huevo duro", "huevo revuelto", "huevos revueltos", "huevo poche"], name: "Huevo entero", kcal: 78, p: 6.5, c: 0.6, f: 5.3, emoji: "🥚", isUnit: true, unitG: 55 },
+
+      // --- FIAMBRES, LÁCTEOS, QUESOS Y PROTEÍNAS ---
+      { keys: ["jamon crudo", "salame", "salamin", "panceta", "bacon", "longaniza", "mortadela"], name: "Fiambre (Jamón crudo / Panceta / Salame)", kcal: 135, p: 10, c: 0.5, f: 10.5, emoji: "🥓", isUnit: true, unitG: 40, pieceG: 15 },
+      { keys: ["jamon cocido", "jamon", "lomito", "pavo", "pechuga de pavo", "feta de jamon"], name: "Jamón cocido / Lomito magro", kcal: 52, p: 8.8, c: 1, f: 1.4, emoji: "🍖", isUnit: true, unitG: 40, pieceG: 20 },
+      { keys: ["queso untable", "queso crema", "casancrem", "finlandia", "mendicrim", "tholem"], name: "Queso untable / crema (1 cda)", kcal: 55, p: 3.2, c: 1.5, f: 4.1, emoji: "🧀", isUnit: true, unitG: 30 },
+      { keys: ["ricota", "ricotta", "queso cottage"], name: "Ricota / Queso cottage", kcal: 135, p: 12, c: 3.5, f: 8, emoji: "🧀", isUnit: true, unitG: 100 },
+      { keys: ["queso rallado", "reggianito", "parmesano", "sardo", "provolone", "provoleta"], name: "Queso duro / Provolone", kcal: 115, p: 9.5, c: 0.5, f: 8.5, emoji: "🧀", isUnit: true, unitG: 30 },
+      { keys: ["queso", "muzzarella", "mozzarella", "port salut", "por salut", "cremoso", "cuartirolo", "tybo", "danbo", "cheddar", "feta de queso"], name: "Queso (Port Salut / Cremoso / Muzza)", kcal: 148, p: 11.5, c: 1.0, f: 11, emoji: "🧀", isUnit: true, unitG: 50, pieceG: 25 },
+      { keys: ["yogur griego", "yogurt griego", "yogur proteico", "kay"], name: "Yogur griego / proteico", kcal: 135, p: 15, c: 11, f: 3.2, emoji: "🥣", isUnit: true, unitG: 170 },
+      { keys: ["yogur descremado", "yogurt descremado", "yogur ser", "yogur light"], name: "Yogur descremado", kcal: 78, p: 5.8, c: 11, f: 0.8, emoji: "🥣", isUnit: true, unitG: 160 },
+      { keys: ["yogur", "yogurt", "yogourt"], name: "Yogur natural / bebible", kcal: 125, p: 6.5, c: 16, f: 3.2, emoji: "🥣", isUnit: true, unitG: 170 },
+      { keys: ["leche de almendras", "leche de avena", "leche de soja", "bebida vegetal", "silk"], name: "Leche vegetal (Almendras / Soja)", kcal: 45, p: 1.5, c: 4.0, f: 2.5, emoji: "🥛", isUnit: true, unitG: 200 },
+      { keys: ["leche descremada", "leche", "vaso de leche"], name: "Leche (1 vaso 200ml)", kcal: 88, p: 6.6, c: 9.5, f: 2.5, emoji: "🥛", isUnit: true, unitG: 200 },
+      { keys: ["whey", "proteina", "scoop", "batido de proteina", "protein"], name: "Scoop Whey Protein", kcal: 120, p: 24, c: 3, f: 1.5, emoji: "🥤", isUnit: true, unitG: 30 },
+      { keys: ["tofu", "seitan", "soja texturizada", "milanesa de soja", "medallon de soja"], name: "Tofu / Milanesa de soja", kcal: 185, p: 17, c: 12, f: 7.5, emoji: "🌱", isUnit: true, unitG: 130 },
+
+      // --- CEREALES, LEGUMBRES, PANIFICADOS Y PASTAS ---
+      { keys: ["arroz con leche"], name: "Arroz con leche", kcal: 220, p: 6.0, c: 38, f: 4.5, emoji: "🍚", isUnit: true, unitG: 180 },
+      { keys: ["arroz", "arroz blanco", "arroz integral", "arroz yamani", "arroz basmati", "risotto"], name: "Arroz cocido", kcal: 195, p: 4.2, c: 42, f: 0.6, emoji: "🍚", isUnit: true, unitG: 150 },
+      { keys: ["quinoa", "quinua", "cuscus", "couscous", "trigo burgol", "mijo"], name: "Quinoa / Trigo burgol cocido", kcal: 180, p: 6.5, c: 31.5, f: 2.8, emoji: "🌾", isUnit: true, unitG: 150 },
+      { keys: ["granola", "muesli", "copos de maiz", "zucaritas", "cereal", "cereales"], name: "Granola / Cereales", kcal: 195, p: 4.5, c: 31, f: 6.0, emoji: "🥣", isUnit: true, unitG: 45 },
+      { keys: ["avena", "porridge"], name: "Avena arrollada", kcal: 155, p: 5.8, c: 27, f: 2.9, emoji: "🌾", isUnit: true, unitG: 40 },
+      { keys: ["noquis", "ravioles", "sorrentinos", "canelones", "lasana", "lasagna", "capeletis", "agnolotits"], name: "Pasta rellena / Ñoquis", kcal: 350, p: 13.5, c: 52, f: 9.8, emoji: "🍝", isUnit: true, unitG: 220 },
+      { keys: ["fideos", "pasta", "tallarines", "spaghetti", "tirabuzon", "mostacholes", "penne", "macarrones"], name: "Pasta / Fideos cocidos", kcal: 250, p: 8.8, c: 49, f: 1.8, emoji: "🍝", isUnit: true, unitG: 180 },
+      { keys: ["polenta"], name: "Polenta cocida", kcal: 175, p: 4.0, c: 36, f: 1.2, emoji: "🍲", isUnit: true, unitG: 200 },
+      { keys: ["hummus"], name: "Hummus de garbanzos", kcal: 115, p: 4.0, c: 9.5, f: 6.8, emoji: "🥣", isUnit: true, unitG: 50 },
+      { keys: ["lentejas", "lenteja", "garbanzos", "garbanzo", "porotos", "poroto", "frijoles", "alubias"], name: "Legumbres cocidas (Lentejas/Garbanzos/Porotos)", kcal: 190, p: 13.5, c: 32, f: 0.9, emoji: "🍲", isUnit: true, unitG: 160 },
+      { keys: ["galleta de arroz", "galletas de arroz", "tostada de arroz", "tostadas de arroz"], name: "Galleta de arroz", kcal: 35, p: 0.8, c: 7.5, f: 0.2, emoji: "🍘", isUnit: true, unitG: 10 },
+      { keys: ["pan frances", "minon", "felipe", "baguette", "flautita", "figazza", "pan arabe", "pan pita", "pebete"], name: "Pan francés / árabe (1 unidad)", kcal: 162, p: 5.4, c: 32, f: 1.2, emoji: "🥖", isUnit: true, unitG: 60 },
+      { keys: ["pan", "tostada", "tostadas", "pan lactal", "pan integral", "pan de salvado", "rebanada de pan", "pan de molde"], name: "Rebanada de pan / Tostada", kcal: 76, p: 3.2, c: 13.5, f: 1.1, emoji: "🍞", isUnit: true, unitG: 30 },
+      { keys: ["rapidita", "rapiditas", "fajita", "fajitas", "tortilla de trigo", "taco", "tacos", "wrap"], name: "Fajita / Rapidita", kcal: 105, p: 2.8, c: 18, f: 2.4, emoji: "🌮", isUnit: true, unitG: 35 },
+      { keys: ["panqueque", "panqueques", "crepe", "hotcake", "waffle"], name: "Panqueque / Waffle", kcal: 185, p: 9.5, c: 23, f: 6.0, emoji: "🥞", isUnit: true, unitG: 90 },
+      { keys: ["chipa", "chipas", "pan de queso"], name: "Chipa", kcal: 155, p: 4.5, c: 16, f: 8.2, emoji: "🧀", isUnit: true, unitG: 45 },
+
+      // --- PLATOS TÍPICOS ARGENTINOS Y COMIDAS ELABORADAS ---
+      { keys: ["milanesa napolitana", "suprema napolitana", "napolitana"], name: "Milanesa napolitana", kcal: 495, p: 39, c: 25, f: 26, emoji: "🥩", isUnit: true, unitG: 230 },
+      { keys: ["milanesa de pollo", "suprema al horno", "milanesa", "mila", "milanesas"], name: "Milanesa de carne o pollo", kcal: 340, p: 31, c: 21, f: 14, emoji: "🥩", isUnit: true, unitG: 160 },
+      { keys: ["empanada", "empanadas", "empanada de carne", "empanada de pollo", "empanada de jamon y queso", "empanada de verdura", "empanada de humita"], name: "Empanada", kcal: 265, p: 11, c: 26, f: 13, emoji: "🥟", isUnit: true, unitG: 110 },
+      { keys: ["pizza", "porcion de pizza", "fugazzeta", "muzza"], name: "Porción de pizza", kcal: 280, p: 12.5, c: 31, f: 12, emoji: "🍕", isUnit: true, unitG: 115 },
+      { keys: ["tarta", "porcion de tarta", "pascualina", "tarta de verdura", "tarta de jamon y queso", "tarta de atun", "tarta de pollo", "tarta de zapallitos"], name: "Porción de tarta", kcal: 310, p: 14.5, c: 24, f: 17, emoji: "🥧", isUnit: true, unitG: 180 },
+      { keys: ["tortilla de papa", "tortilla de papas", "tortilla de verdura", "tortilla de acelga"], name: "Porción de tortilla de papa / verdura", kcal: 320, p: 13, c: 26, f: 18, emoji: "🍳", isUnit: true, unitG: 200 },
+      { keys: ["pastel de papa", "pastel de papas", "pastel de calabaza"], name: "Pastel de papa / calabaza", kcal: 440, p: 24, c: 36, f: 22, emoji: "🍲", isUnit: true, unitG: 280 },
+      { keys: ["guiso de lentejas", "guiso", "locro", "estofado", "cazuela"], name: "Guiso / Estofado casero", kcal: 460, p: 26, c: 48, f: 17, emoji: "🍲", isUnit: true, unitG: 320 },
+      { keys: ["sopa", "sopa de verduras", "caldo"], name: "Sopa de verduras / Caldo", kcal: 85, p: 3.5, c: 14, f: 1.8, emoji: "🥣", isUnit: true, unitG: 280 },
+      { keys: ["sandwich de miga", "sandwiches de miga", "triple de miga"], name: "Sándwich de miga triple", kcal: 215, p: 9.0, c: 20, f: 11, emoji: "🥪", isUnit: true, unitG: 75 },
+      { keys: ["tostado", "carlitos", "sandwich de jamon y queso", "sandwich"], name: "Sándwich / Tostado de jamón y queso", kcal: 355, p: 19, c: 32, f: 16.5, emoji: "🥪", isUnit: true, unitG: 150 },
+      { keys: ["sushi", "roll de sushi", "pieza de sushi", "piezas de sushi"], name: "Sushi (8 piezas / 1 roll)", kcal: 350, p: 16.5, c: 52, f: 8.5, emoji: "🍣", isUnit: true, unitG: 250, pieceG: 31 },
+
+      // --- FRUTOS SECOS, SEMILLAS, GRASAS, DULCES Y SNACKS ---
+      { keys: ["pasta de mani", "mantequilla de mani", "crema de mani"], name: "Pasta de maní (1 cda)", kcal: 118, p: 5.0, c: 4.0, f: 10, emoji: "🥜", isUnit: true, unitG: 20 },
+      { keys: ["almendra", "almendras", "nuez", "nueces", "castana", "castanas", "avellana", "avellanas", "pistacho", "pistachos", "mani", "frutos secos"], name: "Frutos secos / Almendras / Nueces", kcal: 175, p: 6.5, c: 5.5, f: 15, emoji: "🥜", isUnit: true, unitG: 30, pieceG: 1.5 },
+      { keys: ["chia", "semillas de chia", "lino", "sesamo", "semillas de girasol", "semillas"], name: "Semillas (1 cda)", kcal: 60, p: 2.2, c: 4.0, f: 4.0, emoji: "🌱", isUnit: true, unitG: 12 },
+      { keys: ["aceituna", "aceitunas"], name: "Aceitunas", kcal: 45, p: 0.3, c: 1.2, f: 4.5, emoji: "🫒", isUnit: true, unitG: 30, pieceG: 5 },
+      { keys: ["aceite de oliva", "aceite", "oliva", "manteca", "ghee", "mayonesa", "crema de leche"], name: "Aceite / Manteca / Aderezo (1 cda)", kcal: 88, p: 0, c: 0, f: 9.8, emoji: "🫒", isUnit: true, unitG: 10 },
+      { keys: ["dulce de leche"], name: "Dulce de leche (1 cda)", kcal: 80, p: 1.8, c: 14, f: 1.8, emoji: "🍯", isUnit: true, unitG: 25 },
+      { keys: ["mermelada", "miel", "dulce de batata", "dulce de membrillo"], name: "Mermelada / Miel (1 cda)", kcal: 62, p: 0.1, c: 15.5, f: 0, emoji: "🍯", isUnit: true, unitG: 25 },
+      { keys: ["medialuna", "medialunas", "factura", "facturas", "vigilante", "sacramento", "tortita negra", "churro", "churros", "criollito", "bizcocho", "bizcochito"], name: "Medialuna / Factura / Bizcocho", kcal: 175, p: 3.5, c: 22, f: 8.0, emoji: "🥐", isUnit: true, unitG: 45 },
+      { keys: ["budin", "bizcochuelo", "muffin", "magdalena", "torta", "brownie", "pastafrola"], name: "Porción de budín / torta", kcal: 255, p: 4.2, c: 35, f: 11, emoji: "🧁", isUnit: true, unitG: 70 },
+      { keys: ["alfajor", "alfajores"], name: "Alfajor", kcal: 275, p: 4.2, c: 36, f: 12.5, emoji: "🍫", isUnit: true, unitG: 60 },
+      { keys: ["barrita de cereal", "barra de cereal", "barrita proteica", "barrita", "integra", "muecas"], name: "Barrita de cereal / proteica", kcal: 120, p: 4.5, c: 17, f: 3.5, emoji: "🍫", isUnit: true, unitG: 30 },
+      { keys: ["chocolate", "bombon", "chocolate amargo", "tableta de chocolate"], name: "Chocolate (porción 30g)", kcal: 160, p: 2.2, c: 16.5, f: 9.5, emoji: "🍫", isUnit: true, unitG: 30 },
+      { keys: ["galletita de agua", "galletitas de agua", "traviata", "criollitas", "cracker", "crackers", "galletita de salvado"], name: "Galletitas de agua / salvado", kcal: 125, p: 3.0, c: 20, f: 3.6, emoji: "🍪", isUnit: true, unitG: 30, pieceG: 6 },
+      { keys: ["galletita", "galletitas", "pepitos", "oreo", "chocolinas", "sonrisas", "macucas", "rumba", "merengadas", "galletitas dulces"], name: "Galletitas dulces", kcal: 188, p: 2.6, c: 26, f: 8.0, emoji: "🍪", isUnit: true, unitG: 40, pieceG: 10 },
+      { keys: ["helado", "bocha de helado", "cucurucho"], name: "Helado artesanal (1 bocha / porción)", kcal: 215, p: 3.8, c: 25, f: 11, emoji: "🍨", isUnit: true, unitG: 100 },
+      { keys: ["gelatina", "gelatina light"], name: "Gelatina", kcal: 20, p: 2.0, c: 2.5, f: 0, emoji: "🍮", isUnit: true, unitG: 150 },
+      { keys: ["flan", "postrecito", "serenito", "postre lacteo"], name: "Flan / Postre lácteo", kcal: 155, p: 4.5, c: 25, f: 4.0, emoji: "🍮", isUnit: true, unitG: 120 },
+      { keys: ["pochoclo", "pochoclos", "palomitas", "pororo", "papas lays", "doritos", "chisitos", "mani cervecero"], name: "Snack salado / Pochoclos", kcal: 175, p: 3.5, c: 22, f: 8.0, emoji: "🍿", isUnit: true, unitG: 40 },
+
+      // --- BEBIDAS E INFUSIONES ---
+      { keys: ["cafe con leche", "cortado", "capuchino", "cappuccino", "latte", "lagrima", "submarino", "te con leche"], name: "Café con leche / Latte", kcal: 90, p: 6.0, c: 9.0, f: 2.8, emoji: "☕", isUnit: true, unitG: 220 },
+      { keys: ["mate dulce"], name: "Mate dulce (con azúcar)", kcal: 95, p: 0.5, c: 23, f: 0, emoji: "🧉", isUnit: true, unitG: 500 },
+      { keys: ["cafe", "espresso", "mate", "mate amargo", "terere", "te", "te verde", "manzanilla"], name: "Infusión sin azúcar (Café / Mate / Té)", kcal: 5, p: 0.3, c: 0.8, f: 0, emoji: "🧉", isUnit: true, unitG: 200 },
+      { keys: ["jugo de naranja", "exprimido", "jugo exprimido", "jugo de frutas", "licuado"], name: "Jugo exprimido / Licuado de fruta", kcal: 105, p: 1.5, c: 24, f: 0.4, emoji: "🧃", isUnit: true, unitG: 220 },
+      { keys: ["coca zero", "coca light", "gaseosa zero", "gaseosa light", "pepsi black", "sprite zero", "agua saborizada sin azucar", "soda"], name: "Gaseosa Zero / Light (sin calorías)", kcal: 2, p: 0, c: 0.3, f: 0, emoji: "🥤", isUnit: true, unitG: 350 },
+      { keys: ["gaseosa", "coca cola", "coca", "sprite", "fanta", "pepsi", "paso de los toros", "tonica", "aquarius", "levite"], name: "Gaseosa / Bebida azucarada (1 vaso/lata)", kcal: 140, p: 0, c: 35, f: 0, emoji: "🥤", isUnit: true, unitG: 350 },
+      { keys: ["cerveza", "pinta", "birra", "porron", "lata de cerveza"], name: "Cerveza / Pinta", kcal: 205, p: 1.6, c: 16.5, f: 0, emoji: "🍺", isUnit: true, unitG: 473 },
+      { keys: ["vino", "copa de vino", "malbec", "vino tinto", "vino blanco", "champagne", "espumante"], name: "Copa de vino", kcal: 125, p: 0.1, c: 4.0, f: 0, emoji: "🍷", isUnit: true, unitG: 150 },
+      { keys: ["fernet", "gin tonic", "campari", "aperol", "vermut", "trago", "whisky", "vodka"], name: "Trago / Fernet / Gin Tonic", kcal: 225, p: 0, c: 22, f: 0, emoji: "🍹", isUnit: true, unitG: 300 }
     ];
 
-    function estimateFoodOffline(desc) {
-      const raw = (desc || "").trim();
-      const clauses = raw.split(/\s*(?:\+|\band\b|\by\b|\bcon\b|,|;)\s*/i).filter(Boolean);
-      const detected = [];
-      const wordNums = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, media: 0.5, medio: 0.5 };
+    // Caché de alimentos aprendidos automáticamente desde OpenFoodFacts + sincronizados en Supabase
+    window.michuLearnedFoods = [];
+    try {
+      const savedLearned = localStorage.getItem("michufit_learned_foods_v1");
+      if (savedLearned) {
+        const parsedL = JSON.parse(savedLearned);
+        if (Array.isArray(parsedL)) window.michuLearnedFoods = parsedL;
+      }
+    } catch (_) {}
 
-      for (const seg of (clauses.length ? clauses : [raw])) {
-        const s = seg.toLowerCase();
-        for (const entry of OFFLINE_FOOD_DB) {
-          if (entry.keys.some(k => s.includes(k))) {
-            let mult = 1;
-            let qtyLabel = "1 porción";
+    window.mergeCloudLearnedFoods = function (cloudList) {
+      if (!Array.isArray(cloudList) || cloudList.length === 0) return;
+      const byName = new Map();
+      for (const item of [...window.michuLearnedFoods, ...cloudList]) {
+        if (!item || !item.name || !Array.isArray(item.keys)) continue;
+        const k = normalizeFoodText(item.name);
+        if (!byName.has(k)) byName.set(k, item);
+      }
+      window.michuLearnedFoods = Array.from(byName.values()).slice(0, 500);
+      try {
+        localStorage.setItem("michufit_learned_foods_v1", JSON.stringify(window.michuLearnedFoods));
+      } catch (_) {}
+    };
 
-            const mGrams = s.match(/(\d+(?:[.,]\d+)?)\s*(?:g|gr|gramos)\b/);
-            const mSliceCm = s.match(/(\d+(?:[.,]\d+)?)?\s*(?:rebanadas?|fetas?|rodajas?|bifes?)\s*(?:de\s*)?(\d+(?:[.,]\d+)?)\s*cm/);
-            const mSlice = s.match(/(\d+(?:[.,]\d+)?)\s*(?:rebanadas?|fetas?|rodajas?|bifes?|porciones?|unidades?|tazas?|vasos?|platos?)/);
-            const mLeadNum = s.match(/(?:^|\s)(\d+(?:[.,]\d+)?)\s+/);
+    if (Array.isArray(window._pendingCloudLearnedFoods)) {
+      window.mergeCloudLearnedFoods(window._pendingCloudLearnedFoods);
+      delete window._pendingCloudLearnedFoods;
+    }
 
-            if (mGrams) {
-              const g = parseFloat(mGrams[1].replace(",", "."));
-              mult = g / 100.0;
-              qtyLabel = `${Math.round(g)}g`;
-            } else if (mSliceCm && entry.sliceCmG) {
-              const count = mSliceCm[1] ? parseFloat(mSliceCm[1].replace(",", ".")) : 1;
-              const cm = parseFloat(mSliceCm[2].replace(",", "."));
-              const totalG = count * cm * entry.sliceCmG;
-              mult = totalG / 100.0;
-              qtyLabel = `${Math.round(count)} reb. de ${cm}cm (~${Math.round(totalG)}g)`;
-            } else if (mSlice) {
-              const count = parseFloat(mSlice[1].replace(",", "."));
-              if (entry.isUnit) {
-                mult = count;
-                qtyLabel = `${count} u.`;
-              } else {
-                const totalG = count * (entry.sliceCmG || 90);
-                mult = totalG / 100.0;
-                qtyLabel = `${count} porciones (~${Math.round(totalG)}g)`;
-              }
-            } else if (mLeadNum) {
-              const count = parseFloat(mLeadNum[1].replace(",", "."));
-              if (entry.isUnit) {
-                mult = count;
-                qtyLabel = `${count} u.`;
-              } else {
-                const totalG = count * (entry.unitG || 130);
-                mult = totalG / 100.0;
-                qtyLabel = `${count} u. (~${Math.round(totalG)}g)`;
-              }
-            } else {
-              for (const [w, val] of Object.entries(wordNums)) {
-                if (new RegExp(`\\b${w}\\b`).test(s)) {
-                  mult = entry.isUnit ? val : (val * (entry.unitG || 130)) / 100.0;
-                  qtyLabel = `${val} porción`;
-                  break;
-                }
-              }
-              if (qtyLabel === "1 porción" && !entry.isUnit) {
-                const g = entry.unitG || 140;
-                mult = g / 100.0;
-                qtyLabel = `1 porción (~${g}g)`;
-              }
+    function normalizeFoodText(str) {
+      return String(str || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function escapeFoodRegex(s) {
+      return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function buildKeyVariants(normKey) {
+      const variants = new Set([normKey]);
+      if (normKey.endsWith("s")) {
+        variants.add(normKey.replace(/s$/, ""));
+        if (normKey.endsWith("es")) variants.add(normKey.replace(/es$/, ""));
+        if (normKey.endsWith("ces")) variants.add(normKey.replace(/ces$/, "z"));
+      } else {
+        variants.add(normKey + "s");
+        variants.add(normKey + "es");
+        if (normKey.endsWith("z")) variants.add(normKey.slice(0, -1) + "ces");
+      }
+      if (normKey.includes(" ")) {
+        const parts = normKey.split(" ");
+        const first = parts[0];
+        if (!first.endsWith("s")) {
+          variants.add([first + "s", ...parts.slice(1)].join(" "));
+          variants.add([first + "es", ...parts.slice(1)].join(" "));
+        } else {
+          variants.add([first.replace(/s$/, ""), ...parts.slice(1)].join(" "));
+        }
+      }
+      return Array.from(variants).filter(v => v.length >= 2);
+    }
+
+    function getAllSearchableFoodEntries() {
+      const customAsEntries = (appData && Array.isArray(appData.customFoods) ? appData.customFoods : [])
+        .filter(cf => cf && cf.name)
+        .map(cf => ({
+          keys: [normalizeFoodText(cf.name)],
+          name: cf.name,
+          kcal: Number(cf.kcal) || 150,
+          p: Number(cf.p) || 0,
+          c: Number(cf.c) || 0,
+          f: Number(cf.f) || 0,
+          emoji: cf.emoji || "🍽️",
+          isUnit: true,
+          unitG: 100
+        }));
+      return [...customAsEntries, ...(window.michuLearnedFoods || []), ...OFFLINE_FOOD_DB];
+    }
+
+    function findBestFoodEntry(clause) {
+      const normClause = normalizeFoodText(clause);
+      if (!normClause) return null;
+      const allEntries = getAllSearchableFoodEntries();
+      let bestEntry = null;
+      let bestKeyLen = -1;
+
+      for (const entry of allEntries) {
+        if (!entry || !Array.isArray(entry.keys)) continue;
+        for (const rawKey of entry.keys) {
+          const nk = normalizeFoodText(rawKey);
+          if (!nk) continue;
+          const variants = buildKeyVariants(nk);
+          let matched = false;
+          for (const v of variants) {
+            const re = new RegExp(`(?:^|\\s)${escapeFoodRegex(v)}(?:\\s|$)`);
+            if (re.test(normClause)) {
+              matched = true;
+              break;
             }
-
-            detected.push({
-              name: entry.name,
-              quantity: qtyLabel,
-              kcal: Math.round(entry.kcal * mult),
-              p: Math.round(entry.p * mult * 10) / 10,
-              c: Math.round(entry.c * mult * 10) / 10,
-              f: Math.round(entry.f * mult * 10) / 10,
-              emoji: entry.emoji
-            });
-            break;
+          }
+          if (matched && nk.length > bestKeyLen) {
+            bestKeyLen = nk.length;
+            bestEntry = entry;
           }
         }
       }
+      return bestEntry;
+    }
 
+    function splitFoodDescription(raw) {
+      const protectedText = String(raw || "")
+        .replace(/\bcaf[eé]\s+con\s+leche\b/gi, "cafe__CON__leche")
+        .replace(/\bt[eé]\s+con\s+leche\b/gi, "te__CON__leche")
+        .replace(/\bmate\s+con\s+leche\b/gi, "mate__CON__leche")
+        .replace(/\barroz\s+con\s+leche\b/gi, "arroz__CON__leche")
+        .replace(/\bjam[oó]n\s+y\s+queso\b/gi, "jamon__Y__queso");
+
+      return protectedText
+        .split(/\s*(?:\+|\band\b|\by\b|\be\b|\bcon\b|\bacompa[ñn]ado\s+de\b|\bm[aá]s\b|,|;|\/)\s*/i)
+        .map(s => s.replace(/__CON__/g, " con ").replace(/__Y__/g, " y ").trim())
+        .filter(Boolean);
+    }
+
+    function computePortionFromEntry(seg, entry) {
+      const s = seg.toLowerCase();
+      const normS = normalizeFoodText(seg);
+      const baseG = entry.isUnit ? (entry.unitG || 100) : 100;
+      let mult = entry.defaultMult || 1;
+      let qtyLabel = entry.isUnit
+        ? (entry.defaultMult === 0.5 ? `1/2 u. (~${Math.round(baseG * 0.5)}g)` : `1 porción (~${baseG}g)`)
+        : `1 porción (~${entry.unitG || 140}g)`;
+
+      const wordNums = {
+        "media docena": 6, docena: 12,
+        "un cuarto": 0.25, cuarto: 0.25,
+        media: 0.5, medio: 0.5,
+        un: 1, una: 1, uno: 1,
+        dos: 2, tres: 3, cuatro: 4, cinco: 5,
+        seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10
+      };
+
+      const mGrams = s.match(/(\d+(?:[.,]\d+)?)\s*(?:g|gr|grs|gramos)\b/i);
+      const mKg = s.match(/(\d+(?:[.,]\d+)?)\s*(?:kg|kilo|kilos)\b/i);
+      const mMl = s.match(/(\d+(?:[.,]\d+)?)\s*(?:ml|cc|cm3)\b/i);
+      const mHalfFrac = s.match(/(?:^|\s)1\/2\b/);
+      const mQuarterFrac = s.match(/(?:^|\s)1\/4\b/);
+      const mTbsp = s.match(/(\d+(?:[.,]\d+)?)?\s*(?:cda|cdas|cucharada|cucharadas)\b/i);
+      const mTsp = s.match(/(\d+(?:[.,]\d+)?)?\s*(?:cdita|cditas|cucharadita|cucharaditas)\b/i);
+      const mSliceCm = s.match(/(\d+(?:[.,]\d+)?)?\s*(?:rebanadas?|fetas?|rodajas?|bifes?)\s*(?:de\s*)?(\d+(?:[.,]\d+)?)\s*cm/i);
+      const mContainer = normS.match(/(\d+(?:[.,]\d+)?)?\s*\b(tazas?|vasos?|potes?|platos?|compoteras?|bowls?|punados?|bochas?|porciones?|latas?)\b/i);
+      const mSlice = s.match(/(\d+(?:[.,]\d+)?)\s*(?:rebanadas?|fetas?|rodajas?|bifes?|unidades?|piezas?)\b/i);
+      const mLeadNum = s.match(/(?:^|\s)(\d+(?:[.,]\d+)?)\s+/);
+
+      if (mGrams) {
+        const g = parseFloat(mGrams[1].replace(",", "."));
+        mult = g / baseG;
+        qtyLabel = `${Math.round(g)}g`;
+      } else if (mKg) {
+        const g = parseFloat(mKg[1].replace(",", ".")) * 1000;
+        mult = g / baseG;
+        qtyLabel = `${Math.round(g)}g`;
+      } else if (mMl) {
+        const ml = parseFloat(mMl[1].replace(",", "."));
+        mult = ml / baseG;
+        qtyLabel = `${Math.round(ml)}ml`;
+      } else if (mSliceCm && entry.sliceCmG) {
+        const count = mSliceCm[1] ? parseFloat(mSliceCm[1].replace(",", ".")) : 1;
+        const cm = parseFloat(mSliceCm[2].replace(",", "."));
+        const totalG = count * cm * entry.sliceCmG;
+        mult = totalG / baseG;
+        qtyLabel = `${Math.round(count)} reb. de ${cm}cm (~${Math.round(totalG)}g)`;
+      } else if (mTbsp) {
+        const count = mTbsp[1] ? parseFloat(mTbsp[1].replace(",", ".")) : 1;
+        const tbspG = baseG <= 35 ? baseG : 15;
+        const totalG = count * tbspG;
+        mult = totalG / baseG;
+        qtyLabel = `${count} cda (~${Math.round(totalG)}g)`;
+      } else if (mTsp) {
+        const count = mTsp[1] ? parseFloat(mTsp[1].replace(",", ".")) : 1;
+        const totalG = count * 5;
+        mult = totalG / baseG;
+        qtyLabel = `${count} cdita (~${Math.round(totalG)}g)`;
+      } else if (mContainer) {
+        let count = mContainer[1] ? parseFloat(mContainer[1].replace(",", ".")) : 1;
+        if (!mContainer[1]) {
+          for (const [w, val] of Object.entries(wordNums)) {
+            if (new RegExp(`(?:^|\\s)${w}(?:\\s|$)`).test(normS)) {
+              count = val;
+              break;
+            }
+          }
+        }
+        if (entry.isUnit) {
+          mult = count;
+          qtyLabel = `${count} ${mContainer[2]} (~${Math.round(count * baseG)}g)`;
+        } else {
+          const totalG = count * (entry.unitG || 150);
+          mult = totalG / 100.0;
+          qtyLabel = `${count} ${mContainer[2]} (~${Math.round(totalG)}g)`;
+        }
+      } else if (mSlice) {
+        const count = parseFloat(mSlice[1].replace(",", "."));
+        if (entry.pieceG) {
+          const totalG = count * entry.pieceG;
+          mult = totalG / baseG;
+          qtyLabel = `${count} u. (~${Math.round(totalG)}g)`;
+        } else if (entry.isUnit) {
+          mult = count;
+          qtyLabel = `${count} u. (~${Math.round(count * baseG)}g)`;
+        } else {
+          const totalG = count * (entry.sliceCmG || 90);
+          mult = totalG / 100.0;
+          qtyLabel = `${count} porciones (~${Math.round(totalG)}g)`;
+        }
+      } else if (mHalfFrac || mQuarterFrac) {
+        const val = mHalfFrac ? 0.5 : 0.25;
+        if (entry.isUnit) {
+          mult = val;
+          qtyLabel = `${mHalfFrac ? "1/2" : "1/4"} u. (~${Math.round(val * baseG)}g)`;
+        } else {
+          const totalG = val * (entry.unitG || 140);
+          mult = totalG / 100.0;
+          qtyLabel = `${mHalfFrac ? "1/2" : "1/4"} porción (~${Math.round(totalG)}g)`;
+        }
+      } else if (mLeadNum) {
+        const count = parseFloat(mLeadNum[1].replace(",", "."));
+        if (entry.pieceG) {
+          const totalG = count * entry.pieceG;
+          mult = totalG / baseG;
+          qtyLabel = `${count} u. (~${Math.round(totalG)}g)`;
+        } else if (entry.isUnit) {
+          mult = count;
+          qtyLabel = `${count} u. (~${Math.round(count * baseG)}g)`;
+        } else {
+          const totalG = count * (entry.unitG || 140);
+          mult = totalG / 100.0;
+          qtyLabel = `${count} u. (~${Math.round(totalG)}g)`;
+        }
+      } else {
+        let matchedWordNum = null;
+        for (const [w, val] of Object.entries(wordNums)) {
+          if (new RegExp(`(?:^|\\s)${w}(?:\\s|$)`).test(normS)) {
+            matchedWordNum = val;
+            break;
+          }
+        }
+        if (matchedWordNum !== null) {
+          if (entry.pieceG && matchedWordNum >= 2) {
+            const totalG = matchedWordNum * entry.pieceG;
+            mult = totalG / baseG;
+            qtyLabel = `${matchedWordNum} u. (~${Math.round(totalG)}g)`;
+          } else if (entry.isUnit) {
+            mult = matchedWordNum;
+            qtyLabel = `${matchedWordNum} u. (~${Math.round(matchedWordNum * baseG)}g)`;
+          } else {
+            const totalG = matchedWordNum * (entry.unitG || 140);
+            mult = totalG / 100.0;
+            qtyLabel = `${matchedWordNum} porción (~${Math.round(totalG)}g)`;
+          }
+        } else if (!entry.isUnit) {
+          const g = entry.unitG || 140;
+          mult = g / 100.0;
+          qtyLabel = `1 porción (~${g}g)`;
+        }
+      }
+
+      return {
+        name: entry.name,
+        quantity: qtyLabel,
+        kcal: Math.max(1, Math.round(entry.kcal * mult)),
+        p: Math.round(entry.p * mult * 10) / 10,
+        c: Math.round(entry.c * mult * 10) / 10,
+        f: Math.round(entry.f * mult * 10) / 10,
+        emoji: entry.emoji || "🍽️",
+        fromOpenFoodFacts: Boolean(entry.fromOpenFoodFacts)
+      };
+    }
+
+    function extractFoodSearchQuery(clause) {
+      return normalizeFoodText(clause)
+        .replace(/\b(\d+(?:[.,]\d+)?)\s*(g|gr|grs|gramos|kg|kilo|kilos|ml|cc|cm3|l|lt|lts|litro|litros|cm)\b/g, " ")
+        .replace(/\b(un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|media|medio|cuarto|docena|porcion|porciones|plato|platos|taza|tazas|vaso|vasos|pote|potes|bowl|bowls|punado|punados|rebanada|rebanadas|feta|fetas|rodaja|rodajas|unidad|unidades|pieza|piezas|cda|cdas|cucharada|cucharadas|cdita|cditas|cucharadita|cucharaditas|lata|latas|paquete|paquetes|bocha|bochas)\b/g, " ")
+        .replace(/\b(\d+)\b/g, " ")
+        .replace(/^(de|del|con|sin|al|a la|el|la|los|las)\s+/g, " ")
+        .replace(/\s+(de|del|con|sin|al|a la|el|la|los|las)$/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    async function fetchFoodFromOpenFoodFacts(cleanQuery) {
+      if (!cleanQuery || cleanQuery.length < 2) return null;
+      try {
+        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(cleanQuery)}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,product_name_es,brands,nutriments,serving_quantity`;
+        const res = await sbFetchWithTimeout(url, {}, 3000);
+        if (!res.ok) return null;
+        const data = await res.json();
+        const products = Array.isArray(data.products) ? data.products : [];
+        for (const prod of products) {
+          const n = prod.nutriments || {};
+          const rawKcal = n["energy-kcal_100g"] ?? (n["energy_100g"] ? Number(n["energy_100g"]) / 4.184 : null);
+          const kcal100 = Math.round(Number(rawKcal) || 0);
+          if (kcal100 <= 0 || kcal100 > 920) continue;
+
+          const p100 = Math.round((Number(n["proteins_100g"]) || 0) * 10) / 10;
+          const c100 = Math.round((Number(n["carbohydrates_100g"]) || 0) * 10) / 10;
+          const f100 = Math.round((Number(n["fat_100g"]) || 0) * 10) / 10;
+
+          let rawTitle = (prod.product_name_es || prod.product_name || cleanQuery).trim();
+          if (rawTitle.length > 42) rawTitle = rawTitle.slice(0, 42).trim();
+          const capQuery = cleanQuery.charAt(0).toUpperCase() + cleanQuery.slice(1);
+          const displayName = rawTitle ? `${capQuery} (${rawTitle})` : capQuery;
+          const servG = Number(prod.serving_quantity);
+          const unitG = servG >= 15 && servG <= 350 ? Math.round(servG) : 100;
+
+          const newEntry = {
+            keys: [cleanQuery],
+            name: displayName,
+            kcal: kcal100,
+            p: p100,
+            c: c100,
+            f: f100,
+            emoji: "🍽️",
+            isUnit: false,
+            unitG,
+            fromOpenFoodFacts: true,
+            learnedAt: Date.now()
+          };
+
+          window.mergeCloudLearnedFoods([newEntry]);
+          if (typeof window.sbSaveLearnedFoodCatalog === "function") {
+            window.sbSaveLearnedFoodCatalog(window.michuLearnedFoods);
+          }
+          return newEntry;
+        }
+      } catch (err) {
+        console.warn("OpenFoodFacts lookup timeout/offline:", err);
+      }
+      return null;
+    }
+
+    function buildFoodAnalysisResponse(raw, detected, sourceTag = "sara-usda-db") {
       if (detected.length === 0) {
         detected.push({
           name: raw || "Plato casero",
@@ -4577,14 +5087,13 @@
           emoji: "🍽️"
         });
       }
-
       const totalKcal = detected.reduce((a, x) => a + x.kcal, 0);
       const totalP = Math.round(detected.reduce((a, x) => a + x.p, 0) * 10) / 10;
       const totalC = Math.round(detected.reduce((a, x) => a + x.c, 0) * 10) / 10;
       const totalF = Math.round(detected.reduce((a, x) => a + x.f, 0) * 10) / 10;
 
       return {
-        source: "local-offline-ai",
+        source: sourceTag,
         mealName: raw,
         emoji: detected[0].emoji || "🍽️",
         items: detected,
@@ -4593,6 +5102,48 @@
         raccoonCommentCute: `¡Listo! Estimé ${totalKcal} kcal y ${totalP}g de proteína para tu plato 🐱💚.`
       };
     }
+
+    function estimateFoodOffline(desc) {
+      const raw = (desc || "").trim();
+      const clauses = splitFoodDescription(raw);
+      const detected = [];
+
+      for (const seg of (clauses.length ? clauses : [raw])) {
+        const entry = findBestFoodEntry(seg);
+        if (entry) {
+          detected.push(computePortionFromEntry(seg, entry));
+        }
+      }
+      return buildFoodAnalysisResponse(raw, detected, "sara-usda-db");
+    }
+
+    window.analyzeFoodSmart = async function (desc) {
+      const raw = (desc || "").trim();
+      if (!raw) return estimateFoodOffline(raw);
+      const clauses = splitFoodDescription(raw);
+      const detected = [];
+      let usedOpenFoodFacts = false;
+
+      for (const seg of (clauses.length ? clauses : [raw])) {
+        let entry = findBestFoodEntry(seg);
+        if (!entry) {
+          const cleanQuery = extractFoodSearchQuery(seg);
+          if (cleanQuery && cleanQuery.length >= 2) {
+            entry = await fetchFoodFromOpenFoodFacts(cleanQuery);
+            if (entry) usedOpenFoodFacts = true;
+          }
+        }
+        if (entry) {
+          detected.push(computePortionFromEntry(seg, entry));
+        }
+      }
+
+      return buildFoodAnalysisResponse(
+        raw,
+        detected,
+        usedOpenFoodFacts ? "openfoodfacts-live" : "sara-usda-db"
+      );
+    };
 
     function estimateExerciseOffline(desc, weightKg = 80) {
       const s = (desc || "").toLowerCase();
@@ -6217,7 +6768,7 @@
       let r = null;
       try {
         const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 3200);
+        const tid = setTimeout(() => ctrl.abort(), 4500);
         const res = await fetch("/api/analyze-food", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -6248,9 +6799,11 @@
         document.getElementById("mfEmoji").value = r.emoji;
       }
 
-      statusPill.textContent = r.source === "gemini-3.8-flash"
+      statusPill.textContent = r.source === "openfoodfacts-live"
+        ? "🌐 Encontrado en OpenFoodFacts y aprendido en la nube"
+        : r.source === "gemini-3.8-flash"
         ? "✅ Calculado con Gemini 3.8 Flash"
-        : "✅ Calculado por el motor IA de Michu";
+        : "✅ Calculado con Base Nutricional SARA / USDA";
       statusPill.style.background = "var(--accent-soft)";
       statusPill.style.color = "var(--accent)";
 
@@ -6312,6 +6865,24 @@
           f: item.f,
           emoji: item.emoji
         });
+        const cleanK = typeof extractFoodSearchQuery === "function" ? extractFoodSearchQuery(item.name) : normalizeFoodText(item.name);
+        if (cleanK && typeof window.mergeCloudLearnedFoods === "function") {
+          window.mergeCloudLearnedFoods([{
+            keys: [cleanK],
+            name: item.name,
+            kcal: item.kcal,
+            p: item.p,
+            c: item.c,
+            f: item.f,
+            emoji: item.emoji || "🍽️",
+            isUnit: true,
+            unitG: 100,
+            learnedAt: Date.now()
+          }]);
+          if (typeof window.sbSaveLearnedFoodCatalog === "function") {
+            window.sbSaveLearnedFoodCatalog(window.michuLearnedFoods);
+          }
+        }
       }
       addFoodItemToDay(selectedDate, item);
       document.getElementById("manualFoodForm").reset();
