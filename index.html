@@ -9038,10 +9038,23 @@
           updatedAnything = true;
         }
 
+        // Limpia sesiones previas sincronizadas de Samsung Health (incluyendo caminatas duplicadas)
+        day.exercises = day.exercises.filter(ex =>
+          !String(ex.id || "").startsWith("ex-sh-sess-") &&
+          !/^caminata\s*\(.*health/i.test(String(ex.name || "").trim())
+        );
+
         if (Array.isArray(sessionsList) && sessionsList.length > 0) {
-          day.exercises = day.exercises.filter(ex => !String(ex.id || "").startsWith("ex-sh-sess-"));
-          sessionsList.forEach((sess, idx) => {
-            const mins = Math.max(5, Math.round(Number(sess.minutes) || 30));
+          // Excluye sesiones de "Caminata / Walking" cuando ya se contabilizan los pasos totales del día para no duplicar calorías
+          const nonDuplicateSessions = sessionsList.filter(sess => {
+            const t = String(sess.title || "").trim().toLowerCase();
+            if (steps >= 50 && /caminata|walk|paseo|senderismo|hiking/.test(t)) {
+              return false;
+            }
+            return true;
+          });
+          nonDuplicateSessions.forEach((sess, idx) => {
+            const mins = Math.max(5, Math.round(Number(sess.minutes || sess.durationMinutes) || 30));
             const title = (sess.title || "Entrenamiento Samsung Health").trim();
             const kcal = Number(sess.kcal) > 0
               ? Math.round(Number(sess.kcal))
