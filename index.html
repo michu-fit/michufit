@@ -1222,11 +1222,7 @@
       gap: 10px;
       margin-bottom: 14px;
     }
-    @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
-      #btnOpenMobileModal {
-        display: none !important;
-      }
-    }
+    /* Botón Instalar en Celu siempre visible salvo dentro del APK nativo */
 
     /* Minimalist Topbar & Hamburger Menu */
     .topbar-minimal {
@@ -1391,8 +1387,11 @@
         <button type="button" class="btn btn-sm" id="btnOpenSettings" onclick="window.openModal && window.openModal('modalSettings')">
           ⚙️ IA & Backup
         </button>
+        <button type="button" class="btn btn-sm btn-purple" onclick="window.syncSamsungHealthSteps && window.syncSamsungHealthSteps()">
+          ⌚ Samsung Health / Pasos
+        </button>
         <button type="button" class="btn btn-sm btn-primary" id="btnOpenMobileModal" onclick="window.openModal && window.openModal('modalMobileApp')">
-          📱 Instalar en Celu
+          📱 Instalar en Celu / Descargar .APK
         </button>
       </div>
     </header>
@@ -7531,13 +7530,8 @@
     function updateMobileInstallButtonVisibility() {
       const btnMobile = document.getElementById("btnOpenMobileModal");
       if (!btnMobile) return;
-      const isStandalone =
-        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
-        (window.matchMedia && window.matchMedia("(display-mode: fullscreen)").matches) ||
-        window.navigator.standalone === true ||
-        document.referrer.includes("android-app://") ||
-        localStorage.getItem("michufit_pwa_installed") === "1";
-      btnMobile.style.display = isStandalone ? "none" : "inline-flex";
+      const isNativeApk = Boolean(window.MichuAndroidHealth);
+      btnMobile.style.display = isNativeApk ? "none" : "inline-flex";
     }
     updateMobileInstallButtonVisibility();
     window.addEventListener("appinstalled", () => {
