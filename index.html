@@ -416,13 +416,19 @@
     @media (max-width: 768px) {
       .nav-tabs {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 6px;
       }
-      .tab-btn {
+      .nav-tabs .tab-btn {
         min-width: 0;
-        padding: 9px 6px;
-        font-size: 0.76rem;
+        width: 100%;
+        padding: 8px 5px;
+        font-size: 0.73rem;
+        line-height: 1.2;
+        flex-direction: column;
+        gap: 4px;
+        overflow: hidden;
+        word-break: break-word;
       }
     }
 
@@ -1591,11 +1597,13 @@
       </button>
       <button type="button" class="tab-btn" data-tab="tab-fasting" id="navTabFasting">
         <span>⏳ Ayuno Intermitente</span>
-        <span id="navFastingBadge" style="display:none;font-size:0.68rem;padding:2px 6px;border-radius:999px;background:var(--purple-soft);color:var(--purple);font-weight:800;">EN CURSO</span>
-        <label class="nav-if-switch" id="navFastingSlideLabel" onclick="event.stopPropagation();" title="Activar o desactivar Ayuno Intermitente">
-          <input type="checkbox" id="navFastingSlideInput" aria-label="Activar o desactivar Ayuno Intermitente" />
-          <span class="nav-if-slider"></span>
-        </label>
+        <span style="display:inline-flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;">
+          <span id="navFastingBadge" style="display:none;font-size:0.65rem;padding:2px 5px;border-radius:999px;background:var(--purple-soft);color:var(--purple);font-weight:800;white-space:nowrap;">EN CURSO</span>
+          <label class="nav-if-switch" id="navFastingSlideLabel" onclick="event.stopPropagation();" title="Activar o desactivar Ayuno Intermitente">
+            <input type="checkbox" id="navFastingSlideInput" aria-label="Activar o desactivar Ayuno Intermitente" />
+            <span class="nav-if-slider"></span>
+          </label>
+        </span>
       </button>
       <button type="button" class="tab-btn" data-tab="tab-progress">
         📈 Seguimiento de Peso y Gráficos
