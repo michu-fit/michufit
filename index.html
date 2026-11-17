@@ -5786,6 +5786,18 @@
       }
 
       // Construir todos los días transcurridos desde effectiveStart hasta hoy
+      const fastingObj = (appData && appData.fasting) || {};
+      const fastingHist = Array.isArray(fastingObj.history) ? fastingObj.history : [];
+      const isDateFasting = (dateKey) => {
+        const inHist = fastingHist.some(h => h && h.date === dateKey && (h.completed || Number(h.hours) >= Number(h.targetHours || 16)));
+        if (inHist) return true;
+        if (fastingObj.activeStart && dateKey === todayStr()) {
+          const activeHrs = (Date.now() - new Date(fastingObj.activeStart).getTime()) / 3600000;
+          if (activeHrs >= Number(fastingObj.targetHours || 16)) return true;
+        }
+        return false;
+      };
+
       const allDaysSinceStart = [];
       const endDate = new Date(todayStr() + "T12:00:00");
       const startDateObj = new Date(effectiveStart + "T12:00:00");
@@ -5796,13 +5808,23 @@
       while (cursor <= endDate && guard < 366) {
         const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
         const tot = getDayTotals(key);
-        allDaysSinceStart.push({ date: key, label: key.slice(5), kcal: tot.kcal, exercise: tot.exerciseKcal });
+        const isFast = isDateFasting(key);
+        allDaysSinceStart.push({
+          date: key,
+          label: key.slice(5),
+          kcal: tot.kcal,
+          exercise: tot.exerciseKcal,
+          isFasting: isFast
+        });
         cursor.setDate(cursor.getDate() + 1);
         guard++;
       }
 
-      // Mostrar en el gráfico los días desde el inicio (hasta las últimas 7 barras visibles)
-      const chartDays = allDaysSinceStart.slice(-7);
+      // Solo tomar días con carga de calorías (> 0) o que tengan un ayuno registrado (0 kcal por ayuno)
+      const loggedDays = allDaysSinceStart.filter(d => d.kcal > 0 || d.isFasting);
+
+      // Mostrar en el gráfico únicamente los días válidos (con comidas cargadas o ayuno), hasta las últimas 7 barras
+      const chartDays = loggedDays.slice(-7);
       const numBars = Math.max(1, chartDays.length);
 
       const maxBarKcal = Math.max(targets.tdee + 300, ...chartDays.map(d => d.kcal), 2400);
@@ -5814,7 +5836,9 @@
       const targetY = yBar(targets.targetKcal).toFixed(1);
       const tdeeY = yBar(targets.tdee).toFixed(1);
 
-      document.getElementById("WeeklyCalorieChartContainer").innerHTML = `
+      document.getElementById("WeeklyCalorieChartContainer").innerHTML = chartDays.length === 0
+        ? `<p style="color:var(--text-muted);font-size:0.85rem;padding:12px;">Sin días con comidas o ayunos registrados en este período.</p>`
+        : `
         <svg viewBox="0 0 ${bw} ${bh}" style="width:100%;height:auto;background:var(--bg-card);border-radius:12px;border:1px solid var(--border);">
           <!-- Línea TDEE Mantenimiento -->
           <line x1="${bPadL}" y1="${tdeeY}" x2="${bw - bPadR}" y2="${tdeeY}" stroke="#f59e0b" stroke-dasharray="4,4" stroke-width="1.5" />
@@ -5829,20 +5853,22 @@
             const barW = Math.min(44, Math.max(22, slotW * 0.45));
             const x = bPadL + idx * slotW + (slotW - barW) / 2;
             const y = yBar(d.kcal);
-            const h = Math.max(3, bPadT + bPlotH - y);
-            const color = d.kcal === 0 ? "#475569" : (d.kcal <= targets.targetKcal + d.exercise ? "#22c55e" : (d.kcal <= targets.tdee + d.exercise ? "#f59e0b" : "#ef4444"));
+            const h = Math.max(4, bPadT + bPlotH - y);
+            const color = d.kcal === 0 && d.isFasting
+              ? "#a855f7"
+              : (d.kcal <= targets.targetKcal + d.exercise ? "#22c55e" : (d.kcal <= targets.tdee + d.exercise ? "#f59e0b" : "#ef4444"));
+            const barLabel = d.kcal === 0 && d.isFasting ? "0 (Ayuno)" : String(d.kcal);
             return `
               <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="5" fill="${color}" />
-              <text x="${(x + barW / 2).toFixed(1)}" y="${Math.max(12, y - 5).toFixed(1)}" fill="var(--text)" font-size="9.5" font-weight="700" text-anchor="middle">${d.kcal || "-"}</text>
+              <text x="${(x + barW / 2).toFixed(1)}" y="${Math.max(12, y - 5).toFixed(1)}" fill="var(--text)" font-size="9.5" font-weight="700" text-anchor="middle">${barLabel}</text>
               <text x="${(x + barW / 2).toFixed(1)}" y="${bh - 10}" fill="var(--text-muted)" font-size="9.5" text-anchor="middle">${d.label}</text>
             `;
           }).join("")}
         </svg>
       `;
 
-      // Resumen de déficit acumulado desde la fecha de inicio efectiva
+      // Resumen de déficit acumulado tomando únicamente los días con carga (> 0 kcal) o con ayuno registrado
       const totalElapsedDays = allDaysSinceStart.length;
-      const loggedDays = allDaysSinceStart.filter(d => d.kcal > 0);
       const totalAccumDeficit = loggedDays.reduce((acc, d) => acc + ((targets.tdee + d.exercise) - d.kcal), 0);
       const eqKg = (totalAccumDeficit / 7700).toFixed(2);
       const dayWord = totalElapsedDays === 1 ? "día" : "días";
@@ -5850,7 +5876,7 @@
       document.getElementById("weeklyDeficitSummaryBox").innerHTML = `
         <div class="stat-box" style="background:var(--bg-card);">
           <div style="font-size:0.85rem;">
-            📅 <strong>Días registrados (desde ${effectiveStart}):</strong> ${loggedDays.length} de ${totalElapsedDays} ${dayWord}<br/>
+            📅 <strong>Días registrados (desde ${effectiveStart}):</strong> ${loggedDays.length} de ${totalElapsedDays} ${dayWord} <small style="color:var(--text-muted);">(días sin carga excluidos)</small><br/>
             🔥 <strong>Déficit neto acumulado:</strong> <span style="color:var(--accent);font-weight:800;">${totalAccumDeficit >= 0 ? `-${totalAccumDeficit.toLocaleString("es-AR")} kcal` : `+${Math.abs(totalAccumDeficit)} kcal`}</span>
             (Equivalente a <strong>${eqKg} kg</strong> de cambio en reservas de grasa).
           </div>
