@@ -3525,12 +3525,23 @@
             }
             targetUser = cand;
           }
-          targetUser.trackerData = data;
+          const prevTd = targetUser.trackerData || {};
+          if (typeof mergeLocalAndServerData === "function") {
+            // El payload entrante (data) tiene prioridad, pero conservamos registros de otros dispositivos (como measurementsLog o weightLog)
+            const { merged: combinedTd } = mergeLocalAndServerData(data, prevTd);
+            const delMeas = new Set(Array.isArray(data.deletedMeasurementDates) ? data.deletedMeasurementDates : []);
+            if (delMeas.size > 0 && Array.isArray(combinedTd.measurementsLog)) {
+              combinedTd.measurementsLog = combinedTd.measurementsLog.filter(m => m && !delMeas.has(m.date));
+            }
+            targetUser.trackerData = combinedTd;
+          } else {
+            targetUser.trackerData = data;
+          }
           if (data.profile && data.profile.name) {
             targetUser.name = data.profile.name;
           }
           await sbUpsertUser(targetUser);
-          return sbJsonResponse({ ok: true, savedAt: new Date().toISOString() });
+          return sbJsonResponse({ ok: true, savedAt: new Date().toISOString(), data: targetUser.trackerData });
         }
 
         // 7. POST /api/admin/update-user
@@ -4382,15 +4393,44 @@
           hadLocalChanges = true;
         }
       }
-      if (Array.isArray(localData.measurementsLog)) {
-        merged.measurementsLog = Array.isArray(merged.measurementsLog) ? merged.measurementsLog : [];
-        const sMeasDates = new Set(merged.measurementsLog.map(m => m && m.date));
-        for (const m of localData.measurementsLog) {
-          if (m && m.date && !sMeasDates.has(m.date)) {
-            merged.measurementsLog.push(m);
+      if (Array.isArray(localData.weightLog)) {
+        merged.weightLog = Array.isArray(merged.weightLog) ? merged.weightLog : [];
+        const sWeightDates = new Set(merged.weightLog.map(w => w && w.date));
+        for (const w of localData.weightLog) {
+          if (w && w.date && !sWeightDates.has(w.date)) {
+            merged.weightLog.push(w);
             hadLocalChanges = true;
           }
         }
+      }
+      if (Array.isArray(localData.measurementsLog)) {
+        merged.measurementsLog = Array.isArray(merged.measurementsLog) ? merged.measurementsLog : [];
+        const delSet = new Set(Array.isArray(merged.deletedMeasurementDates) ? merged.deletedMeasurementDates : []);
+        const byDate = new Map();
+        for (const sm of merged.measurementsLog) {
+          if (sm && sm.date && !delSet.has(sm.date)) byDate.set(sm.date, { ...sm });
+        }
+        for (const lm of localData.measurementsLog) {
+          if (!lm || !lm.date || delSet.has(lm.date)) continue;
+          if (!byDate.has(lm.date)) {
+            byDate.set(lm.date, { ...lm });
+            hadLocalChanges = true;
+          } else {
+            const cur = byDate.get(lm.date);
+            const lTime = Number(lm.updatedAt) || 0;
+            const sTime = Number(cur.updatedAt) || 0;
+            for (const k of ["neck", "waist", "hip", "chest", "arm", "thigh", "weight"]) {
+              const lVal = Number(lm[k]) || 0;
+              const sVal = Number(cur[k]) || 0;
+              if (lVal > 0 && (sVal === 0 || (lTime > sTime && lVal !== sVal))) {
+                cur[k] = lVal;
+                hadLocalChanges = true;
+              }
+            }
+            if (lTime > sTime) cur.updatedAt = lTime;
+          }
+        }
+        merged.measurementsLog = Array.from(byDate.values());
       }
       return { merged, hadLocalChanges };
     }
@@ -6328,6 +6368,7 @@
         btn.addEventListener("click", () => {
           const d = btn.getAttribute("data-del-meas");
           appData.measurementsLog = (appData.measurementsLog || []).filter(item => item.date !== d);
+          appData.deletedMeasurementDates = Array.from(new Set([...(appData.deletedMeasurementDates || []), d]));
           saveToServer();
           renderProgressCharts();
         });
@@ -6990,9 +7031,25 @@
 
       if (isAdminMode) {
         refreshAdminUsersTable();
+      } else {
+        syncCloudDataIfNeeded();
       }
     }
     window.switchTab = switchTab;
+
+    let _lastCloudSyncTs = 0;
+    function syncCloudDataIfNeeded() {
+      const now = Date.now();
+      if (now - _lastCloudSyncTs < 3500) return;
+      _lastCloudSyncTs = now;
+      if (typeof loadFromServer === "function") {
+        loadFromServer();
+      }
+    }
+    window.addEventListener("focus", syncCloudDataIfNeeded);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") syncCloudDataIfNeeded();
+    });
 
     document.querySelectorAll(".tab-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -7848,9 +7905,13 @@
         }
 
         appData.measurementsLog = Array.isArray(appData.measurementsLog) ? appData.measurementsLog : [];
+        if (Array.isArray(appData.deletedMeasurementDates)) {
+          appData.deletedMeasurementDates = appData.deletedMeasurementDates.filter(x => x !== d);
+        }
         const existing = appData.measurementsLog.find(item => item && item.date === d) || {};
         const mergedEntry = {
           date: d,
+          updatedAt: Date.now(),
           weight: Number(appData.profile && appData.profile.weight) || 78,
           neck: neck || Number(existing.neck) || 0,
           waist: waist || Number(existing.waist) || 0,
