@@ -1952,6 +1952,135 @@
           <div class="chart-box" id="WeeklyCalorieChartContainer"></div>
           <div id="weeklyDeficitSummaryBox" style="margin-top:16px;"></div>
         </div>
+
+        <!-- CARD 3: CIRCUNFERENCIAS CORPORALES, GUÍA VISUAL Y % DE GRASA (U.S. NAVY) -->
+        <div class="card" style="grid-column: 1 / -1;">
+          <div class="card-header" style="flex-wrap:wrap;gap:8px;">
+            <div>
+              <div class="card-title">📏 Circunferencias Corporales y % de Grasa Corporal</div>
+              <small style="color:var(--text-muted);font-size:0.76rem;">
+                Tocá cualquier medida para ver en el esquema exactamente dónde apoyar el centímetro • Calcula tu % de grasa real (Fórmula U.S. Navy)
+              </small>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:18px;align-items:start;">
+            <!-- Columna Izquierda: Esquema Anatómico Liviano + Formulario de Carga -->
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px;">
+              <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+                <!-- Gráfico SVG liviano con zonas de medición -->
+                <div style="flex:0 0 135px;margin:0 auto;text-align:center;">
+                  <svg id="bodyGuideSvg" viewBox="0 0 160 250" style="width:135px;height:210px;background:var(--bg-elev);border-radius:12px;border:1px solid var(--border);" role="img" aria-label="Guía visual de zonas de medición corporal">
+                    <!-- Silueta humana estilizada -->
+                    <circle cx="80" cy="28" r="15" fill="rgba(148,163,184,0.18)" stroke="#64748b" stroke-width="1.8" />
+                    <!-- Cuello -->
+                    <rect x="73" y="43" width="14" height="11" rx="3" fill="rgba(148,163,184,0.18)" stroke="#64748b" stroke-width="1.5" />
+                    <!-- Torso y Brazos -->
+                    <path d="M52,54 C42,56 36,64 34,82 L30,124 C29,130 35,132 38,126 L45,86 L50,86 L54,112 L50,142 L62,146 L66,222 C66,229 75,229 76,222 L79,156 L81,156 L84,222 C85,229 94,229 94,222 L98,146 L110,142 L106,112 L110,86 L115,86 L122,126 C125,132 131,130 130,124 L126,82 C124,64 118,56 108,54 Z"
+                      fill="rgba(148,163,184,0.16)" stroke="#64748b" stroke-width="1.8" stroke-linejoin="round" />
+
+                    <!-- 1. CUELLO -->
+                    <g class="meas-svg-zone" data-zone="neck" style="cursor:pointer;">
+                      <line x1="65" y1="49" x2="95" y2="49" stroke="#38bdf8" stroke-width="3" stroke-dasharray="3,2" />
+                      <circle cx="104" cy="49" r="7" fill="#38bdf8" />
+                      <text x="104" y="52" fill="#0f172a" font-size="8.5" font-weight="900" text-anchor="middle">1</text>
+                    </g>
+
+                    <!-- 2. PECHO -->
+                    <g class="meas-svg-zone" data-zone="chest" style="cursor:pointer;">
+                      <line x1="48" y1="76" x2="112" y2="76" stroke="#a855f7" stroke-width="3" stroke-dasharray="4,2" />
+                      <circle cx="123" cy="76" r="7" fill="#a855f7" />
+                      <text x="123" y="79" fill="#ffffff" font-size="8.5" font-weight="900" text-anchor="middle">2</text>
+                    </g>
+
+                    <!-- 3. BRAZO -->
+                    <g class="meas-svg-zone" data-zone="arm" style="cursor:pointer;">
+                      <line x1="31" y1="92" x2="48" y2="95" stroke="#f59e0b" stroke-width="3" stroke-dasharray="3,2" />
+                      <circle cx="21" cy="91" r="7" fill="#f59e0b" />
+                      <text x="21" y="94" fill="#0f172a" font-size="8.5" font-weight="900" text-anchor="middle">3</text>
+                    </g>
+
+                    <!-- 4. CINTURA -->
+                    <g class="meas-svg-zone" data-zone="waist" style="cursor:pointer;">
+                      <line x1="53" y1="112" x2="107" y2="112" stroke="#22c55e" stroke-width="3.5" stroke-dasharray="4,2" />
+                      <circle cx="119" cy="112" r="7.5" fill="#22c55e" />
+                      <text x="119" y="115" fill="#0f172a" font-size="8.5" font-weight="900" text-anchor="middle">4</text>
+                    </g>
+
+                    <!-- 5. CADERA -->
+                    <g class="meas-svg-zone" data-zone="hip" style="cursor:pointer;">
+                      <line x1="49" y1="138" x2="111" y2="138" stroke="#ec4899" stroke-width="3" stroke-dasharray="4,2" />
+                      <circle cx="123" cy="138" r="7" fill="#ec4899" />
+                      <text x="123" y="141" fill="#ffffff" font-size="8.5" font-weight="900" text-anchor="middle">5</text>
+                    </g>
+
+                    <!-- 6. PIERNA / MUSLO -->
+                    <g class="meas-svg-zone" data-zone="thigh" style="cursor:pointer;">
+                      <line x1="61" y1="174" x2="79" y2="174" stroke="#06b6d4" stroke-width="3" stroke-dasharray="3,2" />
+                      <circle cx="49" cy="174" r="7" fill="#06b6d4" />
+                      <text x="49" y="177" fill="#0f172a" font-size="8.5" font-weight="900" text-anchor="middle">6</text>
+                    </g>
+                  </svg>
+                </div>
+
+                <!-- Explicación interactiva de dónde medir -->
+                <div style="flex:1;min-width:165px;">
+                  <div id="measGuideTipBox" style="background:var(--bg-elev);border:1.5px solid #22c55e;border-radius:11px;padding:10px 12px;font-size:0.79rem;line-height:1.45;margin-bottom:8px;">
+                    <strong style="color:#22c55e;display:block;margin-bottom:3px;">④ Cintura (Clave para % Grasa)</strong>
+                    Rodeá el abdomen con la cinta horizontal <strong>a la altura del ombligo</strong> (o en la parte más estrecha del torso), al final de una exhalación normal y sin meter panza.
+                  </div>
+                  <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.38;">
+                    💡 <strong>Para calcular % de Grasa:</strong> cargá al menos <strong>① Cuello</strong> y <strong>④ Cintura</strong> (y <strong>⑤ Cadera</strong> si sos mujer).
+                  </div>
+                </div>
+              </div>
+
+              <!-- Formulario de carga de circunferencias -->
+              <form id="bodyMeasurementsForm" class="form-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));gap:9px;">
+                <div class="field" style="grid-column: 1 / -1;">
+                  <label for="measDateInput">📅 Fecha de medición</label>
+                  <input type="date" id="measDateInput" required />
+                </div>
+                <div class="field">
+                  <label for="measNeckInput" style="color:#38bdf8;">① Cuello (cm) *</label>
+                  <input type="number" id="measNeckInput" data-guide-zone="neck" step="0.1" min="20" max="75" placeholder="Ej: 38.5" />
+                </div>
+                <div class="field">
+                  <label for="measWaistInput" style="color:#22c55e;">④ Cintura (cm) *</label>
+                  <input type="number" id="measWaistInput" data-guide-zone="waist" step="0.1" min="45" max="190" placeholder="Ej: 86.0" />
+                </div>
+                <div class="field">
+                  <label for="measHipInput" style="color:#ec4899;">⑤ Cadera (cm)</label>
+                  <input type="number" id="measHipInput" data-guide-zone="hip" step="0.1" min="55" max="190" placeholder="Ej: 98.0" />
+                </div>
+                <div class="field">
+                  <label for="measChestInput" style="color:#a855f7;">② Pecho / Tórax (cm)</label>
+                  <input type="number" id="measChestInput" data-guide-zone="chest" step="0.1" min="55" max="180" placeholder="Ej: 101.0" />
+                </div>
+                <div class="field">
+                  <label for="measArmInput" style="color:#f59e0b;">③ Brazo / Bíceps (cm)</label>
+                  <input type="number" id="measArmInput" data-guide-zone="arm" step="0.1" min="15" max="70" placeholder="Ej: 34.5" />
+                </div>
+                <div class="field">
+                  <label for="measThighInput" style="color:#06b6d4;">⑥ Pierna / Muslo (cm)</label>
+                  <input type="number" id="measThighInput" data-guide-zone="thigh" step="0.1" min="30" max="110" placeholder="Ej: 56.0" />
+                </div>
+                <div style="grid-column: 1 / -1; margin-top:4px;">
+                  <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+                    📏 Guardar Medidas y Calcular % de Grasa
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Columna Derecha: Diagnóstico de % de Grasa, Gráfico Evolutivo e Historial -->
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div id="bodyFatSummaryCards"></div>
+              <div class="chart-box" id="measurementsChartContainer"></div>
+              <div id="measurementsHistoryList" style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -4253,6 +4382,16 @@
           hadLocalChanges = true;
         }
       }
+      if (Array.isArray(localData.measurementsLog)) {
+        merged.measurementsLog = Array.isArray(merged.measurementsLog) ? merged.measurementsLog : [];
+        const sMeasDates = new Set(merged.measurementsLog.map(m => m && m.date));
+        for (const m of localData.measurementsLog) {
+          if (m && m.date && !sMeasDates.has(m.date)) {
+            merged.measurementsLog.push(m);
+            hadLocalChanges = true;
+          }
+        }
+      }
       return { merged, hadLocalChanges };
     }
 
@@ -5904,6 +6043,295 @@
           </div>
         </div>
       `;
+
+      renderBodyMeasurementsSection();
+    }
+
+    const MEAS_ZONE_GUIDES = {
+      neck: {
+        num: "①",
+        title: "Cuello (Clave para % Grasa)",
+        color: "#38bdf8",
+        desc: "Colocá la cinta horizontal justo <strong>debajo de la nuez</strong>, mirando al frente con los hombros relajados y sin apretar la piel."
+      },
+      chest: {
+        num: "②",
+        title: "Pecho / Tórax",
+        color: "#a855f7",
+        desc: "Pasá la cinta por debajo de las axilas rodeando la <strong>parte más ancha del torso/pectoral</strong>, al final de una exhalación normal."
+      },
+      arm: {
+        num: "③",
+        title: "Brazo / Bíceps",
+        color: "#f59e0b",
+        desc: "Medí en el <strong>punto medio entre el hueso del hombro y el codo</strong> (hacé siempre la medición igual: o siempre relajado o siempre contrayendo)."
+      },
+      waist: {
+        num: "④",
+        title: "Cintura (Clave para % Grasa)",
+        color: "#22c55e",
+        desc: "Rodeá el abdomen con la cinta horizontal <strong>a la altura del ombligo</strong> (o en la parte más estrecha del torso), al exhalar normal y sin meter panza."
+      },
+      hip: {
+        num: "⑤",
+        title: "Cadera (Clave en Mujeres e ICC)",
+        color: "#ec4899",
+        desc: "Con los pies juntos, rodeá horizontalmente la <strong>parte más prominente de los glúteos</strong> cuidando que la cinta quede paralela al piso."
+      },
+      thigh: {
+        num: "⑥",
+        title: "Pierna / Muslo",
+        color: "#06b6d4",
+        desc: "Parado con el peso repartido en ambos pies, medí el contorno en la <strong>parte media-alta del muslo</strong> (unos 10 cm debajo del pliegue glúteo)."
+      }
+    };
+
+    function highlightMeasurementZone(zoneKey) {
+      const info = MEAS_ZONE_GUIDES[zoneKey] || MEAS_ZONE_GUIDES.waist;
+      const tipBox = document.getElementById("measGuideTipBox");
+      if (tipBox && info) {
+        tipBox.style.borderColor = info.color;
+        tipBox.innerHTML = `
+          <strong style="color:${info.color};display:block;margin-bottom:3px;">${info.num} ${info.title}</strong>
+          ${info.desc}
+        `;
+      }
+      document.querySelectorAll("#bodyGuideSvg .meas-svg-zone").forEach(g => {
+        const isActive = g.getAttribute("data-zone") === zoneKey;
+        g.style.opacity = isActive ? "1" : "0.42";
+        g.style.filter = isActive ? "drop-shadow(0 0 4px rgba(255,255,255,0.65))" : "none";
+      });
+    }
+
+    function computeNavyBodyFat(entry) {
+      if (!entry) return { bfPct: null, category: null, fatKg: null, leanKg: null, ica: null };
+      const prof = (appData && appData.profile) || {};
+      const sex = prof.sex || "male";
+      const height = Number(prof.height) || 172;
+      const weight = Number(entry.weight) || Number(prof.weight) || 78;
+      const neck = Number(entry.neck) || 0;
+      const waist = Number(entry.waist) || 0;
+      const hip = Number(entry.hip) || 0;
+
+      let bfPct = null;
+      if (sex === "female") {
+        if (neck >= 20 && waist >= 45 && hip >= 55 && (waist + hip - neck) > 15 && height >= 110) {
+          const raw = 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.22100 * Math.log10(height)) - 450;
+          if (isFinite(raw)) bfPct = Math.round(Math.max(8, Math.min(60, raw)) * 10) / 10;
+        }
+      } else {
+        if (neck >= 22 && waist >= 45 && (waist - neck) > 8 && height >= 110) {
+          const raw = 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(height)) - 450;
+          if (isFinite(raw)) bfPct = Math.round(Math.max(4, Math.min(55, raw)) * 10) / 10;
+        }
+      }
+
+      let category = null;
+      let catColor = "var(--accent)";
+      if (bfPct !== null) {
+        if (sex === "female") {
+          if (bfPct < 21) { category = "Atlético / Deportivo"; catColor = "#38bdf8"; }
+          else if (bfPct < 25) { category = "Fitness"; catColor = "#22c55e"; }
+          else if (bfPct <= 31) { category = "Saludable / Aceptable"; catColor = "#f59e0b"; }
+          else { category = "Elevado"; catColor = "#ef4444"; }
+        } else {
+          if (bfPct < 14) { category = "Atlético / Deportivo"; catColor = "#38bdf8"; }
+          else if (bfPct < 18) { category = "Fitness"; catColor = "#22c55e"; }
+          else if (bfPct <= 24) { category = "Saludable / Aceptable"; catColor = "#f59e0b"; }
+          else { category = "Elevado"; catColor = "#ef4444"; }
+        }
+      }
+
+      const fatKg = bfPct !== null ? Math.round((weight * (bfPct / 100)) * 10) / 10 : null;
+      const leanKg = bfPct !== null ? Math.round((weight - fatKg) * 10) / 10 : null;
+      const ica = waist > 0 && height > 0 ? Math.round((waist / height) * 100) / 100 : null;
+
+      return { bfPct, category, catColor, fatKg, leanKg, ica, weight };
+    }
+
+    function renderBodyMeasurementsSection() {
+      const summaryBox = document.getElementById("bodyFatSummaryCards");
+      const chartBox = document.getElementById("measurementsChartContainer");
+      const listBox = document.getElementById("measurementsHistoryList");
+      const dateInp = document.getElementById("measDateInput");
+      if (!summaryBox || !chartBox || !listBox) return;
+
+      if (dateInp && !dateInp.value) {
+        dateInp.value = selectedDate || todayStr();
+      }
+
+      const mLogs = [...(appData.measurementsLog || [])]
+        .filter(m => m && m.date)
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      if (mLogs.length === 0) {
+        const isFemale = (appData.profile && appData.profile.sex) === "female";
+        summaryBox.innerHTML = `
+          <div class="stat-box" style="background:var(--bg-card);border:1px dashed var(--border);padding:14px;">
+            <strong style="font-size:0.88rem;color:var(--text);display:block;margin-bottom:4px;">
+              🧬 Todavía no cargaste circunferencias
+            </strong>
+            <span style="font-size:0.79rem;color:var(--text-muted);line-height:1.45;">
+              Cargá a la izquierda tus medidas en centímetros (con <strong>Cuello + Cintura${isFemale ? " + Cadera" : ""}</strong> ya se calcula automáticamente tu <strong>% de Grasa Corporal</strong>, tus kg de masa muscular magra y tu evolución en cm).
+            </span>
+          </div>
+        `;
+        chartBox.innerHTML = "";
+        listBox.innerHTML = "";
+        return;
+      }
+
+      const first = mLogs[0];
+      const latest = mLogs[mLogs.length - 1];
+      const firstStats = computeNavyBodyFat(first);
+      const latestStats = computeNavyBodyFat(latest);
+
+      const deltaWaist = (Number(latest.waist) && Number(first.waist))
+        ? Math.round((Number(latest.waist) - Number(first.waist)) * 10) / 10
+        : null;
+      const deltaBf = (latestStats.bfPct !== null && firstStats.bfPct !== null)
+        ? Math.round((latestStats.bfPct - firstStats.bfPct) * 10) / 10
+        : null;
+
+      const sumKeys = ["neck", "chest", "arm", "waist", "hip", "thigh"];
+      let totalCmDiff = 0;
+      let comparedCount = 0;
+      for (const k of sumKeys) {
+        if (Number(latest[k]) > 0 && Number(first[k]) > 0) {
+          totalCmDiff += (Number(latest[k]) - Number(first[k]));
+          comparedCount++;
+        }
+      }
+      totalCmDiff = Math.round(totalCmDiff * 10) / 10;
+
+      summaryBox.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(145px, 1fr));gap:9px;">
+          <div class="stat-box" style="background:var(--bg-card);">
+            <span class="label">🔥 % Grasa Corporal (Navy)</span>
+            <span class="val" style="color:${latestStats.catColor || 'var(--accent)'};">
+              ${latestStats.bfPct !== null ? `${latestStats.bfPct}%` : "Falta Cuello/Cintura"}
+            </span>
+            <small style="font-size:0.72rem;color:var(--text-muted);">
+              ${latestStats.category ? `${latestStats.category}${deltaBf !== null && mLogs.length > 1 ? ` (${deltaBf > 0 ? "+" : ""}${deltaBf}%)` : ""}` : "Cargá cuello y cintura"}
+            </small>
+          </div>
+          <div class="stat-box" style="background:var(--bg-card);">
+            <span class="label">💪 Composición Corporal</span>
+            <span class="val" style="font-size:0.96rem;">
+              ${latestStats.leanKg !== null ? `${latestStats.leanKg} kg magros` : "—"}
+            </span>
+            <small style="font-size:0.72rem;color:var(--text-muted);">
+              ${latestStats.fatKg !== null ? `🧈 ${latestStats.fatKg} kg de tejido graso` : "Estimado según tu peso actual"}
+            </small>
+          </div>
+          <div class="stat-box" style="background:var(--bg-card);">
+            <span class="label">📏 Cintura & Riesgo (ICA)</span>
+            <span class="val" style="font-size:0.96rem;color:${latestStats.ica && latestStats.ica < 0.5 ? '#22c55e' : '#f59e0b'};">
+              ${latest.waist ? `${latest.waist} cm` : "—"} ${deltaWaist !== null && mLogs.length > 1 ? `(${deltaWaist > 0 ? "+" : ""}${deltaWaist} cm)` : ""}
+            </span>
+            <small style="font-size:0.72rem;color:var(--text-muted);">
+              ${latestStats.ica ? `Índice Cintura/Altura: ${latestStats.ica} ${latestStats.ica < 0.5 ? "🟢 Óptimo" : "🟡 Reducir"}` : "Medida abdominal"}
+            </small>
+          </div>
+          <div class="stat-box" style="background:var(--bg-card);">
+            <span class="label">📉 Cambio Total en cm</span>
+            <span class="val" style="font-size:0.96rem;color:${totalCmDiff <= 0 ? '#22c55e' : '#f59e0b'};">
+              ${mLogs.length > 1 && comparedCount > 0 ? `${totalCmDiff > 0 ? "+" : ""}${totalCmDiff} cm` : "1° Registro"}
+            </span>
+            <small style="font-size:0.72rem;color:var(--text-muted);">
+              Desde ${first.date} (${mLogs.length} ${mLogs.length === 1 ? "medición" : "mediciones"})
+            </small>
+          </div>
+        </div>
+      `;
+
+      // Gráfico SVG de evolución de Cintura (cm) y % de Grasa
+      const waistPtsLogs = mLogs.filter(m => Number(m.waist) > 0);
+      if (waistPtsLogs.length >= 1) {
+        const wVals = waistPtsLogs.map(m => Number(m.waist));
+        const minW = Math.min(...wVals) - 2;
+        const maxW = Math.max(...wVals) + 2;
+        const width = 520, height = 185, padL = 40, padR = 36, padT = 22, padB = 30;
+        const plotW = width - padL - padR;
+        const plotH = height - padT - padB;
+        const xCoord = (i) => padL + (waistPtsLogs.length === 1 ? plotW / 2 : (i / (waistPtsLogs.length - 1)) * plotW);
+        const yWaist = (val) => padT + plotH - ((val - minW) / Math.max(1, maxW - minW)) * plotH;
+
+        const waistPoly = waistPtsLogs.map((m, i) => `${xCoord(i).toFixed(1)},${yWaist(Number(m.waist)).toFixed(1)}`).join(" ");
+
+        const bfVals = waistPtsLogs.map(m => computeNavyBodyFat(m).bfPct).filter(v => v !== null);
+        const minBf = bfVals.length > 0 ? Math.min(...bfVals) - 1.5 : 10;
+        const maxBf = bfVals.length > 0 ? Math.max(...bfVals) + 1.5 : 30;
+        const yBf = (val) => padT + plotH - ((val - minBf) / Math.max(1, maxBf - minBf)) * plotH;
+
+        const bfPointsArr = [];
+        waistPtsLogs.forEach((m, i) => {
+          const bf = computeNavyBodyFat(m).bfPct;
+          if (bf !== null) bfPointsArr.push({ i, date: m.date, bf, x: xCoord(i), y: yBf(bf) });
+        });
+        const bfPoly = bfPointsArr.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+
+        chartBox.innerHTML = `
+          <svg viewBox="0 0 ${width} ${height}" style="width:100%;height:auto;background:var(--bg-card);border-radius:12px;border:1px solid var(--border);">
+            ${bfPoly ? `<polyline fill="none" stroke="#a855f7" stroke-width="2.4" stroke-dasharray="4,2" points="${bfPoly}" />` : ""}
+            <polyline fill="none" stroke="#22c55e" stroke-width="3" points="${waistPoly}" />
+            ${waistPtsLogs.map((m, i) => `
+              <circle cx="${xCoord(i).toFixed(1)}" cy="${yWaist(Number(m.waist)).toFixed(1)}" r="4.2" fill="#22c55e" stroke="#0f141c" stroke-width="1.5" />
+              <text x="${xCoord(i).toFixed(1)}" y="${Math.max(12, yWaist(Number(m.waist)) - 8).toFixed(1)}" fill="#22c55e" font-size="9.5" font-weight="800" text-anchor="middle">${m.waist}cm</text>
+              <text x="${xCoord(i).toFixed(1)}" y="${height - 9}" fill="var(--text-muted)" font-size="9.5" text-anchor="middle">${m.date.slice(5)}</text>
+            `).join("")}
+            ${bfPointsArr.map(p => `
+              <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.6" fill="#a855f7" stroke="#0f141c" stroke-width="1.2" />
+              <text x="${p.x.toFixed(1)}" y="${Math.min(height - 20, p.y + 13).toFixed(1)}" fill="#a855f7" font-size="9" font-weight="700" text-anchor="middle">${p.bf}%</text>
+            `).join("")}
+          </svg>
+          <div style="display:flex;gap:14px;font-size:0.74rem;color:var(--text-muted);margin-top:5px;flex-wrap:wrap;">
+            <span>🟢 Cintura (cm)</span>
+            <span>🟣 % Grasa Corporal (U.S. Navy)</span>
+          </div>
+        `;
+      } else {
+        chartBox.innerHTML = "";
+      }
+
+      // Historial detallado de circunferencias
+      const labelsMap = [
+        { k: "waist", label: "Cintura", color: "#22c55e" },
+        { k: "neck", label: "Cuello", color: "#38bdf8" },
+        { k: "hip", label: "Cadera", color: "#ec4899" },
+        { k: "chest", label: "Pecho", color: "#a855f7" },
+        { k: "arm", label: "Brazo", color: "#f59e0b" },
+        { k: "thigh", label: "Pierna", color: "#06b6d4" }
+      ];
+
+      listBox.innerHTML = [...mLogs].reverse().map(m => {
+        const st = computeNavyBodyFat(m);
+        const badges = labelsMap
+          .filter(x => Number(m[x.k]) > 0)
+          .map(x => `<span style="font-size:0.73rem;padding:2px 7px;border-radius:6px;background:var(--bg-elev);border:1px solid var(--border);"><strong style="color:${x.color};">${x.label}:</strong> ${m[x.k]} cm</span>`)
+          .join(" ");
+        return `
+          <div class="meal-item" style="align-items:flex-start;">
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <strong>📅 ${m.date}</strong>
+                ${st.bfPct !== null ? `<span class="chip" style="padding:2px 8px;font-size:0.72rem;font-weight:800;background:var(--purple-soft);color:var(--purple);">🔥 ${st.bfPct}% Grasa (${st.leanKg}kg magros)</span>` : ""}
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;">${badges}</div>
+            </div>
+            <button type="button" class="icon-del" data-del-meas="${m.date}" title="Borrar medición">🗑️</button>
+          </div>
+        `;
+      }).join("");
+
+      listBox.querySelectorAll("[data-del-meas]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const d = btn.getAttribute("data-del-meas");
+          appData.measurementsLog = (appData.measurementsLog || []).filter(item => item.date !== d);
+          saveToServer();
+          renderProgressCharts();
+        });
+      });
     }
 
     // =========================================================================
@@ -7385,6 +7813,71 @@
       saveToServer();
       renderAll();
     });
+
+    // Guía interactiva de circunferencias y guardado de medidas corporales
+    document.querySelectorAll("#bodyMeasurementsForm input[data-guide-zone]").forEach(inp => {
+      const z = inp.getAttribute("data-guide-zone");
+      inp.addEventListener("focus", () => highlightMeasurementZone(z));
+      inp.addEventListener("click", () => highlightMeasurementZone(z));
+    });
+
+    document.querySelectorAll("#bodyGuideSvg .meas-svg-zone").forEach(zoneEl => {
+      zoneEl.addEventListener("click", () => {
+        const z = zoneEl.getAttribute("data-zone");
+        highlightMeasurementZone(z);
+        const targetInp = document.querySelector(`#bodyMeasurementsForm input[data-guide-zone="${z}"]`);
+        if (targetInp) targetInp.focus();
+      });
+    });
+
+    const bodyMeasForm = document.getElementById("bodyMeasurementsForm");
+    if (bodyMeasForm) {
+      bodyMeasForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const d = document.getElementById("measDateInput").value || selectedDate || todayStr();
+        const neck = Number(document.getElementById("measNeckInput").value) || 0;
+        const waist = Number(document.getElementById("measWaistInput").value) || 0;
+        const hip = Number(document.getElementById("measHipInput").value) || 0;
+        const chest = Number(document.getElementById("measChestInput").value) || 0;
+        const arm = Number(document.getElementById("measArmInput").value) || 0;
+        const thigh = Number(document.getElementById("measThighInput").value) || 0;
+
+        if (!neck && !waist && !hip && !chest && !arm && !thigh) {
+          alert("Ingresá al menos una medida en centímetros (por ejemplo Cuello y Cintura).");
+          return;
+        }
+
+        appData.measurementsLog = Array.isArray(appData.measurementsLog) ? appData.measurementsLog : [];
+        const existing = appData.measurementsLog.find(item => item && item.date === d) || {};
+        const mergedEntry = {
+          date: d,
+          weight: Number(appData.profile && appData.profile.weight) || 78,
+          neck: neck || Number(existing.neck) || 0,
+          waist: waist || Number(existing.waist) || 0,
+          hip: hip || Number(existing.hip) || 0,
+          chest: chest || Number(existing.chest) || 0,
+          arm: arm || Number(existing.arm) || 0,
+          thigh: thigh || Number(existing.thigh) || 0
+        };
+
+        appData.measurementsLog = appData.measurementsLog.filter(item => item && item.date !== d);
+        appData.measurementsLog.push(mergedEntry);
+
+        ["measNeckInput", "measWaistInput", "measHipInput", "measChestInput", "measArmInput", "measThighInput"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+
+        saveToServer();
+        renderAll();
+        const st = computeNavyBodyFat(mergedEntry);
+        if (st.bfPct !== null) {
+          setRaccoonSpeech(`"📏 ¡Medidas guardadas! Tu estimado actual es ${st.bfPct}% de grasa corporal (${st.category}) con ${st.leanKg} kg de masa magra 🐱💪."`);
+        } else {
+          setRaccoonSpeech(`"📏 ¡Circunferencias registradas! Acordate de cargar Cuello y Cintura cuando quieras calcular tu % de grasa corporal 🐱🐾."`);
+        }
+      });
+    }
 
     // Selector de fecha "Contar desde" o modo Automático (1° día con datos)
     document.getElementById("trackingStartDateInput").addEventListener("change", (e) => {
