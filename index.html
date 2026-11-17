@@ -1677,7 +1677,7 @@
           <div class="macro-list">
             <div>
               <div class="macro-row-head">
-                <span>🥩 Proteínas <small style="color:var(--text-muted);font-weight:500;">(preserva músculo en déficit)</small></span>
+                <span>🥩 Proteínas <small id="macroProteinSubLabel" style="color:var(--text-muted);font-weight:500;">(preserva músculo en déficit)</small></span>
                 <span id="macroProteinText">19 / 165 g</span>
               </div>
               <div class="progress-track">
@@ -1886,9 +1886,9 @@
             <div class="field">
               <label for="profMacroPreset">Distribución de Macros</label>
               <select id="profMacroPreset">
-                <option value="high_protein">Alta Proteína / Fitness (2.0g/kg prot, 25% grasas)</option>
-                <option value="balanced">Equilibrado (30% Prot / 40% Carbos / 30% Grasas)</option>
-                <option value="low_carb">Low-Carb Saciedad (35% Prot / 25% Carbos / 40% Grasas)</option>
+                <option value="high_protein">Alta Proteína / Fitness (2.1g/kg masa magra o 2.0g/kg peso, 25% grasas)</option>
+                <option value="balanced">Equilibrado (1.8g/kg masa magra o 30% Prot / 40% Carbos / 30% Grasas)</option>
+                <option value="low_carb">Low-Carb Saciedad (2.2g/kg masa magra o 35% Prot / 25% Carbos / 40% Grasas)</option>
               </select>
             </div>
             <div class="field">
@@ -3901,8 +3901,26 @@
     }
 
     // =========================================================================
-    // CÁLCULO CIENTÍFICO DE TMB (Mifflin-St Jeor), TDEE Y MACROS
+    // CÁLCULO CIENTÍFICO DE TMB (Mifflin-St Jeor), TDEE Y MACROS (POR MASA MAGRA)
     // =========================================================================
+    function getLatestBodyComposition(prof = appData.profile) {
+      const mLogs = [...((appData && appData.measurementsLog) || [])]
+        .filter(m => m && m.date)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      if (mLogs.length === 0 || typeof computeNavyBodyFat !== "function") return null;
+      const curW = Number(prof && prof.weight) || 78;
+      for (let i = mLogs.length - 1; i >= 0; i--) {
+        const st = computeNavyBodyFat({ ...mLogs[i], weight: curW });
+        if (st && st.bfPct !== null && st.leanKg !== null && st.leanKg > 20) {
+          return {
+            ...st,
+            date: mLogs[i].date
+          };
+        }
+      }
+      return null;
+    }
+
     function computeNutritionTargets(prof = appData.profile) {
       const w = Number(prof.weight) || 75;
       const h = Number(prof.height) || 170;
@@ -3925,23 +3943,48 @@
       const targetKcal = Math.max(minSafe, tdee - deficit);
       const effectiveDeficit = tdee - targetKcal;
 
+      // Detectar si el usuario tiene % de Grasa y Masa Magra (LBM) calculada por circunferencias
+      const bodyComp = getLatestBodyComposition(prof);
+      const usingLeanMass = Boolean(bodyComp && bodyComp.leanKg > 20);
+      const leanKg = usingLeanMass ? bodyComp.leanKg : null;
+      const bfPct = usingLeanMass ? bodyComp.bfPct : null;
+      const fatKg = usingLeanMass ? bodyComp.fatKg : null;
+
       let proteinG = 140;
       let fatG = 55;
       let carbsG = 160;
+      let proteinPerKgLbm = 2.1;
 
       if (prof.macroPreset === "high_protein") {
-        proteinG = Math.round(w * 2.0);
+        proteinPerKgLbm = 2.1;
+        proteinG = usingLeanMass ? Math.round(leanKg * proteinPerKgLbm) : Math.round(w * 2.0);
         fatG = Math.round((targetKcal * 0.25) / 9);
         const remKcal = Math.max(200, targetKcal - (proteinG * 4 + fatG * 9));
         carbsG = Math.round(remKcal / 4);
       } else if (prof.macroPreset === "balanced") {
-        proteinG = Math.round((targetKcal * 0.30) / 4);
-        carbsG = Math.round((targetKcal * 0.40) / 4);
-        fatG = Math.round((targetKcal * 0.30) / 9);
+        proteinPerKgLbm = 1.8;
+        if (usingLeanMass) {
+          proteinG = Math.round(leanKg * proteinPerKgLbm);
+          fatG = Math.round((targetKcal * 0.30) / 9);
+          const remKcal = Math.max(200, targetKcal - (proteinG * 4 + fatG * 9));
+          carbsG = Math.round(remKcal / 4);
+        } else {
+          proteinG = Math.round((targetKcal * 0.30) / 4);
+          carbsG = Math.round((targetKcal * 0.40) / 4);
+          fatG = Math.round((targetKcal * 0.30) / 9);
+        }
       } else {
-        proteinG = Math.round((targetKcal * 0.35) / 4);
-        carbsG = Math.round((targetKcal * 0.25) / 4);
-        fatG = Math.round((targetKcal * 0.40) / 9);
+        proteinPerKgLbm = 2.2;
+        if (usingLeanMass) {
+          proteinG = Math.round(leanKg * proteinPerKgLbm);
+          fatG = Math.round((targetKcal * 0.40) / 9);
+          const remKcal = Math.max(120, targetKcal - (proteinG * 4 + fatG * 9));
+          carbsG = Math.round(remKcal / 4);
+        } else {
+          proteinG = Math.round((targetKcal * 0.35) / 4);
+          carbsG = Math.round((targetKcal * 0.25) / 4);
+          fatG = Math.round((targetKcal * 0.40) / 9);
+        }
       }
 
       const kgToLose = Math.max(0, Number((w - (Number(prof.goalWeight) || w)).toFixed(1)));
@@ -3959,6 +4002,11 @@
         proteinG,
         carbsG,
         fatG,
+        usingLeanMass,
+        leanKg,
+        bfPct,
+        fatKg,
+        proteinPerKgLbm,
         kgToLose,
         weeklyLossKg,
         weeksNeeded,
@@ -4755,6 +4803,12 @@
       }
 
       // Barras de Macros
+      const protSubEl = document.getElementById("macroProteinSubLabel");
+      if (protSubEl) {
+        protSubEl.innerHTML = targets.usingLeanMass
+          ? `(según <strong>${targets.leanKg} kg</strong> de masa magra • ${targets.proteinPerKgLbm}g/kg)`
+          : `(preserva músculo en déficit • según peso total)`;
+      }
       document.getElementById("macroProteinText").textContent = `${totals.p} / ${targets.proteinG} g`;
       document.getElementById("macroCarbsText").textContent = `${totals.c} / ${targets.carbsG} g`;
       document.getElementById("macroFatText").textContent = `${totals.f} / ${targets.fatG} g`;
@@ -5945,11 +5999,19 @@
         </div>
 
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
-          <strong style="font-size:0.9rem;display:block;margin-bottom:8px;">🥗 Tus Macros Diarios Recomendados</strong>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+            <strong style="font-size:0.9rem;">🥗 Tus Macros Diarios Recomendados</strong>
+            <span style="font-size:0.73rem;padding:2px 8px;border-radius:999px;font-weight:700;background:${t.usingLeanMass ? 'var(--accent-soft)' : 'var(--bg-elev)'};color:${t.usingLeanMass ? 'var(--accent)' : 'var(--text-muted)'};">
+              ${t.usingLeanMass ? `🧬 Proteína según Masa Magra (${t.leanKg} kg • ${t.bfPct}% grasa)` : `⚖️ Proteína según Peso Total (cargá medidas para usar Masa Magra)`}
+            </span>
+          </div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
             <div style="padding:8px;border-radius:9px;background:var(--bg-elev);">
               <div style="color:#22c55e;font-weight:800;font-size:1.1rem;">${t.proteinG}g</div>
               <div style="font-size:0.75rem;color:var(--text-muted);">Proteínas (${t.proteinG * 4} kcal)</div>
+              <div style="font-size:0.69rem;color:#22c55e;margin-top:2px;">
+                ${t.usingLeanMass ? `${t.proteinPerKgLbm}g × ${t.leanKg} kg magros` : `${(t.proteinG / Math.max(1, Number(p.weight) || 75)).toFixed(1)}g × ${p.weight} kg`}
+              </div>
             </div>
             <div style="padding:8px;border-radius:9px;background:var(--bg-elev);">
               <div style="color:#38bdf8;font-weight:800;font-size:1.1rem;">${t.carbsG}g</div>
@@ -6358,7 +6420,7 @@
               ${latestStats.leanKg !== null ? `${latestStats.leanKg} kg magros` : "—"}
             </span>
             <small style="font-size:0.72rem;color:var(--text-muted);">
-              ${latestStats.fatKg !== null ? `🧈 ${latestStats.fatKg} kg de tejido graso` : "Estimado según tu peso actual"}
+              ${latestStats.fatKg !== null ? `🧈 ${latestStats.fatKg} kg grasos • 🥩 Meta prot: <strong>${computeNutritionTargets().proteinG}g/día</strong>` : "Estimado según tu peso actual"}
             </small>
           </div>
           <div class="stat-box" style="background:var(--bg-card);">
