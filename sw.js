@@ -1,4 +1,4 @@
-const CACHE_NAME = 'michufit-cloud-v20';
+const CACHE_NAME = 'michufit-cloud-v21';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (e) => {
@@ -25,7 +25,7 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-function fetchWithTimeout(urlStr, ms = 3500) {
+function fetchWithTimeout(urlStr, ms = 12000) {
   return new Promise((resolve, reject) => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => {
@@ -48,7 +48,7 @@ function fetchWithTimeout(urlStr, ms = 3500) {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || e.request.url.includes('/api/') || e.request.url.includes('supabase.co') || e.request.url.includes('openfoodfacts.org') || e.request.url.endsWith('.apk')) return;
   e.respondWith(
-    fetchWithTimeout(e.request.url, 3500)
+    fetchWithTimeout(e.request.url, 12000)
       .then((res) => {
         if (res && res.status === 200) {
           const clone = res.clone();
