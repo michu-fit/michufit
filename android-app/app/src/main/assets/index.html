@@ -2694,7 +2694,7 @@
   <div class="custom-modal-overlay" id="modalAddFood" role="dialog" aria-modal="true">
     <div class="modal-inner">
       <div class="card-header">
-        <div class="card-title">🍽️ Agregar Comida al Diario</div>
+        <div class="card-title" id="modalAddFoodTitle">🍽️ Agregar Comida al Diario</div>
         <button type="button" class="btn btn-sm" data-close-modal="modalAddFood">✕</button>
       </div>
       <form id="manualFoodForm" class="form-grid">
@@ -4463,13 +4463,22 @@
         sDay.meals = (sDay.meals || []).filter(m => m && !delItemSet.has(m.id));
         if (sDay.meals.length !== origMealsLen) hadLocalChanges = true;
 
-        const sMealMap = new Map(sDay.meals.map(m => [m.id, m]));
+        const sMealMap = new Map(sDay.meals.map((m, idx) => [m.id, idx]));
         for (const m of (lDay.meals || [])) {
           if (!m || !m.id || delItemSet.has(m.id)) continue;
           if (!sMealMap.has(m.id)) {
             sDay.meals.push(m);
-            sMealMap.set(m.id, m);
+            sMealMap.set(m.id, sDay.meals.length - 1);
             hadLocalChanges = true;
+          } else {
+            const idx = sMealMap.get(m.id);
+            const sMeal = sDay.meals[idx];
+            const lUpd = Number(m.updatedAt) || 0;
+            const sUpd = Number(sMeal.updatedAt) || 0;
+            if (lUpd > sUpd) {
+              sDay.meals[idx] = m;
+              hadLocalChanges = true;
+            }
           }
         }
 
@@ -5049,6 +5058,7 @@
       const wasConsumed = isMealConsumed(item);
       item.planned = true;
       item.checked = !wasConsumed;
+      item.updatedAt = Date.now();
 
       if (item.checked) {
         const now = new Date();
@@ -5119,6 +5129,7 @@
                 </div>
                 <div class="meal-item-right">
                   <strong style="${!consumed ? 'color:var(--text-muted);font-weight:600;' : ''}">${item.kcal} kcal</strong>
+                  <button type="button" class="icon-del" data-edit-meal-id="${item.id}" title="Editar comida">✏️</button>
                   <button type="button" class="icon-del" data-del-id="${item.id}" title="Eliminar alimento">🗑️</button>
                 </div>
               </div>
@@ -5150,6 +5161,12 @@
       grid.querySelectorAll("[data-toggle-plan-id]").forEach(btn => {
         btn.addEventListener("click", () => {
           toggleMealConsumedCheck(btn.getAttribute("data-toggle-plan-id"));
+        });
+      });
+
+      grid.querySelectorAll("[data-edit-meal-id]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          openEditFoodModal(btn.getAttribute("data-edit-meal-id"));
         });
       });
 
@@ -5387,7 +5404,28 @@
       el.removeAttribute("open");
     }
 
+    let editingMealId = null;
+
     function openFoodModal(mealType) {
+      editingMealId = null;
+      const titleEl = document.getElementById("modalAddFoodTitle");
+      if (titleEl) titleEl.textContent = "🍽️ Agregar Comida al Diario";
+      const submitBtn = document.getElementById("btnSubmitManualFood");
+      if (submitBtn) submitBtn.textContent = "➕ Agregar y que Michu opine";
+      const form = document.getElementById("manualFoodForm");
+      if (form) form.reset();
+      const emojiEl = document.getElementById("mfEmoji");
+      if (emojiEl) emojiEl.value = "🍽️";
+      const bdBox = document.getElementById("mfAiBreakdownBox");
+      if (bdBox) bdBox.style.display = "none";
+      const statusPill = document.getElementById("mfAiStatusPill");
+      if (statusPill) {
+        statusPill.textContent = "✨ Autocompletado IA activo";
+        statusPill.style.background = "var(--accent-soft)";
+        statusPill.style.color = "var(--accent)";
+      }
+      if (typeof mfLastAnalyzedText !== "undefined") mfLastAnalyzedText = "";
+
       if (mealType) {
         const sel = document.getElementById("mfMealType");
         if (sel) sel.value = mealType;
@@ -5398,6 +5436,79 @@
       setTimeout(() => {
         const inp = document.getElementById("mfName");
         if (inp) inp.focus();
+      }, 80);
+    }
+
+    function openEditFoodModal(mealId) {
+      const day = ensureDayRecord(selectedDate);
+      const item = (day.meals || []).find(m => m.id === mealId);
+      if (!item) return;
+
+      editingMealId = item.id;
+      const titleEl = document.getElementById("modalAddFoodTitle");
+      if (titleEl) {
+        titleEl.textContent = item.planned
+          ? "✏️ Editar Comida Planificada"
+          : "✏️ Editar Comida Cargada";
+      }
+      const submitBtn = document.getElementById("btnSubmitManualFood");
+      if (submitBtn) {
+        submitBtn.textContent = "💾 Guardar cambios en la comida";
+      }
+
+      const sel = document.getElementById("mfMealType");
+      if (sel) sel.value = item.mealType || "lunch";
+      const nameInp = document.getElementById("mfName");
+      if (nameInp) nameInp.value = item.name || "";
+      const emojiInp = document.getElementById("mfEmoji");
+      if (emojiInp) emojiInp.value = item.emoji || "🍽️";
+      const kcalInp = document.getElementById("mfKcal");
+      if (kcalInp) kcalInp.value = Math.round(Number(item.kcal) || 0);
+      const pInp = document.getElementById("mfP");
+      if (pInp) pInp.value = Number(item.p || 0).toFixed(1).replace(/\.0$/, "");
+      const cInp = document.getElementById("mfC");
+      if (cInp) cInp.value = Number(item.c || 0).toFixed(1).replace(/\.0$/, "");
+      const fInp = document.getElementById("mfF");
+      if (fInp) fInp.value = Number(item.f || 0).toFixed(1).replace(/\.0$/, "");
+      const saveCat = document.getElementById("mfSaveToCatalog");
+      if (saveCat) saveCat.checked = false;
+
+      if (typeof mfLastAnalyzedText !== "undefined") {
+        mfLastAnalyzedText = (item.name || "").trim();
+      }
+      const statusPill = document.getElementById("mfAiStatusPill");
+      if (statusPill) {
+        statusPill.textContent = "✏️ Editá el texto y la IA recalcula sola";
+        statusPill.style.background = "var(--purple-soft)";
+        statusPill.style.color = "var(--purple)";
+      }
+      const bdBox = document.getElementById("mfAiBreakdownBox");
+      if (bdBox && item.name) {
+        const r = typeof estimateFoodOffline === "function" ? estimateFoodOffline(item.name) : null;
+        if (r && r.items && r.items.length > 0) {
+          const itemsPills = r.items.map(it =>
+            `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed var(--border);">
+              <span>${it.emoji || "🍽️"} <strong>${it.name}</strong> <small style="color:var(--text-muted);">(${it.quantity})</small></span>
+              <span style="white-space:nowrap;font-weight:700;color:var(--accent);">${it.kcal} kcal <small style="color:var(--text-muted);font-weight:500;">(${it.p}P / ${it.c}C / ${it.f}G)</small></span>
+            </div>`
+          ).join("");
+          bdBox.style.display = "block";
+          bdBox.innerHTML = `
+            <div style="font-weight:700;margin-bottom:4px;color:var(--text);">🔍 Agregá o quitá ingredientes arriba (o tocá ✨ Calcular IA):</div>
+            ${itemsPills}
+          `;
+        } else {
+          bdBox.style.display = "none";
+        }
+      }
+
+      openModal("modalAddFood");
+      setTimeout(() => {
+        if (nameInp) {
+          nameInp.focus();
+          const len = nameInp.value.length;
+          try { nameInp.setSelectionRange(len, len); } catch (_) {}
+        }
       }, 80);
     }
 
@@ -8092,7 +8203,28 @@
           }
         }
       }
-      addFoodItemToDay(selectedDate, item);
+      if (editingMealId) {
+        const day = ensureDayRecord(selectedDate);
+        const existing = (day.meals || []).find(m => m.id === editingMealId);
+        if (existing) {
+          existing.mealType = item.mealType || existing.mealType || "lunch";
+          existing.name = item.name;
+          existing.emoji = item.emoji || "🍽️";
+          existing.kcal = Math.round(Number(item.kcal) || 0);
+          existing.p = Math.round((Number(item.p) || 0) * 10) / 10;
+          existing.c = Math.round((Number(item.c) || 0) * 10) / 10;
+          existing.f = Math.round((Number(item.f) || 0) * 10) / 10;
+          existing.updatedAt = Date.now();
+          saveToServer();
+          renderAll();
+          setRaccoonSpeech(generateContextualRaccoonComment({ type: "food_added", item: existing }));
+        } else {
+          addFoodItemToDay(selectedDate, item);
+        }
+        editingMealId = null;
+      } else {
+        addFoodItemToDay(selectedDate, item);
+      }
       document.getElementById("manualFoodForm").reset();
       document.getElementById("mfEmoji").value = "🍽️";
       document.getElementById("mfAiBreakdownBox").style.display = "none";
