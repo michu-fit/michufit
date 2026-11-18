@@ -805,155 +805,474 @@
       color: var(--accent);
     }
 
-    /* Onboarding Interview Wizard */
-    .wiz-progress-wrap {
+    /* Onboarding Interview Wizard (BitePal Style) */
+    .bp-wiz-shell {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-
-    .wiz-progress-top {
-      display: flex;
+      min-height: 510px;
       justify-content: space-between;
-      align-items: center;
-      font-size: 0.75rem;
-      font-weight: 800;
-      color: var(--text-muted);
+      position: relative;
+      user-select: none;
     }
 
-    .wiz-progress-track {
-      width: 100%;
-      height: 7px;
-      background: var(--bg-card);
-      border-radius: 999px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-
-    .wiz-progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--purple), var(--accent));
-      border-radius: 999px;
-      transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .wiz-michu-bubble {
-      display: flex;
-      gap: 11px;
-      align-items: flex-start;
-      background: linear-gradient(135deg, rgba(168, 85, 247, 0.13), rgba(34, 197, 94, 0.08));
-      border: 1px solid rgba(168, 85, 247, 0.38);
-      border-radius: 14px;
-      padding: 11px 13px;
-      margin-bottom: 12px;
-      font-size: 0.84rem;
-      line-height: 1.42;
-      color: var(--text);
-    }
-
-    .wiz-michu-avatar {
-      font-size: 1.85rem;
-      line-height: 1;
-      flex-shrink: 0;
-      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
-    }
-
-    .wiz-step-page {
-      display: none;
-      flex-direction: column;
-      gap: 12px;
-      animation: wizFadeIn 0.22s ease;
-    }
-
-    .wiz-step-page.active {
-      display: flex;
-    }
-
-    @keyframes wizFadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .wiz-question-title {
-      font-size: 1.05rem;
-      font-weight: 900;
-      color: var(--text);
-      margin-bottom: 2px;
-    }
-
-    .wiz-opt-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 9px;
-    }
-
-    .wiz-opt-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .wiz-opt-card {
-      background: var(--bg-card);
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 11px 13px;
-      cursor: pointer;
-      text-align: left;
-      color: var(--text);
-      transition: all 0.16s ease;
+    .bp-top-bar {
       display: flex;
       align-items: center;
       gap: 10px;
+      margin-bottom: 12px;
+      min-height: 36px;
     }
 
-    .wiz-opt-card:hover {
-      border-color: var(--purple);
-      transform: translateY(-1px);
+    .bp-back-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 1.15rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
     }
 
-    .wiz-opt-card.selected {
+    .bp-back-btn:hover {
       border-color: var(--accent);
-      background: var(--accent-soft);
-      box-shadow: 0 0 0 1px var(--accent);
+      transform: scale(1.05);
     }
 
-    .wiz-opt-card .wiz-opt-icon {
+    .bp-seg-bars {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      flex: 1;
+    }
+
+    .bp-seg-track {
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.22);
+      overflow: hidden;
+    }
+
+    .bp-seg-fill {
+      height: 100%;
+      width: 0%;
+      background: #22c55e;
+      border-radius: 999px;
+      transition: width 0.28s ease;
+    }
+
+    .bp-skip-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    .bp-skip-btn:hover {
+      color: var(--text);
+      background: var(--bg-card);
+    }
+
+    .bp-mascot-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .bp-mascot-mini {
+      width: 66px;
+      height: 66px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bp-speech-bubble {
+      position: relative;
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      padding: 13px 16px;
+      font-size: 0.98rem;
+      font-weight: 800;
+      line-height: 1.35;
+      color: var(--text);
+      flex: 1;
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .bp-speech-bubble::before {
+      content: "";
+      position: absolute;
+      left: -8px;
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+      width: 14px;
+      height: 14px;
+      background: var(--bg-card);
+      border-left: 1.5px solid var(--border);
+      border-bottom: 1.5px solid var(--border);
+    }
+
+    .bp-center-bubble {
+      position: relative;
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 16px 20px;
+      font-size: 1.22rem;
+      font-weight: 900;
+      line-height: 1.3;
+      color: var(--text);
+      text-align: left;
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+    }
+
+    .bp-center-bubble::after {
+      content: "";
+      position: absolute;
+      bottom: -9px;
+      left: 38%;
+      transform: rotate(45deg);
+      width: 16px;
+      height: 16px;
+      background: var(--bg-card);
+      border-right: 1.5px solid var(--border);
+      border-bottom: 1.5px solid var(--border);
+    }
+
+    .bp-stage-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+      animation: bpFadeSlide 0.22s ease;
+    }
+
+    @keyframes bpFadeSlide {
+      from { opacity: 0; transform: translateY(7px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .bp-giant-input-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 26px 10px;
+      gap: 8px;
+    }
+
+    .bp-giant-label {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .bp-giant-input {
+      background: transparent !important;
+      border: none !important;
+      border-bottom: 2px solid transparent !important;
+      font-size: 2.35rem !important;
+      font-weight: 900 !important;
+      text-align: center !important;
+      color: var(--text) !important;
+      outline: none !important;
+      box-shadow: none !important;
+      padding: 4px 8px !important;
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .bp-giant-input:focus {
+      border-bottom-color: var(--accent) !important;
+    }
+
+    .bp-talk-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 11px;
+    }
+
+    .bp-talk-card {
+      position: relative;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 18px;
+      padding: 14px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      color: var(--text);
+    }
+
+    .bp-talk-card:hover {
+      border-color: rgba(34, 197, 94, 0.55);
+      transform: translateY(-2px);
+    }
+
+    .bp-talk-card.selected {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.08);
+      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.15);
+    }
+
+    .bp-talk-check {
+      position: absolute;
+      top: 9px;
+      right: 9px;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: #22c55e;
+      color: #052e14;
+      font-size: 0.75rem;
+      font-weight: 900;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bp-talk-card.selected .bp-talk-check {
+      display: inline-flex;
+    }
+
+    .bp-choice-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .bp-choice-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 13px 15px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--text);
+      transition: all 0.15s ease;
+    }
+
+    .bp-choice-card:hover {
+      border-color: rgba(34, 197, 94, 0.5);
+    }
+
+    .bp-choice-card.selected {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+    }
+
+    .bp-choice-icon {
       font-size: 1.45rem;
       line-height: 1;
       flex-shrink: 0;
     }
 
-    .wiz-opt-card .wiz-opt-title {
+    .bp-choice-title {
+      font-size: 0.94rem;
       font-weight: 800;
-      font-size: 0.88rem;
       display: block;
     }
 
-    .wiz-opt-card .wiz-opt-sub {
-      font-size: 0.74rem;
+    .bp-choice-sub {
+      font-size: 0.76rem;
       color: var(--text-muted);
       display: block;
       margin-top: 2px;
     }
 
-    .wiz-big-input {
-      font-size: 1.15rem !important;
-      font-weight: 800 !important;
-      padding: 12px 14px !important;
-      text-align: center;
+    .bp-choice-radio {
+      margin-left: auto;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 2px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: transparent;
+      flex-shrink: 0;
     }
 
-    .wiz-nav-bar {
+    .bp-choice-card.selected .bp-choice-radio {
+      background: #22c55e;
+      border-color: #22c55e;
+      color: #052e14;
+    }
+
+    /* Vertical Drum / Wheel Picker */
+    .bp-wheel-container {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
+      padding: 8px 0;
+      user-select: none;
+      touch-action: pan-x;
+    }
+
+    .bp-wheel-row {
+      padding: 4px 16px;
+      cursor: pointer;
+      transition: all 0.14s ease;
+      text-align: center;
+      line-height: 1.15;
+    }
+
+    .bp-wheel-row.dist-2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      opacity: 0.28;
+    }
+
+    .bp-wheel-row.dist-1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      opacity: 0.58;
+    }
+
+    .bp-wheel-row.dist-0 {
+      font-size: 2.75rem;
+      font-weight: 900;
+      color: var(--text);
+      padding: 6px 18px;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
       gap: 8px;
-      margin-top: 6px;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
+    }
+
+    .bp-pill-cloud {
+      display: flex;
       flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px 0;
+    }
+
+    .bp-allergy-pill {
+      padding: 10px 16px;
+      border-radius: 14px;
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .bp-allergy-pill.selected {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.14);
+      color: #22c55e;
+    }
+
+    .bp-cta-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 8px;
+    }
+
+    .bp-dice-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--bg-card);
+      font-size: 1.35rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform 0.18s ease;
+    }
+
+    .bp-dice-btn:hover {
+      transform: rotate(25deg) scale(1.06);
+      border-color: var(--accent);
+    }
+
+    .bp-main-btn {
+      flex: 1;
+      height: 52px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #042410;
+      font-size: 1.02rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.28);
+      transition: all 0.16s ease;
+    }
+
+    .bp-main-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+
+    .bp-main-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .bp-sig-bars {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 20px;
+      padding: 0 4px;
+    }
+
+    .bp-sig-bar {
+      width: 4px;
+      border-radius: 3px;
+      background: rgba(148, 163, 184, 0.3);
+    }
+
+    .bp-sig-bar.on {
+      background: #22c55e;
     }
 
     /* Forms & Inputs */
@@ -2774,233 +3093,34 @@
           </button>
         </form>
 
-        <!-- FORMULARIO REGISTRO (WIZARD AMIGABLE ESTILO ENTREVISTA POR PÁGINA) -->
-        <form id="authRegisterForm" style="display:none;flex-direction:column;gap:8px;" novalidate>
-          <!-- Barra de progreso de la entrevista -->
-          <div class="wiz-progress-wrap">
-            <div class="wiz-progress-top">
-              <span id="regWizStepBadge" style="color:var(--purple);">✨ Paso 1 de 6</span>
-              <span id="regWizOptionalBadge" style="color:var(--accent);">Obligatorio para tu cuenta</span>
-            </div>
-            <div class="wiz-progress-track">
-              <div class="wiz-progress-fill" id="regWizProgressFill" style="width:16.6%;"></div>
-            </div>
-          </div>
-
-          <!-- Burbuja conversacional de Michu -->
-          <div class="wiz-michu-bubble">
-            <span class="wiz-michu-avatar" id="regWizMichuEmoji">🐱</span>
-            <div id="regWizMichuText">
-              <strong>¡Hola! Soy Michu, tu compañero de ruta.</strong><br/>
-              Antes de armar tu plan, contame cómo te llamás y elegí con qué usuario y clave vas a entrar.
-            </div>
-          </div>
-
-          <!-- Valores ocultos sincronizados con las tarjetas interactivas -->
-          <input type="hidden" id="regRoleRequested" value="patient" />
-          <input type="hidden" id="regSex" value="male" />
-          <input type="hidden" id="regDeficitType" value="recommended" />
-          <input type="hidden" id="regActivity" value="1.375" />
-          <input type="hidden" id="regMoodMode" value="sarcastic" />
-
-          <!-- PÁGINA 1: Nombre, Usuario/Email y Contraseña (Obligatorio) -->
-          <div class="wiz-step-page active" data-wiz-step="1">
-            <div class="wiz-question-title">👋 ¿Cómo te llamás y cómo vas a iniciar sesión?</div>
-            <div class="field">
-              <label for="regName">¿Cómo te llamás o cómo querés que te diga Michu?</label>
-              <input type="text" id="regName" placeholder="Ej: Martín" autocomplete="name" />
-            </div>
-            <div class="field">
-              <label for="regEmail">Tu Email o Nombre de Usuario</label>
-              <input type="text" id="regEmail" placeholder="Ej: martin@gmail.com o martin_fit" autocomplete="username" />
-            </div>
-            <div class="field">
-              <label for="regPassword">Elegí una contraseña (mínimo 4 caracteres)</label>
-              <input type="password" id="regPassword" placeholder="••••••••" autocomplete="new-password" />
-            </div>
-            <div class="field" style="margin-top:2px;">
-              <label>¿Qué tipo de cuenta vas a usar?</label>
-              <div class="wiz-opt-grid">
-                <button type="button" class="wiz-opt-card selected" data-wiz-pick="regRoleRequested" data-wiz-val="patient">
-                  <span class="wiz-opt-icon">🐱</span>
-                  <span>
-                    <span class="wiz-opt-title">Paciente / Usuario</span>
-                    <span class="wiz-opt-sub">Llevar mi diario y metas</span>
-                  </span>
-                </button>
-                <button type="button" class="wiz-opt-card" data-wiz-pick="regRoleRequested" data-wiz-val="nutritionist">
-                  <span class="wiz-opt-icon">🩺</span>
-                  <span>
-                    <span class="wiz-opt-title">Nutricionista</span>
-                    <span class="wiz-opt-sub">Supervisar pacientes</span>
-                  </span>
-                </button>
+        <!-- FORMULARIO REGISTRO (EXPERIENCIA INTERACTIVA ESTILO BITEPAL / ENTREVISTA) -->
+        <form id="authRegisterForm" style="display:none;flex-direction:column;" novalidate>
+          <div class="bp-wiz-shell" id="bpWizShell">
+            <!-- Barra superior: Botón Atrás + 4 barras segmentadas + Botón Omitir -->
+            <div class="bp-top-bar" id="bpWizTopBar">
+              <button type="button" class="bp-back-btn" id="bpWizBackBtn" title="Volver atrás">‹</button>
+              <div class="bp-seg-bars" id="bpWizSegBars">
+                <div class="bp-seg-track"><div class="bp-seg-fill" id="bpSegFill1"></div></div>
+                <div class="bp-seg-track"><div class="bp-seg-fill" id="bpSegFill2"></div></div>
+                <div class="bp-seg-track"><div class="bp-seg-fill" id="bpSegFill3"></div></div>
+                <div class="bp-seg-track"><div class="bp-seg-fill" id="bpSegFill4"></div></div>
               </div>
-            </div>
-          </div>
-
-          <!-- PÁGINA 2: Edad y Sexo Biológico (Opcional) -->
-          <div class="wiz-step-page" data-wiz-step="2">
-            <div class="wiz-question-title">🎂 ¿Qué edad tenés y cuál es tu sexo biológico?</div>
-            <div class="field">
-              <label>Sexo biológico (para la fórmula de tasa metabólica)</label>
-              <div class="wiz-opt-grid">
-                <button type="button" class="wiz-opt-card selected" data-wiz-pick="regSex" data-wiz-val="male">
-                  <span class="wiz-opt-icon">🙋‍♂️</span>
-                  <span>
-                    <span class="wiz-opt-title">Hombre</span>
-                    <span class="wiz-opt-sub">Fórmula Mifflin-St Jeor M</span>
-                  </span>
-                </button>
-                <button type="button" class="wiz-opt-card" data-wiz-pick="regSex" data-wiz-val="female">
-                  <span class="wiz-opt-icon">🙋‍♀️</span>
-                  <span>
-                    <span class="wiz-opt-title">Mujer</span>
-                    <span class="wiz-opt-sub">Fórmula Mifflin-St Jeor F</span>
-                  </span>
-                </button>
-              </div>
-            </div>
-            <div class="field" style="margin-top:4px;">
-              <label for="regAge">¿Qué edad tenés? (en años)</label>
-              <input type="number" id="regAge" class="wiz-big-input" min="12" max="100" step="1" placeholder="Ej: 30" />
-            </div>
-          </div>
-
-          <!-- PÁGINA 3: Altura y Peso Actual (Opcional) -->
-          <div class="wiz-step-page" data-wiz-step="3">
-            <div class="wiz-question-title">📏 ¿Qué altura tenés y cuánto estás pesando?</div>
-            <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="field">
-                <label for="regHeight">📏 Tu altura (en cm)</label>
-                <input type="number" id="regHeight" class="wiz-big-input" min="120" max="230" step="1" placeholder="Ej: 175" />
-                <small style="font-size:0.72rem;color:var(--text-muted);text-align:center;">Ej: 1,75 m = 175 cm</small>
-              </div>
-              <div class="field">
-                <label for="regWeight">⚖️ Peso actual (en kg)</label>
-                <input type="number" id="regWeight" class="wiz-big-input" step="0.1" min="35" max="250" placeholder="Ej: 78.5" />
-                <small style="font-size:0.72rem;color:var(--text-muted);text-align:center;">Podés poner un aproximado</small>
-              </div>
-            </div>
-          </div>
-
-          <!-- PÁGINA 4: Objetivo y Peso Meta (Opcional) -->
-          <div class="wiz-step-page" data-wiz-step="4">
-            <div class="wiz-question-title">🎯 ¿Cuál es tu objetivo principal?</div>
-            <div class="wiz-opt-list">
-              <button type="button" class="wiz-opt-card selected" data-wiz-pick="regDeficitType" data-wiz-val="recommended">
-                <span class="wiz-opt-icon">🔥</span>
-                <span>
-                  <span class="wiz-opt-title">Bajar grasa de forma constante (Recomendado)</span>
-                  <span class="wiz-opt-sub">Déficit de -500 kcal/día • Bajás ~0.45 kg por semana cuidando músculo</span>
-                </span>
-              </button>
-              <button type="button" class="wiz-opt-card" data-wiz-pick="regDeficitType" data-wiz-val="mild">
-                <span class="wiz-opt-icon">🌿</span>
-                <span>
-                  <span class="wiz-opt-title">Ir de a poco y muy flexible (Déficit suave)</span>
-                  <span class="wiz-opt-sub">Déficit de -300 kcal/día • Ideal para adaptarte sin nada de hambre</span>
-                </span>
-              </button>
-              <button type="button" class="wiz-opt-card" data-wiz-pick="regDeficitType" data-wiz-val="aggressive">
-                <span class="wiz-opt-icon">⚡</span>
-                <span>
-                  <span class="wiz-opt-title">Resultados más rápidos (Déficit intenso)</span>
-                  <span class="wiz-opt-sub">Déficit de -700 kcal/día • Priorizando alta proteína diaria</span>
-                </span>
-              </button>
-            </div>
-            <div class="field" style="margin-top:4px;">
-              <label for="regGoalWeight">🏁 ¿A qué peso objetivo te gustaría llegar? (en kg)</label>
-              <input type="number" id="regGoalWeight" class="wiz-big-input" step="0.1" min="35" max="250" placeholder="Ej: 72.0" />
-            </div>
-          </div>
-
-          <!-- PÁGINA 5: Nivel de Actividad Física (Opcional) -->
-          <div class="wiz-step-page" data-wiz-step="5">
-            <div class="wiz-question-title">🏃‍♂️ ¿Qué tan activo sos durante la semana?</div>
-            <div class="wiz-opt-list">
-              <button type="button" class="wiz-opt-card" data-wiz-pick="regActivity" data-wiz-val="1.2">
-                <span class="wiz-opt-icon">🪑</span>
-                <span>
-                  <span class="wiz-opt-title">Sedentario / Trabajo de oficina</span>
-                  <span class="wiz-opt-sub">Poco movimiento diario, sin entrenamiento fijo</span>
-                </span>
-              </button>
-              <button type="button" class="wiz-opt-card selected" data-wiz-pick="regActivity" data-wiz-val="1.375">
-                <span class="wiz-opt-icon">🚶</span>
-                <span>
-                  <span class="wiz-opt-title">Actividad ligera (1 a 2 días por semana)</span>
-                  <span class="wiz-opt-sub">Caminatas frecuentes o ejercicio suave 1-2 veces/sem</span>
-                </span>
-              </button>
-              <button type="button" class="wiz-opt-card" data-wiz-pick="regActivity" data-wiz-val="1.55">
-                <span class="wiz-opt-icon">🏋️</span>
-                <span>
-                  <span class="wiz-opt-title">Moderado (3 a 5 días por semana)</span>
-                  <span class="wiz-opt-sub">Gimnasio, pesas, running o deporte regular</span>
-                </span>
-              </button>
-              <button type="button" class="wiz-opt-card" data-wiz-pick="regActivity" data-wiz-val="1.725">
-                <span class="wiz-opt-icon">🔥</span>
-                <span>
-                  <span class="wiz-opt-title">Muy activo / Intenso (6+ días por semana)</span>
-                  <span class="wiz-opt-sub">Entrenamiento exigente casi todos los días</span>
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <!-- PÁGINA 6: Resumen Personalizado + Humor de Michu + Código Nutricionista (Opcional) -->
-          <div class="wiz-step-page" data-wiz-step="6">
-            <div class="wiz-question-title">🚀 ¡Todo listo! Así queda tu plan inicial</div>
-            <div id="regWizSummaryBox" style="background:var(--bg-card);border:1.5px solid var(--accent);border-radius:12px;padding:12px 14px;font-size:0.83rem;"></div>
-
-            <div class="field">
-              <label>🐱 ¿Con qué personalidad querés que te hable Michu?</label>
-              <div class="wiz-opt-grid">
-                <button type="button" class="wiz-opt-card selected" data-wiz-pick="regMoodMode" data-wiz-val="sarcastic">
-                  <span class="wiz-opt-icon">😼</span>
-                  <span>
-                    <span class="wiz-opt-title">Sarcástico</span>
-                    <span class="wiz-opt-sub">Humor picante y sin filtro</span>
-                  </span>
-                </button>
-                <button type="button" class="wiz-opt-card" data-wiz-pick="regMoodMode" data-wiz-val="cute">
-                  <span class="wiz-opt-icon">💚</span>
-                  <span>
-                    <span class="wiz-opt-title">Tierno</span>
-                    <span class="wiz-opt-sub">100% dulce y motivador</span>
-                  </span>
-                </button>
-              </div>
+              <button type="button" class="bp-skip-btn" id="bpWizSkipBtn">Omitir ⏭️</button>
             </div>
 
-            <div class="field">
-              <label for="regInviteCode">🩺 ¿Tenés código de tu Nutricionista? (Opcional)</label>
-              <input type="text" id="regInviteCode" placeholder="Ej: NUTRI-LAURA (Dejalo vacío si no tenés)" style="text-transform:uppercase;" />
+            <!-- Cabecera con Mascota tomando notas + Burbuja con efecto máquina de escribir -->
+            <div class="bp-mascot-row" id="bpWizMascotHeader" style="display:none;">
+              <div class="bp-mascot-mini" id="bpWizMascotMiniSvg"></div>
+              <div class="bp-speech-bubble" id="bpWizSpeechText"></div>
             </div>
 
-            <small style="font-size:0.74rem;color:var(--text-muted);text-align:center;">
-              🔒 Al finalizar, el administrador recibirá tu solicitud para aprobar y activar tu cuenta.
-            </small>
-          </div>
+            <!-- Contenedor dinámico de cada pantalla de la entrevista -->
+            <div class="bp-stage-body" id="bpWizStageBody"></div>
 
-          <!-- Barra de navegación del Wizard (Atrás / Omitir / Siguiente / Crear Cuenta) -->
-          <div class="wiz-nav-bar">
-            <button type="button" class="btn btn-sm" id="btnRegWizBack" style="display:none;">
-              ⬅️ Atrás
-            </button>
-            <div style="display:flex;gap:8px;margin-left:auto;align-items:center;">
-              <button type="button" class="btn btn-sm" id="btnRegWizSkip" style="display:none;color:var(--text-muted);">
-                Omitir paso ⏭️
-              </button>
-              <button type="button" class="btn btn-primary" id="btnRegWizNext" style="padding:10px 18px;">
-                Siguiente ➡️
-              </button>
-              <button type="submit" class="btn btn-purple" id="btnRegWizSubmit" style="display:none;padding:11px 18px;">
-                🚀 Crear mi Cuenta
-              </button>
+            <!-- Barra inferior de acción (Dado opcional + Botón Continuar / Vamos) -->
+            <div class="bp-cta-bar" id="bpWizFooterBar">
+              <button type="button" class="bp-dice-btn" id="bpWizDiceBtn" style="display:none;" title="Sugerir nombre al azar">🎲</button>
+              <button type="button" class="bp-main-btn" id="bpWizNextBtn">Continuar ›</button>
             </div>
           </div>
         </form>
@@ -3522,6 +3642,8 @@
       const todayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const wVal = Number(weight) || 78.0;
       const gwVal = Number(goalWeight) || Math.max(48, Math.round(wVal - 5));
+      const fastHours = Number(extra.fastingTargetHours) || 14;
+      const eatHours = Math.max(4, 24 - fastHours);
       return {
         profile: {
           name: name || "Paciente",
@@ -3533,11 +3655,16 @@
           height: Number(height) || 172,
           activity: Number(extra.activity) || 1.375,
           deficitType: extra.deficitType || "recommended",
-          customDeficit: 500,
-          macroPreset: "high_protein",
-          waterGoal: 8,
+          customDeficit: Number(extra.customDeficit) || 500,
+          macroPreset: extra.macroPreset || "high_protein",
+          waterGoal: Number(extra.waterGoal) || 8,
           moodMode: extra.moodMode || "sarcastic",
-          MascotName: "Michu"
+          talkStyle: extra.talkStyle || "direct",
+          MascotName: extra.mascotName || "Michu",
+          eatingWindowStart: extra.eatingStart || "10:00",
+          eatingWindowEnd: extra.eatingEnd || "20:00",
+          mealsPerDay: Number(extra.mealsPerDay) || 3,
+          allergies: Array.isArray(extra.allergies) ? extra.allergies : []
         },
         customFoods: [
           {
@@ -3554,13 +3681,13 @@
           [todayKey]: { water: 0, exerciseKcal: 0, meals: [] }
         },
         weightLog: [
-          { date: todayKey, weight: Number(weight) || 78.0, note: "Peso inicial" }
+          { date: todayKey, weight: wVal, note: "Peso inicial" }
         ],
         fasting: {
-          enabled: false,
-          protocol: "16:8",
-          targetHours: 16,
-          customHours: 16,
+          enabled: Boolean(extra.fastingTargetHours),
+          protocol: `${fastHours}:${eatHours}`,
+          targetHours: fastHours,
+          customHours: fastHours,
           activeStart: null,
           updatedAt: 0,
           history: []
@@ -9747,318 +9874,1285 @@
       }
 
       const regForm = document.getElementById("authRegisterForm");
-      let currentRegWizStep = 1;
-      const totalRegWizSteps = 6;
 
-      function getRegWizardFirstName() {
-        const raw = (document.getElementById("regName")?.value || "").trim();
-        return raw ? raw.split(/\s+/)[0] : "Campeón";
+      // =========================================================================
+      // MOTOR INTERACTIVO DE ONBOARDING ESTILO BITEPAL (RULETAS, TYPEWRITER Y PLAN)
+      // =========================================================================
+      const bpState = {
+        stepIdx: 0,
+        mascotName: "Michu",
+        userName: "",
+        talkStyle: "direct", // cheer | kind | direct | mindful
+        moodMode: "sarcastic",
+        mainGoal: "lose", // lose | maintain | gain
+        extraGoals: ["Sentirme mejor conmigo mismo(a)"],
+        mealsPerDay: 3,
+        eatingStartHour: 10,
+        eatingEndHour: 20,
+        dietType: "high_protein", // balanced | high_protein | low_carb | vegetarian | vegan | paleo
+        allergies: [],
+        waterHabit: "yes",
+        sex: "male",
+        age: 35,
+        activity: 1.375,
+        height: 173,
+        weightInt: 84,
+        weightDec: 5,
+        goalWeightInt: 78,
+        goalWeightDec: 0,
+        weeklyRateKg: 0.5,
+        weekendEatMore: null,
+        cravingsFreq: null,
+        email: "",
+        password: "",
+        roleRequested: "patient",
+        inviteCode: ""
+      };
+
+      const MASCOT_FUN_NAMES = ["Michu", "Chickpea", "Mochi", "Garritas", "Milaneso", "Bigotes", "Pelusa", "Chimuelo", "Atún", "Bambú"];
+      let bpTypewriterTimer = null;
+      let bpBuildTimers = [];
+
+      function clearBpTimers() {
+        if (bpTypewriterTimer) {
+          clearInterval(bpTypewriterTimer);
+          bpTypewriterTimer = null;
+        }
+        bpBuildTimers.forEach(t => clearTimeout(t));
+        bpBuildTimers = [];
       }
 
-      function renderRegWizardSummary() {
-        const box = document.getElementById("regWizSummaryBox");
-        if (!box) return;
-        const name = getRegWizardFirstName();
-        const sex = document.getElementById("regSex")?.value || "male";
-        const ageRaw = Number(document.getElementById("regAge")?.value);
-        const heightRaw = Number(document.getElementById("regHeight")?.value);
-        const weightRaw = Number(document.getElementById("regWeight")?.value);
-        const goalRaw = Number(document.getElementById("regGoalWeight")?.value);
-        const activity = Number(document.getElementById("regActivity")?.value) || 1.375;
-        const deficitType = document.getElementById("regDeficitType")?.value || "recommended";
+      function typewriteBpBubble(el, fullText) {
+        if (!el) return;
+        if (bpTypewriterTimer) clearInterval(bpTypewriterTimer);
+        el.textContent = "";
+        let i = 0;
+        bpTypewriterTimer = setInterval(() => {
+          i += 2;
+          el.textContent = fullText.slice(0, i);
+          if (i >= fullText.length) {
+            el.textContent = fullText;
+            clearInterval(bpTypewriterTimer);
+            bpTypewriterTimer = null;
+          }
+        }, 18);
+      }
 
-        const age = ageRaw > 0 ? ageRaw : 30;
-        const height = heightRaw > 0 ? heightRaw : 172;
-        const weight = weightRaw > 0 ? weightRaw : 78;
-        const goalWeight = goalRaw > 0 ? goalRaw : Math.max(48, Math.round(weight - 5));
-
-        const previewTargets = computeNutritionTargets({
-          name,
-          sex,
-          age,
-          height,
-          weight,
-          goalWeight,
-          activity,
-          deficitType,
-          customDeficit: 500,
-          macroPreset: "high_protein"
-        });
-
-        const skippedAny = !ageRaw || !heightRaw || !weightRaw || !goalRaw;
-        box.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-            <strong style="color:var(--accent);font-size:0.95rem;">🎯 Tu Meta Inicial: ${previewTargets.targetKcal.toLocaleString("es-AR")} kcal/día</strong>
-            <span class="chip" style="background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:0.74rem;">
-              🥩 ${previewTargets.proteinG}g Proteína/día
-            </span>
-          </div>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.79rem;color:var(--text);">
-            <span>⚖️ Peso: <strong>${weight} kg</strong> → Meta: <strong>${goalWeight} kg</strong></span>
-            <span>📏 Altura: <strong>${height} cm</strong> • 🎂 <strong>${age} años</strong></span>
-          </div>
-          ${skippedAny ? `
-            <div style="margin-top:6px;font-size:0.73rem;color:var(--text-muted);">
-              💡 Usamos valores estimados para los pasos que omitiste. Podés ajustarlos cuando quieras desde la pestaña <strong>⚖️ Calculadora TDEE</strong>.
-            </div>
-          ` : `
-            <div style="margin-top:6px;font-size:0.73rem;color:var(--text-muted);">
-              ✨ Podés ajustar cualquiera de estos valores en cualquier momento desde tu perfil.
-            </div>
-          `}
+      function bpMascotSvg(variant = "notepad", size = 66) {
+        // Ilustración vectorial estilo mapache/gatito BitePal con libreta, ojos de corazón, estrellas, gorra, etc.
+        const isHeart = variant === "hearts";
+        const isStar = variant === "stars";
+        const isKind = variant === "kind";
+        const isDirect = variant === "direct";
+        const isZen = variant === "zen";
+        const isThink = variant === "think";
+        const isSheet = variant === "sheet";
+        return `
+          <svg viewBox="0 0 120 120" width="${size}" height="${size}" style="overflow:visible;">
+            <!-- Cola anillada -->
+            <g transform="translate(76, 68) rotate(18)">
+              <ellipse cx="18" cy="10" rx="20" ry="11" fill="#9ca3af" stroke="#1f2937" stroke-width="3.2"/>
+              <path d="M12 0 L12 20 M24 1 L24 19" stroke="#374151" stroke-width="5" stroke-linecap="round"/>
+            </g>
+            <!-- Cuerpo -->
+            <ellipse cx="58" cy="84" rx="23" ry="22" fill="#cbd5e1" stroke="#1f2937" stroke-width="3.2"/>
+            <!-- Corazón blanco en la pancita -->
+            <path d="M58 88 C58 88 50 82 50 77 C50 74 53 72 56 74 L58 76 L60 74 C63 72 66 74 66 77 C66 82 58 88 58 88 Z" fill="#ffffff"/>
+            <!-- Orejas -->
+            <path d="M26 42 L20 16 L44 26 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="3.2" stroke-linejoin="round"/>
+            <path d="M27 36 L24 21 L39 27 Z" fill="#1f2937"/>
+            <path d="M90 42 L96 16 L72 26 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="3.2" stroke-linejoin="round"/>
+            <path d="M89 36 L92 21 L77 27 Z" fill="#1f2937"/>
+            <!-- Cabeza -->
+            <ellipse cx="58" cy="49" rx="34" ry="27" fill="#cbd5e1" stroke="#1f2937" stroke-width="3.2"/>
+            <!-- Antifaz oscuro -->
+            <ellipse cx="43" cy="49" rx="14" ry="11" fill="#374151"/>
+            <ellipse cx="73" cy="49" rx="14" ry="11" fill="#374151"/>
+            <!-- Mejillas rosadas -->
+            <ellipse cx="30" cy="57" rx="5" ry="3" fill="#f472b6" opacity="0.65"/>
+            <ellipse cx="86" cy="57" rx="5" ry="3" fill="#f472b6" opacity="0.65"/>
+            <!-- Ojos según variante -->
+            ${isHeart ? `
+              <path d="M43 55 C43 55 34 48 34 43 C34 39 38 37 41 40 L43 42 L45 40 C48 37 52 39 52 43 C52 48 43 55 43 55 Z" fill="#ef4444"/>
+              <path d="M73 55 C73 55 64 48 64 43 C64 39 68 37 71 40 L73 42 L75 40 C78 37 82 39 82 43 C82 48 73 55 73 55 Z" fill="#ef4444"/>
+            ` : isStar ? `
+              <polygon points="43,39 45,45 52,45 46,49 48,55 43,51 38,55 40,49 34,45 41,45" fill="#facc15"/>
+              <polygon points="73,39 75,45 82,45 76,49 78,55 73,51 68,55 70,49 64,45 71,45" fill="#facc15"/>
+            ` : isZen ? `
+              <path d="M36 49 Q43 54 50 49" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+              <path d="M66 49 Q73 54 80 49" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+            ` : `
+              <circle cx="43" cy="48" r="7.5" fill="#111827" stroke="#ffffff" stroke-width="2"/>
+              <circle cx="45" cy="45.5" r="2.6" fill="#ffffff"/>
+              <circle cx="73" cy="48" r="7.5" fill="#111827" stroke="#ffffff" stroke-width="2"/>
+              <circle cx="75" cy="45.5" r="2.6" fill="#ffffff"/>
+            `}
+            <!-- Moño para 'kind' -->
+            ${isKind ? `
+              <g transform="translate(72, 22) rotate(12)">
+                <ellipse cx="-6" cy="0" rx="6" ry="4" fill="#fb7185" stroke="#1f2937" stroke-width="2"/>
+                <ellipse cx="6" cy="0" rx="6" ry="4" fill="#fb7185" stroke="#1f2937" stroke-width="2"/>
+                <circle cx="0" cy="0" r="2.5" fill="#f43f5e"/>
+              </g>
+            ` : ""}
+            <!-- Gorra para 'direct' -->
+            ${isDirect ? `
+              <path d="M36 28 Q58 14 80 28 Z" fill="#38bdf8" stroke="#1f2937" stroke-width="2.6"/>
+              <circle cx="58" cy="23" r="3" fill="#facc15"/>
+            ` : ""}
+            <!-- Hocico y sonrisa -->
+            <ellipse cx="58" cy="56" rx="8" ry="6" fill="#ffffff"/>
+            <ellipse cx="58" cy="53" rx="3.2" ry="2.2" fill="#1f2937"/>
+            <path d="M53 58 Q58 64 63 58" fill="#f43f5e" stroke="#1f2937" stroke-width="2.2" stroke-linecap="round"/>
+            <!-- Accesorios: libreta y lápiz / hoja amarilla / signos -->
+            ${variant === "notepad" ? `
+              <rect x="26" y="70" width="22" height="26" rx="4" fill="#fde047" stroke="#1f2937" stroke-width="2.6"/>
+              <line x1="30" y1="77" x2="44" y2="77" stroke="#ca8a04" stroke-width="2"/>
+              <line x1="30" y1="83" x2="42" y2="83" stroke="#ca8a04" stroke-width="2"/>
+              <g transform="translate(76, 62) rotate(28)">
+                <rect x="0" y="0" width="7" height="24" rx="2" fill="#f87171" stroke="#1f2937" stroke-width="2.2"/>
+                <polygon points="0,24 7,24 3.5,31" fill="#fde68a" stroke="#1f2937" stroke-width="2"/>
+              </g>
+            ` : isSheet ? `
+              <rect x="18" y="54" width="44" height="54" rx="5" transform="rotate(-8 40 80)" fill="#fde047" stroke="#1f2937" stroke-width="3"/>
+            ` : isThink ? `
+              <text x="12" y="28" fill="#ef4444" font-size="18" font-weight="900">7</text>
+              <text x="96" y="34" fill="#38bdf8" font-size="18" font-weight="900">?</text>
+              <text x="54" y="14" fill="#facc15" font-size="17" font-weight="900">3</text>
+            ` : ""}
+          </svg>
         `;
       }
 
-      function updateRegWizardUI() {
-        const fname = getRegWizardFirstName();
-        const pages = document.querySelectorAll("#authRegisterForm .wiz-step-page");
-        pages.forEach(p => {
-          const s = Number(p.getAttribute("data-wiz-step"));
-          p.classList.toggle("active", s === currentRegWizStep);
-        });
+      function getBpWeight() {
+        return Number(`${bpState.weightInt}.${bpState.weightDec}`) || 78;
+      }
 
-        const badge = document.getElementById("regWizStepBadge");
-        if (badge) badge.textContent = `✨ Paso ${currentRegWizStep} de ${totalRegWizSteps}`;
+      function getBpGoalWeight() {
+        return Number(`${bpState.goalWeightInt}.${bpState.goalWeightDec}`) || 72;
+      }
 
-        const optBadge = document.getElementById("regWizOptionalBadge");
-        if (optBadge) {
-          if (currentRegWizStep === 1) {
-            optBadge.textContent = "Obligatorio para tu cuenta";
-            optBadge.style.color = "var(--accent)";
-          } else if (currentRegWizStep < totalRegWizSteps) {
-            optBadge.textContent = "Opcional • Podés omitirlo";
-            optBadge.style.color = "var(--text-muted)";
-          } else {
-            optBadge.textContent = "¡Último paso!";
-            optBadge.style.color = "var(--purple)";
+      function getBpBmi() {
+        const hM = (Number(bpState.height) || 173) / 100;
+        const w = getBpWeight();
+        return Math.round((w / (hM * hM)) * 10) / 10;
+      }
+
+      function getBpBmiCategory(bmi) {
+        if (bmi < 18.5) return { label: "Bajo peso", color: "#38bdf8", bg: "rgba(56,189,248,0.16)" };
+        if (bmi < 25) return { label: "Normal", color: "#22c55e", bg: "rgba(34,197,94,0.16)" };
+        if (bmi < 30) return { label: "Sobrepeso", color: "#f59e0b", bg: "rgba(245,158,11,0.18)" };
+        return { label: "Obeso", color: "#ef4444", bg: "rgba(239,68,68,0.18)" };
+      }
+
+      function getBpEtaDateStr() {
+        const diff = Math.abs(getBpWeight() - getBpGoalWeight());
+        const rate = Math.max(0.15, Number(bpState.weeklyRateKg) || 0.5);
+        const weeks = Math.max(1, Math.ceil(diff / rate));
+        const dt = new Date();
+        dt.setDate(dt.getDate() + weeks * 7);
+        return dt.toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
+      }
+
+      // Definición de las pantallas del Onboarding estilo BitePal
+      const BP_SCREENS = [
+        { id: "intro_mascot", seg: 0, skippable: false },
+        { id: "name_mascot", seg: 0, skippable: true },
+        { id: "user_name", seg: 0, skippable: false },
+        { id: "fav_human", seg: 0, skippable: false },
+        { id: "talk_style", seg: 0, skippable: true },
+        { id: "sec1_intro", seg: 1, skippable: false },
+        { id: "main_goal", seg: 1, skippable: true },
+        { id: "extra_goals", seg: 1, skippable: true },
+        { id: "sec2_intro", seg: 2, skippable: false },
+        { id: "meals_per_day", seg: 2, skippable: true },
+        { id: "eating_window", seg: 2, skippable: true },
+        { id: "diet_type", seg: 2, skippable: true },
+        { id: "allergies", seg: 2, skippable: true },
+        { id: "water_habit", seg: 2, skippable: true },
+        { id: "sec3_intro", seg: 3, skippable: false },
+        { id: "gender", seg: 3, skippable: true },
+        { id: "age", seg: 3, skippable: true },
+        { id: "activity_level", seg: 3, skippable: true },
+        { id: "height", seg: 3, skippable: true },
+        { id: "weight", seg: 3, skippable: true },
+        { id: "bmi_summary", seg: 3, skippable: true },
+        { id: "goal_weight", seg: 4, skippable: true },
+        { id: "goal_speed", seg: 4, skippable: true },
+        { id: "realistic_celebration", seg: 4, skippable: false },
+        { id: "building_plan", seg: 4, skippable: false },
+        { id: "plan_ready", seg: 4, skippable: false }
+      ];
+
+      function updateBpTopProgress(scr) {
+        const segBars = document.getElementById("bpWizSegBars");
+        const skipBtn = document.getElementById("bpWizSkipBtn");
+        const backBtn = document.getElementById("bpWizBackBtn");
+
+        if (backBtn) {
+          backBtn.style.visibility = bpState.stepIdx > 0 && scr.id !== "building_plan" ? "visible" : "hidden";
+        }
+        if (skipBtn) {
+          skipBtn.style.display = scr.skippable ? "inline-flex" : "none";
+        }
+        if (segBars) {
+          segBars.style.visibility = scr.seg > 0 ? "visible" : "hidden";
+          for (let s = 1; s <= 4; s++) {
+            const fillEl = document.getElementById("bpSegFill" + s);
+            if (!fillEl) continue;
+            if (s < scr.seg) {
+              fillEl.style.width = "100%";
+            } else if (s > scr.seg) {
+              fillEl.style.width = "0%";
+            } else {
+              const sameSeg = BP_SCREENS.filter(x => x.seg === s);
+              const posInSeg = sameSeg.findIndex(x => x.id === scr.id) + 1;
+              fillEl.style.width = `${Math.round((posInSeg / Math.max(1, sameSeg.length)) * 100)}%`;
+            }
           }
         }
+      }
 
-        const fill = document.getElementById("regWizProgressFill");
-        if (fill) {
-          fill.style.width = `${Math.round((currentRegWizStep / totalRegWizSteps) * 100)}%`;
+      // Helper para crear una ruleta vertical interactiva (clic, rueda del mouse y swipe táctil)
+      function buildBpWheelHtml(idPrefix, currentVal, minVal, maxVal, unitText = "") {
+        const vM2 = currentVal - 2 >= minVal ? currentVal - 2 : "";
+        const vM1 = currentVal - 1 >= minVal ? currentVal - 1 : "";
+        const vP1 = currentVal + 1 <= maxVal ? currentVal + 1 : "";
+        const vP2 = currentVal + 2 <= maxVal ? currentVal + 2 : "";
+        return `
+          <div class="bp-wheel-container" id="${idPrefix}_wrap">
+            <div class="bp-wheel-row dist-2" data-wheel-delta="-2">${vM2}</div>
+            <div class="bp-wheel-row dist-1" data-wheel-delta="-1">${vM1}</div>
+            <div class="bp-wheel-row dist-0" title="Tocá arriba/abajo o girá la rueda">
+              <span>${currentVal}</span>
+              ${unitText ? `<small style="font-size:1.35rem;font-weight:800;color:var(--text);">${unitText}</small>` : ""}
+            </div>
+            <div class="bp-wheel-row dist-1" data-wheel-delta="1">${vP1}</div>
+            <div class="bp-wheel-row dist-2" data-wheel-delta="2">${vP2}</div>
+          </div>
+        `;
+      }
+
+      function attachBpWheelEvents(idPrefix, getVal, setVal, minVal, maxVal) {
+        const wrap = document.getElementById(`${idPrefix}_wrap`);
+        if (!wrap) return;
+        const stepChange = (delta) => {
+          const next = Math.max(minVal, Math.min(maxVal, getVal() + delta));
+          if (next !== getVal()) {
+            setVal(next);
+          }
+        };
+        wrap.querySelectorAll("[data-wheel-delta]").forEach(row => {
+          row.addEventListener("click", () => {
+            const d = Number(row.getAttribute("data-wheel-delta")) || 0;
+            if (d) stepChange(d);
+          });
+        });
+        wrap.addEventListener("wheel", (e) => {
+          e.preventDefault();
+          stepChange(e.deltaY > 0 ? 1 : -1);
+        }, { passive: false });
+
+        let touchStartY = null;
+        wrap.addEventListener("touchstart", (e) => {
+          if (e.touches && e.touches[0]) touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+        wrap.addEventListener("touchmove", (e) => {
+          if (touchStartY === null || !e.touches || !e.touches[0]) return;
+          const dy = touchStartY - e.touches[0].clientY;
+          if (Math.abs(dy) >= 22) {
+            stepChange(dy > 0 ? 1 : -1);
+            touchStartY = e.touches[0].clientY;
+          }
+        }, { passive: true });
+      }
+
+      function renderBpWizardScreen() {
+        clearBpTimers();
+        showAuthAlert("");
+        const scr = BP_SCREENS[bpState.stepIdx] || BP_SCREENS[0];
+        updateBpTopProgress(scr);
+
+        const mascotHeader = document.getElementById("bpWizMascotHeader");
+        const mascotMiniSvg = document.getElementById("bpWizMascotMiniSvg");
+        const speechEl = document.getElementById("bpWizSpeechText");
+        const stage = document.getElementById("bpWizStageBody");
+        const footerBar = document.getElementById("bpWizFooterBar");
+        const diceBtn = document.getElementById("bpWizDiceBtn");
+        const nextBtn = document.getElementById("bpWizNextBtn");
+
+        if (!stage) return;
+        diceBtn.style.display = "none";
+        footerBar.style.display = "flex";
+        nextBtn.disabled = false;
+        nextBtn.innerHTML = `Continuar ›`;
+
+        const setHeaderBubble = (text, animate = true) => {
+          mascotHeader.style.display = "flex";
+          mascotMiniSvg.innerHTML = bpMascotSvg("notepad", 64);
+          if (animate) typewriteBpBubble(speechEl, text);
+          else speechEl.textContent = text;
+        };
+
+        // 1. INTRO MASCOT (00:00)
+        if (scr.id === "intro_mascot") {
+          mascotHeader.style.display = "none";
+          stage.innerHTML = `
+            <div style="text-align:center;padding:10px 4px;">
+              <h2 style="font-size:1.75rem;font-weight:900;line-height:1.2;margin-bottom:18px;">
+                Este mapache-michi es ahora tu mascota virtual
+              </h2>
+              <div style="display:flex;justify-content:center;margin:14px 0;">
+                ${bpMascotSvg("stars", 165)}
+              </div>
+              <p style="font-size:0.86rem;color:var(--text-muted);max-width:310px;margin:0 auto;">
+                Te acompañará todos los días para alcanzar tu peso ideal sin sufrir el proceso.
+              </p>
+            </div>
+          `;
+          return;
         }
 
-        const bubbleEmoji = document.getElementById("regWizMichuEmoji");
-        const bubbleTxt = document.getElementById("regWizMichuText");
-        const stepMessages = {
-          1: {
-            emoji: "🐱",
-            html: `<strong>¡Hola! Soy Michu, tu compañero de ruta.</strong><br/>Antes de armar tu plan, contame cómo te llamás y elegí con qué usuario y clave vas a entrar.`
-          },
-          2: {
-            emoji: "🐾",
-            html: `<strong>¡Mucho gusto, ${fname}!</strong><br/>Contame qué edad tenés y tu sexo biológico para calcular cuántas calorías gasta tu cuerpo en reposo (si preferís, podés omitirlo).`
-          },
-          3: {
-            emoji: "📏",
-            html: `<strong>¡Vamos re bien, ${fname}!</strong><br/>¿Qué altura tenés y cuánto estás pesando hoy? No hace falta que sea exacto al gramo, o podés omitirlo y cargarlo después.`
-          },
-          4: {
-            emoji: "🎯",
-            html: `<strong>Hablemos de tu objetivo, ${fname}.</strong><br/>¿A qué ritmo te gustaría ir y a qué peso te gustaría llegar?`
-          },
-          5: {
-            emoji: "🏃‍♂️",
-            html: `<strong>¡Casi terminamos!</strong><br/>¿Qué tan activo sos en tu semana habitual? Con esto calculo tu gasto calórico diario total.`
-          },
-          6: {
-            emoji: "🚀",
-            html: `<strong>¡Listo, ${fname}! Ya calculé tu plan inicial.</strong><br/>Elegí con qué humor querés que te acompañe cada día y creá tu cuenta.`
+        // 2. NAME MASCOT (00:01)
+        if (scr.id === "name_mascot") {
+          mascotHeader.style.display = "none";
+          diceBtn.style.display = "inline-flex";
+          stage.innerHTML = `
+            <div style="display:flex;justify-content:flex-end;margin-top:-10px;margin-bottom:-10px;">
+              ${bpMascotSvg("normal", 88)}
+            </div>
+            <div class="bp-giant-input-wrap">
+              <span class="bp-giant-label">Nombra a tu mascota</span>
+              <input type="text" id="bpMascotNameInp" class="bp-giant-input" value="${bpState.mascotName}" maxlength="18" autocomplete="off" />
+            </div>
+          `;
+          const inp = document.getElementById("bpMascotNameInp");
+          if (inp) {
+            inp.addEventListener("input", () => {
+              bpState.mascotName = inp.value.trim() || "Michu";
+            });
+            setTimeout(() => inp.focus(), 60);
+          }
+          diceBtn.onclick = () => {
+            const others = MASCOT_FUN_NAMES.filter(n => n !== bpState.mascotName);
+            bpState.mascotName = others[Math.floor(Math.random() * others.length)] || "Chickpea";
+            if (inp) inp.value = bpState.mascotName;
+          };
+          return;
+        }
+
+        // 3. USER NAME (00:05)
+        if (scr.id === "user_name") {
+          setHeaderBubble(`¡${bpState.mascotName}! Me gusta. ¿Y tú cómo te llamas?`);
+          stage.innerHTML = `
+            <div class="bp-giant-input-wrap">
+              <span class="bp-giant-label">Tu nombre</span>
+              <input type="text" id="bpUserNameInp" class="bp-giant-input" value="${bpState.userName}" placeholder="Tu nombre" maxlength="32" autocomplete="name" />
+            </div>
+          `;
+          const inp = document.getElementById("bpUserNameInp");
+          if (inp) {
+            inp.addEventListener("input", () => {
+              bpState.userName = inp.value;
+            });
+            setTimeout(() => inp.focus(), 60);
+          }
+          return;
+        }
+
+        // 4. FAV HUMAN CELEBRATION (00:08)
+        if (scr.id === "fav_human") {
+          mascotHeader.style.display = "none";
+          const uName = (bpState.userName || "Campeón").trim().split(/\s+/)[0];
+          stage.innerHTML = `
+            <div style="text-align:center;padding:18px 6px;">
+              <div class="bp-center-bubble" id="bpFavHumanBubble"></div>
+              <div style="display:flex;justify-content:center;margin-top:18px;">
+                ${bpMascotSvg("hearts", 160)}
+              </div>
+            </div>
+          `;
+          typewriteBpBubble(document.getElementById("bpFavHumanBubble"), `¡${uName}! ¡Mi nuevo humano favorito!`);
+          return;
+        }
+
+        // 5. TALK STYLE (00:12 - 00:31)
+        if (scr.id === "talk_style") {
+          const quotes = {
+            cheer: "Tres días registrados seguidos. ¡Ya estás en racha!",
+            kind: "Hoy volviste a presentarte. Eso es lo que importa.",
+            direct: "3 días, 9 comidas. Aún faltan 30 g de proteína.",
+            mindful: "Tres días seguidos registrados. ¿Qué hizo que hoy fuera más fácil?"
+          };
+          setHeaderBubble("¿Cómo debería hablarte?");
+          stage.innerHTML = `
+            <div class="bp-talk-grid">
+              <div class="bp-talk-card ${bpState.talkStyle === 'cheer' ? 'selected' : ''}" data-talk="cheer">
+                <span class="bp-talk-check">✓</span>
+                ${bpMascotSvg("stars", 76)}
+                <strong style="font-size:0.88rem;">Animador</strong>
+              </div>
+              <div class="bp-talk-card ${bpState.talkStyle === 'kind' ? 'selected' : ''}" data-talk="kind">
+                <span class="bp-talk-check">✓</span>
+                ${bpMascotSvg("kind", 76)}
+                <strong style="font-size:0.88rem;">Amable y cercano</strong>
+              </div>
+              <div class="bp-talk-card ${bpState.talkStyle === 'direct' ? 'selected' : ''}" data-talk="direct">
+                <span class="bp-talk-check">✓</span>
+                ${bpMascotSvg("direct", 76)}
+                <strong style="font-size:0.88rem;">Directo</strong>
+              </div>
+              <div class="bp-talk-card ${bpState.talkStyle === 'mindful' ? 'selected' : ''}" data-talk="mindful">
+                <span class="bp-talk-check">✓</span>
+                ${bpMascotSvg("zen", 76)}
+                <strong style="font-size:0.88rem;">Guía de atención plena</strong>
+              </div>
+            </div>
+          `;
+          stage.querySelectorAll("[data-talk]").forEach(card => {
+            card.addEventListener("click", () => {
+              const st = card.getAttribute("data-talk");
+              bpState.talkStyle = st;
+              bpState.moodMode = (st === "direct") ? "sarcastic" : "cute";
+              stage.querySelectorAll("[data-talk]").forEach(c => c.classList.toggle("selected", c === card));
+              typewriteBpBubble(speechEl, quotes[st] || "¿Cómo debería hablarte?");
+            });
+          });
+          return;
+        }
+
+        // 6. SEC 1 INTRO: Hablemos de tus objetivos (00:34)
+        if (scr.id === "sec1_intro") {
+          mascotHeader.style.display = "none";
+          nextBtn.innerHTML = `Vamos`;
+          stage.innerHTML = `
+            <div style="text-align:center;padding:16px 6px;">
+              <div class="bp-center-bubble" id="bpSec1Bubble"></div>
+              <div style="display:flex;justify-content:center;margin-top:16px;">
+                ${bpMascotSvg("notepad", 160)}
+              </div>
+            </div>
+          `;
+          typewriteBpBubble(document.getElementById("bpSec1Bubble"), "Primero, hablemos de tus objetivos");
+          return;
+        }
+
+        // 7. MAIN GOAL (00:36)
+        if (scr.id === "main_goal") {
+          setHeaderBubble("¿Cuál es tu meta principal?");
+          const opts = [
+            { val: "lose", icon: "📉", title: "Bajar de peso" },
+            { val: "maintain", icon: "⚖️", title: "Mantener el peso" },
+            { val: "gain", icon: "💪", title: "Subir de peso" }
+          ];
+          stage.innerHTML = `
+            <div class="bp-choice-list">
+              ${opts.map(o => `
+                <div class="bp-choice-card ${bpState.mainGoal === o.val ? 'selected' : ''}" data-goal="${o.val}">
+                  <span class="bp-choice-icon">${o.icon}</span>
+                  <span class="bp-choice-title">${o.title}</span>
+                  <span class="bp-choice-radio">✓</span>
+                </div>
+              `).join("")}
+            </div>
+          `;
+          stage.querySelectorAll("[data-goal]").forEach(c => {
+            c.addEventListener("click", () => {
+              bpState.mainGoal = c.getAttribute("data-goal");
+              stage.querySelectorAll("[data-goal]").forEach(x => x.classList.toggle("selected", x === c));
+            });
+          });
+          return;
+        }
+
+        // 8. EXTRA GOALS (00:38)
+        if (scr.id === "extra_goals") {
+          setHeaderBubble("¿Alguna meta adicional?");
+          const items = [
+            { icon: "🫚", label: "Mejorar la salud intestinal" },
+            { icon: "👟", label: "Mejorar mi rendimiento deportivo" },
+            { icon: "🥦", label: "Construir una relación saludable con la comida" },
+            { icon: "⚡", label: "Aumentar mi energía diaria" },
+            { icon: "🧠", label: "Reducir el estrés" },
+            { icon: "🙌", label: "Sentirme mejor conmigo mismo(a)" }
+          ];
+          stage.innerHTML = `
+            <div class="bp-choice-list">
+              ${items.map(it => {
+                const isSel = bpState.extraGoals.includes(it.label);
+                return `
+                  <div class="bp-choice-card ${isSel ? 'selected' : ''}" data-ext-goal="${it.label}" style="padding:11px 14px;">
+                    <span class="bp-choice-icon">${it.icon}</span>
+                    <span class="bp-choice-title" style="font-size:0.88rem;">${it.label}</span>
+                    <span class="bp-choice-radio">✓</span>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          `;
+          stage.querySelectorAll("[data-ext-goal]").forEach(c => {
+            c.addEventListener("click", () => {
+              const lbl = c.getAttribute("data-ext-goal");
+              if (bpState.extraGoals.includes(lbl)) {
+                bpState.extraGoals = bpState.extraGoals.filter(x => x !== lbl);
+              } else {
+                bpState.extraGoals.push(lbl);
+              }
+              c.classList.toggle("selected", bpState.extraGoals.includes(lbl));
+            });
+          });
+          return;
+        }
+
+        // 9. SEC 2 INTRO: Hábitos alimenticios (00:55)
+        if (scr.id === "sec2_intro") {
+          mascotHeader.style.display = "none";
+          nextBtn.innerHTML = `Vamos`;
+          stage.innerHTML = `
+            <div style="text-align:center;padding:16px 6px;">
+              <div class="bp-center-bubble" id="bpSec2Bubble"></div>
+              <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:16px;">
+                <span style="font-size:2.1rem;">🍰</span>
+                ${bpMascotSvg("zen", 150)}
+                <span style="font-size:2.1rem;">🍎</span>
+              </div>
+            </div>
+          `;
+          typewriteBpBubble(document.getElementById("bpSec2Bubble"), "Ahora hablemos de tus hábitos alimenticios");
+          return;
+        }
+
+        // 10. MEALS PER DAY WHEEL (00:57)
+        if (scr.id === "meals_per_day") {
+          setHeaderBubble("¿Cuántas comidas al día sueles hacer?", false);
+          const renderWheel = () => {
+            stage.innerHTML = buildBpWheelHtml("bpMealsWheel", bpState.mealsPerDay, 1, 6, "comidas");
+            attachBpWheelEvents("bpMealsWheel", () => bpState.mealsPerDay, (v) => {
+              bpState.mealsPerDay = v;
+              renderWheel();
+            }, 1, 6);
+          };
+          typewriteBpBubble(speechEl, "¿Cuántas comidas al día sueles hacer?");
+          renderWheel();
+          return;
+        }
+
+        // 11. EATING WINDOW / INTERMITTENT FASTING (00:59)
+        if (scr.id === "eating_window") {
+          typewriteBpBubble(speechEl, "¿Entre qué horas comes?");
+          mascotHeader.style.display = "flex";
+          mascotMiniSvg.innerHTML = bpMascotSvg("notepad", 64);
+
+          const renderWindow = () => {
+            const winHrs = Math.max(4, (bpState.eatingEndHour - bpState.eatingStartHour + 24) % 24 || 10);
+            const fmtH = (h) => `${String((h + 24) % 24).padStart(2, "0")}:00`;
+            stage.innerHTML = `
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:center;">
+                <div>
+                  <div style="font-size:0.8rem;color:var(--text-muted);font-weight:700;margin-bottom:4px;">Inicio</div>
+                  <div class="bp-wheel-container" id="bpStartHr_wrap">
+                    <div class="bp-wheel-row dist-1" data-wheel-delta="-1" style="font-size:1.3rem;">${fmtH(bpState.eatingStartHour - 1)}</div>
+                    <div class="bp-wheel-row dist-0" style="font-size:2.1rem;">${fmtH(bpState.eatingStartHour)}</div>
+                    <div class="bp-wheel-row dist-1" data-wheel-delta="1" style="font-size:1.3rem;">${fmtH(bpState.eatingStartHour + 1)}</div>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:0.8rem;color:var(--text-muted);font-weight:700;margin-bottom:4px;">Fin</div>
+                  <div class="bp-wheel-container" id="bpEndHr_wrap">
+                    <div class="bp-wheel-row dist-1" data-wheel-delta="-1" style="font-size:1.3rem;">${fmtH(bpState.eatingEndHour - 1)}</div>
+                    <div class="bp-wheel-row dist-0" style="font-size:2.1rem;">${fmtH(bpState.eatingEndHour)}</div>
+                    <div class="bp-wheel-row dist-1" data-wheel-delta="1" style="font-size:1.3rem;">${fmtH(bpState.eatingEndHour + 1)}</div>
+                  </div>
+                </div>
+              </div>
+              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:13px 15px;margin-top:8px;">
+                <strong style="color:#22c55e;font-size:0.9rem;display:block;margin-bottom:3px;">
+                  🍴 Ventana de alimentación: ${winHrs} horas (Ayuno ${24 - winHrs}:${winHrs})
+                </strong>
+                <span style="font-size:0.78rem;color:var(--text-muted);">
+                  Comer en una ventana de 8 a 10 horas puede favorecer la salud metabólica y el control de insulina.
+                </span>
+              </div>
+            `;
+            attachBpWheelEvents("bpStartHr", () => bpState.eatingStartHour, (v) => { bpState.eatingStartHour = v; renderWindow(); }, 5, 16);
+            attachBpWheelEvents("bpEndHr", () => bpState.eatingEndHour, (v) => { bpState.eatingEndHour = v; renderWindow(); }, 15, 23);
+          };
+          renderWindow();
+          return;
+        }
+
+        // 12. DIET TYPE (01:05)
+        if (scr.id === "diet_type") {
+          setHeaderBubble("¿Qué tipo de dieta prefieres?");
+          const diets = [
+            { val: "balanced", icon: "🥗", label: "Equilibrado(a)" },
+            { val: "high_protein", icon: "🥚", label: "Alta en proteínas" },
+            { val: "low_carb", icon: "🥑", label: "Cetogénica / Low-Carb" },
+            { val: "vegetarian", icon: "🧀", label: "Vegetariano(a)" },
+            { val: "vegan", icon: "🥦", label: "Vegano(a)" },
+            { val: "paleo", icon: "🍖", label: "Paleo" }
+          ];
+          stage.innerHTML = `
+            <div class="bp-choice-list">
+              ${diets.map(d => `
+                <div class="bp-choice-card ${bpState.dietType === d.val ? 'selected' : ''}" data-diet="${d.val}" style="padding:11px 15px;">
+                  <span class="bp-choice-icon">${d.icon}</span>
+                  <span class="bp-choice-title">${d.label}</span>
+                  <span class="bp-choice-radio">✓</span>
+                </div>
+              `).join("")}
+            </div>
+          `;
+          stage.querySelectorAll("[data-diet]").forEach(c => {
+            c.addEventListener("click", () => {
+              bpState.dietType = c.getAttribute("data-diet");
+              stage.querySelectorAll("[data-diet]").forEach(x => x.classList.toggle("selected", x === c));
+            });
+          });
+          return;
+        }
+
+        // 13. ALLERGIES CLOUD (01:08)
+        if (scr.id === "allergies") {
+          setHeaderBubble("¿Tienes alguna restricción alimentaria o alergia?");
+          const tags = ["Lactosa", "Mariscos", "Miel", "Maní", "Pescado", "Trigo", "Gluten", "Lácteos", "Huevos", "Frutos secos", "Soya", "Semillas", "Cítricos"];
+          const updateBtnTxt = () => {
+            nextBtn.innerHTML = bpState.allergies.length === 0 ? `✓ Como de todo` : `Continuar ›`;
+          };
+          updateBtnTxt();
+          stage.innerHTML = `
+            <div class="bp-pill-cloud">
+              ${tags.map(t => `
+                <button type="button" class="bp-allergy-pill ${bpState.allergies.includes(t) ? 'selected' : ''}" data-allergy="${t}">${t}</button>
+              `).join("")}
+            </div>
+          `;
+          stage.querySelectorAll("[data-allergy]").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const t = btn.getAttribute("data-allergy");
+              if (bpState.allergies.includes(t)) {
+                bpState.allergies = bpState.allergies.filter(x => x !== t);
+              } else {
+                bpState.allergies.push(t);
+              }
+              btn.classList.toggle("selected", bpState.allergies.includes(t));
+              updateBtnTxt();
+            });
+          });
+          return;
+        }
+
+        // 14. WATER HABIT (01:11 - 01:13)
+        if (scr.id === "water_habit") {
+          setHeaderBubble("¿Crees que bebes suficiente agua?");
+          const wOpts = [
+            { val: "yes", icon: "💧", label: "Sí" },
+            { val: "no", icon: "🥤", label: "No" },
+            { val: "unsure", icon: "🤔", label: "No estoy seguro" }
+          ];
+          stage.innerHTML = `
+            <div class="bp-choice-list">
+              ${wOpts.map(o => `
+                <div class="bp-choice-card ${bpState.waterHabit === o.val ? 'selected' : ''}" data-water="${o.val}">
+                  <span class="bp-choice-icon">${o.icon}</span>
+                  <span class="bp-choice-title">${o.label}</span>
+                  <span class="bp-choice-radio">✓</span>
+                </div>
+              `).join("")}
+            </div>
+            <div style="background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.35);border-radius:14px;padding:11px 14px;margin-top:6px;text-align:center;">
+              <div style="font-size:1.45rem;letter-spacing:4px;margin-bottom:4px;">💧💧💧🥛🥛</div>
+              <strong style="font-size:0.84rem;color:#38bdf8;display:block;">El agua potencia la quema de grasa, la energía y la concentración</strong>
+            </div>
+          `;
+          stage.querySelectorAll("[data-water]").forEach(c => {
+            c.addEventListener("click", () => {
+              bpState.waterHabit = c.getAttribute("data-water");
+              stage.querySelectorAll("[data-water]").forEach(x => x.classList.toggle("selected", x === c));
+            });
+          });
+          return;
+        }
+
+        // 15. SEC 3 INTRO: Tu plan está casi listo (01:21)
+        if (scr.id === "sec3_intro") {
+          mascotHeader.style.display = "none";
+          nextBtn.innerHTML = `Vamos`;
+          stage.innerHTML = `
+            <div style="text-align:center;padding:16px 6px;">
+              <div class="bp-center-bubble" id="bpSec3Bubble"></div>
+              <div style="display:flex;justify-content:center;margin-top:16px;">
+                ${bpMascotSvg("think", 160)}
+              </div>
+            </div>
+          `;
+          typewriteBpBubble(document.getElementById("bpSec3Bubble"), "Tu plan está casi listo. Solo faltan algunos detalles");
+          return;
+        }
+
+        // 16. GENDER (01:23)
+        if (scr.id === "gender") {
+          setHeaderBubble("Selecciona tu género");
+          const gOpts = [
+            { val: "female", icon: "👩", label: "Mujer" },
+            { val: "male", icon: "👨", label: "Hombre" },
+            { val: "other", icon: "✨", label: "No binario" }
+          ];
+          stage.innerHTML = `
+            <div class="bp-choice-list">
+              ${gOpts.map(o => `
+                <div class="bp-choice-card ${bpState.sex === o.val ? 'selected' : ''}" data-sex="${o.val}">
+                  <span class="bp-choice-icon">${o.icon}</span>
+                  <span class="bp-choice-title">${o.label}</span>
+                  <span class="bp-choice-radio">✓</span>
+                </div>
+              `).join("")}
+            </div>
+          `;
+          stage.querySelectorAll("[data-sex]").forEach(c => {
+            c.addEventListener("click", () => {
+              bpState.sex = c.getAttribute("data-sex");
+              stage.querySelectorAll("[data-sex]").forEach(x => x.classList.toggle("selected", x === c));
+            });
+          });
+          return;
+        }
+
+        // 17. AGE WHEEL (01:25)
+        if (scr.id === "age") {
+          setHeaderBubble("¿Cuál es tu edad?", false);
+          typewriteBpBubble(speechEl, "¿Cuál es tu edad?");
+          const renderAge = () => {
+            stage.innerHTML = buildBpWheelHtml("bpAgeWheel", bpState.age, 14, 95, "");
+            attachBpWheelEvents("bpAgeWheel", () => bpState.age, (v) => { bpState.age = v; renderAge(); }, 14, 95);
+          };
+          renderAge();
+          return;
+        }
+
+        // 18. ACTIVITY LEVEL WITH SIGNAL BARS (01:31)
+        if (scr.id === "activity_level") {
+          setHeaderBubble("¿Cuál es tu nivel de actividad?");
+          const aOpts = [
+            { val: 1.2, bars: 1, title: "No activo(a)", sub: "Me quedo sin aliento rápidamente al subir escaleras" },
+            { val: 1.375, bars: 2, title: "Ligeramente activo(a)", sub: "A veces hago entrenamientos cortos para mantenerme en movimiento" },
+            { val: 1.55, bars: 3, title: "Moderadamente activo(a)", sub: "Mantengo una rutina de ejercicio regular de 1 a 2 veces por semana" },
+            { val: 1.725, bars: 4, title: "Muy activo(a)", sub: "El fitness es una parte fundamental de mi estilo de vida" }
+          ];
+          const barsHtml = (n) => `
+            <span class="bp-sig-bars">
+              <span class="bp-sig-bar ${n >= 1 ? 'on' : ''}" style="height:6px;"></span>
+              <span class="bp-sig-bar ${n >= 2 ? 'on' : ''}" style="height:10px;"></span>
+              <span class="bp-sig-bar ${n >= 3 ? 'on' : ''}" style="height:15px;"></span>
+              <span class="bp-sig-bar ${n >= 4 ? 'on' : ''}" style="height:20px;"></span>
+            </span>
+          `;
+          stage.innerHTML = `
+            <div class="bp-choice-list">
+              ${aOpts.map(o => `
+                <div class="bp-choice-card ${Number(bpState.activity) === o.val ? 'selected' : ''}" data-act="${o.val}">
+                  ${barsHtml(o.bars)}
+                  <div>
+                    <span class="bp-choice-title">${o.title}</span>
+                    <span class="bp-choice-sub">${o.sub}</span>
+                  </div>
+                </div>
+              `).join("")}
+            </div>
+          `;
+          stage.querySelectorAll("[data-act]").forEach(c => {
+            c.addEventListener("click", () => {
+              bpState.activity = Number(c.getAttribute("data-act"));
+              stage.querySelectorAll("[data-act]").forEach(x => x.classList.toggle("selected", x === c));
+            });
+          });
+          return;
+        }
+
+        // 19. HEIGHT WHEEL (01:46)
+        if (scr.id === "height") {
+          setHeaderBubble("¿Cuál es tu altura?", false);
+          typewriteBpBubble(speechEl, "¿Cuál es tu altura?");
+          const renderHeight = () => {
+            stage.innerHTML = buildBpWheelHtml("bpHeightWheel", bpState.height, 135, 220, "cm");
+            attachBpWheelEvents("bpHeightWheel", () => bpState.height, (v) => { bpState.height = v; renderHeight(); }, 135, 220);
+          };
+          renderHeight();
+          return;
+        }
+
+        // 20. WEIGHT WHEEL + LIVE BMI CARD (01:48)
+        if (scr.id === "weight") {
+          setHeaderBubble("¿Cuál es tu peso actual?", false);
+          typewriteBpBubble(speechEl, "¿Cuál es tu peso actual?");
+          const renderWeight = () => {
+            const bmi = getBpBmi();
+            const cat = getBpBmiCategory(bmi);
+            stage.innerHTML = `
+              <div style="display:flex;justify-content:center;align-items:center;gap:6px;">
+                ${buildBpWheelHtml("bpWInt", bpState.weightInt, 38, 190, "")}
+                <span style="font-size:2.4rem;font-weight:900;">.</span>
+                ${buildBpWheelHtml("bpWDec", bpState.weightDec, 0, 9, "kg")}
+              </div>
+              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:12px 15px;margin-top:6px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                  <strong style="color:${cat.color};font-size:0.95rem;">Tu IMC: ${bmi.toFixed(1).replace(".", ",")}</strong>
+                  <span style="background:${cat.bg};color:${cat.color};font-size:0.75rem;font-weight:800;padding:2px 9px;border-radius:6px;">${cat.label}</span>
+                </div>
+                <span style="font-size:0.79rem;color:var(--text-muted);">
+                  Esto nos ayuda a adaptar un plan adecuado para ti que apoye tu salud a largo plazo.
+                </span>
+              </div>
+            `;
+            attachBpWheelEvents("bpWInt", () => bpState.weightInt, (v) => {
+              bpState.weightInt = v;
+              if (bpState.goalWeightInt >= v) bpState.goalWeightInt = Math.max(45, v - 4);
+              renderWeight();
+            }, 38, 190);
+            attachBpWheelEvents("bpWDec", () => bpState.weightDec, (v) => { bpState.weightDec = v; renderWeight(); }, 0, 9);
+          };
+          renderWeight();
+          return;
+        }
+
+        // 21. BMI PERSONAL SUMMARY SCREEN (01:50)
+        if (scr.id === "bmi_summary") {
+          mascotHeader.style.display = "none";
+          const bmi = getBpBmi();
+          const cat = getBpBmiCategory(bmi);
+          const pctPos = Math.max(4, Math.min(96, ((bmi - 15) / (40 - 15)) * 100));
+          stage.innerHTML = `
+            <div style="text-align:center;margin-bottom:6px;">
+              <h3 style="font-size:1.3rem;font-weight:900;margin-bottom:6px;">Tu resumen personal</h3>
+              <div style="display:flex;justify-content:center;">${bpMascotSvg("stars", 90)}</div>
+            </div>
+            <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:18px;padding:16px;">
+              <div style="font-size:0.82rem;color:var(--text-muted);font-weight:700;margin-bottom:18px;">Índice de masa corporal (IMC)</div>
+              <div style="position:relative;margin:14px 0 8px;">
+                <div style="position:absolute;left:${pctPos}%;top:-30px;transform:translateX(-50%);background:#111827;color:#fff;font-size:0.78rem;font-weight:900;padding:4px 9px;border-radius:8px;white-space:nowrap;border:1px solid var(--border);">
+                  Tú: ${bmi.toFixed(1).replace(".", ",")}
+                </div>
+                <div style="height:10px;border-radius:999px;background:linear-gradient(90deg, #38bdf8 0%, #22c55e 28%, #f59e0b 62%, #ef4444 100%);position:relative;">
+                  <div style="position:absolute;left:${pctPos}%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:999px;background:${cat.color};border:3px solid #fff;"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-top:6px;">
+                  <span>Bajo peso</span><span>Normal</span><span>Sobrepeso</span><span>Obeso</span>
+                </div>
+              </div>
+              <div style="background:${cat.bg};border-radius:12px;padding:11px 13px;margin-top:12px;font-size:0.8rem;color:var(--text);">
+                <strong style="color:${cat.color};display:block;margin-bottom:3px;">💡 Diagnóstico inicial (${cat.label})</strong>
+                ¡Pequeños pasos llevan a grandes cambios! Tu plan se adaptará a tu metabolismo actual.
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        // 22. GOAL WEIGHT WHEEL (01:53)
+        if (scr.id === "goal_weight") {
+          setHeaderBubble("¿Cuál es tu peso ideal?", false);
+          typewriteBpBubble(speechEl, "¿Cuál es tu peso ideal?");
+          const renderGoalW = () => {
+            const curW = getBpWeight();
+            const goalW = getBpGoalWeight();
+            const diffPct = Math.max(1, Math.round((Math.abs(curW - goalW) / Math.max(1, curW)) * 100));
+            stage.innerHTML = `
+              <div style="display:flex;justify-content:center;align-items:center;gap:6px;">
+                ${buildBpWheelHtml("bpGWInt", bpState.goalWeightInt, 38, 180, "")}
+                <span style="font-size:2.4rem;font-weight:900;">.</span>
+                ${buildBpWheelHtml("bpGWDec", bpState.goalWeightDec, 0, 9, "kg")}
+              </div>
+              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:12px 15px;margin-top:6px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                  <strong style="color:#22c55e;font-size:0.95rem;">Cambio proyectado: ${diffPct} %</strong>
+                  <span style="background:rgba(34,197,94,0.16);color:#22c55e;font-size:0.75rem;font-weight:800;padding:2px 9px;border-radius:6px;">Realista</span>
+                </div>
+                <span style="font-size:0.79rem;color:var(--text-muted);">
+                  Una meta segura y alcanzable con beneficios notables para tu salud y composición corporal.
+                </span>
+              </div>
+            `;
+            attachBpWheelEvents("bpGWInt", () => bpState.goalWeightInt, (v) => { bpState.goalWeightInt = v; renderGoalW(); }, 38, 180);
+            attachBpWheelEvents("bpGWDec", () => bpState.goalWeightDec, (v) => { bpState.goalWeightDec = v; renderGoalW(); }, 0, 9);
+          };
+          renderGoalW();
+          return;
+        }
+
+        // 23. GOAL SPEED SLIDER (01:55)
+        if (scr.id === "goal_speed") {
+          setHeaderBubble("¿Qué tan rápido quieres alcanzar tu meta?", false);
+          typewriteBpBubble(speechEl, "¿Qué tan rápido quieres alcanzar tu meta?");
+          const renderSpeed = () => {
+            const r = Number(bpState.weeklyRateKg) || 0.5;
+            const badgeTxt = r <= 0.35 ? "Suave y flexible" : (r <= 0.65 ? "Recomendado" : "Intenso");
+            stage.innerHTML = `
+              <div style="text-align:center;padding:10px 4px;">
+                <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:4px;">Pérdida de peso por semana</div>
+                <div style="font-size:2.9rem;font-weight:900;line-height:1.1;">
+                  ${r.toFixed(1).replace(".", ",")} <small style="font-size:1.35rem;color:var(--text-muted);">kg</small>
+                </div>
+                <span style="display:inline-block;margin:8px 0 14px;background:#22c55e;color:#052e14;font-size:0.76rem;font-weight:900;padding:3px 11px;border-radius:8px;">
+                  ${badgeTxt}
+                </span>
+                <input type="range" id="bpRateRange" min="0.2" max="1.0" step="0.1" value="${r}" style="width:100%;accent-color:#22c55e;cursor:pointer;" />
+                <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-top:4px;">
+                  <span>Lento</span><span>Óptimo</span><span>Rápido</span>
+                </div>
+              </div>
+              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:13px 15px;margin-top:6px;">
+                <strong style="color:#22c55e;font-size:0.9rem;display:block;margin-bottom:3px;">
+                  ✅ Alcanza tu meta para el ${getBpEtaDateStr()}
+                </strong>
+                <span style="font-size:0.78rem;color:var(--text-muted);">
+                  Se ajustará tu déficit calórico diario (-${Math.round(r * 1000)} kcal/día) priorizando proteína para cuidar tu masa muscular.
+                </span>
+              </div>
+            `;
+            const rng = document.getElementById("bpRateRange");
+            if (rng) {
+              rng.addEventListener("input", () => {
+                bpState.weeklyRateKg = Number(rng.value) || 0.5;
+                renderSpeed();
+              });
+            }
+          };
+          renderSpeed();
+          return;
+        }
+
+        // 24. REALISTIC CELEBRATION (01:59)
+        if (scr.id === "realistic_celebration") {
+          mascotHeader.style.display = "none";
+          nextBtn.innerHTML = `Obtener mi plan personal`;
+          const uName = (bpState.userName || "Campeón").trim().split(/\s+/)[0];
+          const diffKg = Math.abs(getBpWeight() - getBpGoalWeight()).toFixed(1).replace(".", ",");
+          stage.innerHTML = `
+            <div style="text-align:center;padding:18px 6px;">
+              <div class="bp-center-bubble">
+                ${uName}, perder <span style="color:#22c55e;">${diffKg} kg</span> ¡es una meta realista!
+              </div>
+              <div style="display:flex;justify-content:center;margin-top:18px;">
+                ${bpMascotSvg("stars", 160)}
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        // 25. BUILDING PLAN ANIMATION + POPUPS (02:02 - 02:21)
+        if (scr.id === "building_plan") {
+          mascotHeader.style.display = "none";
+          footerBar.style.display = "none";
+          const sexLabel = bpState.sex === "female" ? "Mujer" : "Hombre";
+          stage.innerHTML = `
+            <div style="text-align:center;margin-bottom:8px;">
+              <h2 style="font-size:1.55rem;font-weight:900;">Personalizando tu plan</h2>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.86rem;font-weight:800;margin-bottom:4px;">
+                  <span>Analizando tu perfil</span><span id="bpBldPct1" style="color:#22c55e;">100% ✓</span>
+                </div>
+                <div class="bp-seg-track" style="height:8px;"><div class="bp-seg-fill" id="bpBldBar1" style="width:100%;"></div></div>
+                <small style="font-size:0.74rem;color:var(--text-muted);">${bpState.height} cm, ${getBpWeight().toFixed(1).replace(".", ",")} kg</small>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.86rem;font-weight:800;margin-bottom:4px;">
+                  <span>Calculando tu metabolismo</span><span id="bpBldPct2" style="color:#22c55e;">90%</span>
+                </div>
+                <div class="bp-seg-track" style="height:8px;"><div class="bp-seg-fill" id="bpBldBar2" style="width:90%;"></div></div>
+                <small style="font-size:0.74rem;color:var(--text-muted);">${sexLabel}, ${bpState.age}</small>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.86rem;font-weight:800;margin-bottom:4px;">
+                  <span>Definiendo tu nutrición</span><span id="bpBldPct3" style="color:var(--text-muted);">0%</span>
+                </div>
+                <div class="bp-seg-track" style="height:8px;"><div class="bp-seg-fill" id="bpBldBar3" style="width:0%;"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.86rem;font-weight:800;margin-bottom:4px;">
+                  <span>Analizando estilo de vida</span><span id="bpBldPct4" style="color:var(--text-muted);">0%</span>
+                </div>
+                <div class="bp-seg-track" style="height:8px;"><div class="bp-seg-fill" id="bpBldBar4" style="width:0%;"></div></div>
+              </div>
+            </div>
+            <!-- Popup interactivo sobre la mascota -->
+            <div id="bpBuildPopupBox" style="background:var(--bg-card);border:2px solid var(--accent);border-radius:18px;padding:15px;margin-top:10px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.28);">
+              <strong style="font-size:1.02rem;display:block;margin-bottom:10px;">¿Sueles comer más durante el fin de semana?</strong>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <button type="button" class="btn" data-wknd="no" style="justify-content:center;">No</button>
+                <button type="button" class="btn btn-primary" data-wknd="yes" style="justify-content:center;">Sí</button>
+              </div>
+              <button type="button" class="bp-skip-btn" data-wknd="unsure" style="margin-top:6px;">No estoy seguro</button>
+            </div>
+            <div style="display:flex;justify-content:center;margin-top:4px;">
+              ${bpMascotSvg("sheet", 105)}
+            </div>
+          `;
+
+          const popupBox = document.getElementById("bpBuildPopupBox");
+          const advanceToPopup2 = () => {
+            document.getElementById("bpBldPct2").textContent = "✓";
+            document.getElementById("bpBldBar2").style.width = "100%";
+            document.getElementById("bpBldPct3").textContent = "55%";
+            document.getElementById("bpBldPct3").style.color = "#22c55e";
+            document.getElementById("bpBldBar3").style.width = "55%";
+            popupBox.innerHTML = `
+              <strong style="font-size:1.02rem;display:block;margin-bottom:10px;">¿Tienes antojos?</strong>
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <button type="button" class="btn" data-crav="always" style="justify-content:center;">Todo el tiempo</button>
+                <button type="button" class="btn btn-primary" data-crav="sometimes" style="justify-content:center;">De vez en cuando</button>
+                <button type="button" class="btn" data-crav="rarely" style="justify-content:center;">Rara vez</button>
+              </div>
+            `;
+            popupBox.querySelectorAll("[data-crav]").forEach(b => {
+              b.addEventListener("click", () => {
+                bpState.cravingsFreq = b.getAttribute("data-crav");
+                document.getElementById("bpBldPct3").textContent = "✓";
+                document.getElementById("bpBldBar3").style.width = "100%";
+                document.getElementById("bpBldPct4").textContent = "100% ✓";
+                document.getElementById("bpBldPct4").style.color = "#22c55e";
+                document.getElementById("bpBldBar4").style.width = "100%";
+                popupBox.style.display = "none";
+                const t = setTimeout(() => {
+                  bpState.stepIdx++;
+                  renderBpWizardScreen();
+                }, 480);
+                bpBuildTimers.push(t);
+              });
+            });
+          };
+
+          popupBox.querySelectorAll("[data-wknd]").forEach(b => {
+            b.addEventListener("click", () => {
+              bpState.weekendEatMore = b.getAttribute("data-wknd");
+              advanceToPopup2();
+            });
+          });
+          return;
+        }
+
+        // 26. PLAN READY + CURVA PROYECTADA + CREAR CUENTA (02:23)
+        if (scr.id === "plan_ready") {
+          mascotHeader.style.display = "none";
+          nextBtn.innerHTML = `🚀 Comprometerme y Crear mi Cuenta`;
+          const curW = getBpWeight();
+          const goalW = getBpGoalWeight();
+          const etaStr = getBpEtaDateStr();
+          const customDef = Math.max(250, Math.min(900, Math.round((Number(bpState.weeklyRateKg) || 0.5) * 1000)));
+          const macroPreset = ["balanced", "high_protein", "low_carb"].includes(bpState.dietType) ? bpState.dietType : "high_protein";
+          const calc = computeNutritionTargets({
+            name: bpState.userName || "Campeón",
+            sex: bpState.sex === "female" ? "female" : "male",
+            age: bpState.age,
+            height: bpState.height,
+            weight: curW,
+            goalWeight: goalW,
+            activity: bpState.activity,
+            deficitType: "custom",
+            customDeficit: customDef,
+            macroPreset
+          });
+
+          stage.innerHTML = `
+            <div style="text-align:center;margin-bottom:6px;">
+              <span style="font-size:0.78rem;color:var(--text-muted);font-weight:700;">✨ Tu plan personal está listo</span>
+              <h2 style="font-size:1.38rem;font-weight:900;line-height:1.22;margin-top:2px;">
+                Alcanzar <span style="color:#22c55e;">${goalW} kg</span> para el ${etaStr}
+              </h2>
+            </div>
+
+            <!-- Curva SVG de Progreso Proyectado -->
+            <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:12px 14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <strong style="font-size:0.86rem;">Progreso proyectado</strong>
+                <span class="chip" style="background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:0.74rem;">
+                  🎯 ${calc.targetKcal} kcal/día • 🥩 ${calc.proteinG}g P
+                </span>
+              </div>
+              <svg viewBox="0 0 320 110" style="width:100%;height:auto;overflow:visible;">
+                <defs>
+                  <linearGradient id="bpCurveGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#22c55e" stop-opacity="0.28"/>
+                    <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M 24 26 C 110 28, 150 82, 230 82 L 296 82 L 296 102 L 24 102 Z" fill="url(#bpCurveGrad)"/>
+                <path d="M 24 26 C 110 28, 150 82, 230 82" fill="none" stroke="#94a3b8" stroke-width="3.5" stroke-linecap="round"/>
+                <path d="M 230 82 L 296 82" fill="none" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="24" cy="26" r="5" fill="var(--bg)" stroke="#94a3b8" stroke-width="3"/>
+                <text x="24" y="15" font-size="11" font-weight="900" fill="var(--text)">${curW} kg</text>
+                <rect x="202" y="54" width="54" height="20" rx="6" fill="#22c55e"/>
+                <text x="229" y="68" font-size="10.5" font-weight="900" fill="#052e14" text-anchor="middle">${goalW} kg</text>
+                <circle cx="230" cy="82" r="5" fill="#22c55e" stroke="#fff" stroke-width="2"/>
+                <text x="24" y="104" font-size="9.5" fill="var(--text-muted)">Hoy</text>
+                <text x="230" y="104" font-size="9.5" fill="#22c55e" font-weight="700" text-anchor="middle">${etaStr}</text>
+              </svg>
+              <div style="font-size:0.76rem;color:var(--text-muted);margin-top:4px;display:flex;flex-direction:column;gap:2px;">
+                <span>✅ Verás los primeros resultados visibles en solo 3 semanas</span>
+              </div>
+            </div>
+
+            <!-- Datos de acceso para guardar la cuenta -->
+            <div style="background:var(--bg-card);border:1.5px solid var(--purple);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:9px;">
+              <strong style="font-size:0.84rem;color:var(--purple);">🔐 Elegí tu usuario y clave para guardar tu plan:</strong>
+              <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:8px;">
+                <div class="field" style="grid-column:1 / -1;">
+                  <input type="text" id="bpFinalEmailInp" placeholder="Tu Email o Usuario (ej: angel@gmail.com)" value="${bpState.email}" autocomplete="username" />
+                </div>
+                <div class="field">
+                  <input type="password" id="bpFinalPwdInp" placeholder="Contraseña (mín. 4)" value="${bpState.password}" autocomplete="new-password" />
+                </div>
+                <div class="field">
+                  <select id="bpFinalRoleSel">
+                    <option value="patient" ${bpState.roleRequested === "patient" ? "selected" : ""}>🐱 Paciente</option>
+                    <option value="nutritionist" ${bpState.roleRequested === "nutritionist" ? "selected" : ""}>🩺 Nutricionista</option>
+                  </select>
+                </div>
+                <div class="field" style="grid-column:1 / -1;">
+                  <input type="text" id="bpFinalInviteInp" placeholder="🩺 Código de Nutricionista (Opcional)" value="${bpState.inviteCode}" style="text-transform:uppercase;" />
+                </div>
+              </div>
+            </div>
+          `;
+
+          const emInp = document.getElementById("bpFinalEmailInp");
+          const pwInp = document.getElementById("bpFinalPwdInp");
+          const rlSel = document.getElementById("bpFinalRoleSel");
+          const ivInp = document.getElementById("bpFinalInviteInp");
+          if (emInp) emInp.addEventListener("input", () => { bpState.email = emInp.value; });
+          if (pwInp) pwInp.addEventListener("input", () => { bpState.password = pwInp.value; });
+          if (rlSel) rlSel.addEventListener("change", () => { bpState.roleRequested = rlSel.value; });
+          if (ivInp) ivInp.addEventListener("input", () => { bpState.inviteCode = ivInp.value; });
+          return;
+        }
+      }
+
+      async function submitBpRegistration() {
+        const name = (bpState.userName || "").trim() || "Campeón";
+        const email = (bpState.email || "").trim();
+        const password = (bpState.password || "").trim();
+        if (!email) {
+          showAuthAlert("Ingresá un email o nombre de usuario para guardar tu plan.");
+          document.getElementById("bpFinalEmailInp")?.focus();
+          return;
+        }
+        if (password.length < 4) {
+          showAuthAlert("Elegí una contraseña de al menos 4 caracteres.");
+          document.getElementById("bpFinalPwdInp")?.focus();
+          return;
+        }
+        showAuthAlert("");
+        const curW = getBpWeight();
+        const goalW = getBpGoalWeight();
+        const customDef = Math.max(250, Math.min(900, Math.round((Number(bpState.weeklyRateKg) || 0.5) * 1000)));
+        const winHrs = Math.max(4, (bpState.eatingEndHour - bpState.eatingStartHour + 24) % 24 || 10);
+        const fastTarget = Math.max(12, Math.min(20, 24 - winHrs));
+        const macroPreset = ["balanced", "high_protein", "low_carb"].includes(bpState.dietType) ? bpState.dietType : "high_protein";
+
+        const payload = {
+          name,
+          email,
+          password,
+          roleRequested: bpState.roleRequested || "patient",
+          inviteCode: (bpState.inviteCode || "").trim(),
+          profile: {
+            sex: bpState.sex === "female" ? "female" : "male",
+            age: Number(bpState.age) || 35,
+            height: Number(bpState.height) || 173,
+            weight: curW,
+            goalWeight: goalW,
+            activity: Number(bpState.activity) || 1.375,
+            deficitType: "custom",
+            customDeficit: customDef,
+            macroPreset,
+            moodMode: bpState.moodMode || "sarcastic",
+            talkStyle: bpState.talkStyle || "direct",
+            mascotName: bpState.mascotName || "Michu",
+            mealsPerDay: bpState.mealsPerDay || 3,
+            eatingStart: `${String(bpState.eatingStartHour).padStart(2, "0")}:00`,
+            eatingEnd: `${String(bpState.eatingEndHour).padStart(2, "0")}:00`,
+            fastingTargetHours: fastTarget,
+            allergies: bpState.allergies || []
           }
         };
 
-        const msg = stepMessages[currentRegWizStep] || stepMessages[1];
-        if (bubbleEmoji) bubbleEmoji.textContent = msg.emoji;
-        if (bubbleTxt) bubbleTxt.innerHTML = msg.html;
-
-        const btnBack = document.getElementById("btnRegWizBack");
-        const btnSkip = document.getElementById("btnRegWizSkip");
-        const btnNext = document.getElementById("btnRegWizNext");
-        const btnSubmit = document.getElementById("btnRegWizSubmit");
-
-        if (btnBack) btnBack.style.display = currentRegWizStep > 1 ? "inline-flex" : "none";
-        if (btnSkip) btnSkip.style.display = (currentRegWizStep > 1 && currentRegWizStep < totalRegWizSteps) ? "inline-flex" : "none";
-        if (btnNext) btnNext.style.display = currentRegWizStep < totalRegWizSteps ? "inline-flex" : "none";
-        if (btnSubmit) btnSubmit.style.display = currentRegWizStep === totalRegWizSteps ? "inline-flex" : "none";
-
-        if (currentRegWizStep === 4) {
-          const wVal = Number(document.getElementById("regWeight")?.value);
-          const gwInp = document.getElementById("regGoalWeight");
-          if (wVal > 40 && gwInp && !gwInp.value) {
-            gwInp.placeholder = `Ej: ${Math.max(48, Math.round(wVal - 5))} kg`;
+        try {
+          const res = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            showAuthAlert(data.error || "Error al crear la cuenta.");
+            return;
           }
+          currentAuthToken = data.token;
+          localStorage.setItem("michufit_auth_token", currentAuthToken);
+          currentUserInfo = data.user;
+          showAuthModal("pending");
+        } catch (err) {
+          showAuthAlert("No se pudo conectar con el servidor.");
         }
-
-        if (currentRegWizStep === totalRegWizSteps) {
-          renderRegWizardSummary();
-        }
-
-        setTimeout(() => {
-          const activePage = document.querySelector(`#authRegisterForm .wiz-step-page[data-wiz-step="${currentRegWizStep}"]`);
-          const firstInput = activePage ? activePage.querySelector("input:not([type='hidden'])") : null;
-          if (firstInput && window.innerWidth > 640) {
-            try { firstInput.focus(); } catch (_) {}
-          }
-        }, 60);
       }
 
-      function validateRegWizStep1() {
-        const name = (document.getElementById("regName")?.value || "").trim();
-        const email = (document.getElementById("regEmail")?.value || "").trim();
-        const pwd = (document.getElementById("regPassword")?.value || "").trim();
-        if (!name) {
-          showAuthAlert("Por favor contanos cómo te llamás para continuar.");
-          document.getElementById("regName")?.focus();
-          return false;
+      function handleBpNextStep() {
+        const scr = BP_SCREENS[bpState.stepIdx];
+        if (!scr) return;
+        if (scr.id === "user_name") {
+          const v = (bpState.userName || "").trim();
+          if (!v) {
+            showAuthAlert("Contanos tu nombre para que tu mascota sepa cómo llamarte.");
+            document.getElementById("bpUserNameInp")?.focus();
+            return;
+          }
         }
-        if (!email) {
-          showAuthAlert("Ingresá un email o nombre de usuario para poder iniciar sesión.");
-          document.getElementById("regEmail")?.focus();
-          return false;
+        if (scr.id === "plan_ready") {
+          submitBpRegistration();
+          return;
         }
-        if (pwd.length < 4) {
-          showAuthAlert("Elegí una contraseña de al menos 4 caracteres.");
-          document.getElementById("regPassword")?.focus();
-          return false;
+        if (bpState.stepIdx < BP_SCREENS.length - 1) {
+          bpState.stepIdx++;
+          renderBpWizardScreen();
         }
-        showAuthAlert("");
-        return true;
       }
 
       window.resetRegWizard = function () {
-        currentRegWizStep = 1;
+        bpState.stepIdx = 0;
         showAuthAlert("");
-        updateRegWizardUI();
+        renderBpWizardScreen();
       };
 
-      document.querySelectorAll("#authRegisterForm [data-wiz-pick]").forEach(card => {
-        card.addEventListener("click", () => {
-          const fieldId = card.getAttribute("data-wiz-pick");
-          const val = card.getAttribute("data-wiz-val");
-          const hiddenInp = document.getElementById(fieldId);
-          if (hiddenInp) hiddenInp.value = val;
-          document.querySelectorAll(`#authRegisterForm [data-wiz-pick="${fieldId}"]`).forEach(c => {
-            c.classList.toggle("selected", c === card);
-          });
-          if (currentRegWizStep === totalRegWizSteps) {
-            renderRegWizardSummary();
-          }
-        });
+      document.getElementById("bpWizBackBtn")?.addEventListener("click", () => {
+        if (bpState.stepIdx > 0) {
+          bpState.stepIdx--;
+          renderBpWizardScreen();
+        }
       });
 
-      const btnWizBack = document.getElementById("btnRegWizBack");
-      if (btnWizBack) {
-        btnWizBack.addEventListener("click", () => {
-          showAuthAlert("");
-          if (currentRegWizStep > 1) {
-            currentRegWizStep--;
-            updateRegWizardUI();
-          }
-        });
-      }
+      document.getElementById("bpWizSkipBtn")?.addEventListener("click", () => {
+        if (bpState.stepIdx < BP_SCREENS.length - 1) {
+          bpState.stepIdx++;
+          renderBpWizardScreen();
+        }
+      });
 
-      const btnWizNext = document.getElementById("btnRegWizNext");
-      if (btnWizNext) {
-        btnWizNext.addEventListener("click", () => {
-          if (currentRegWizStep === 1 && !validateRegWizStep1()) return;
-          showAuthAlert("");
-          if (currentRegWizStep < totalRegWizSteps) {
-            currentRegWizStep++;
-            updateRegWizardUI();
-          }
-        });
-      }
-
-      const btnWizSkip = document.getElementById("btnRegWizSkip");
-      if (btnWizSkip) {
-        btnWizSkip.addEventListener("click", () => {
-          showAuthAlert("");
-          if (currentRegWizStep === 2) {
-            const ageInp = document.getElementById("regAge");
-            if (ageInp) ageInp.value = "";
-          } else if (currentRegWizStep === 3) {
-            const hInp = document.getElementById("regHeight");
-            const wInp = document.getElementById("regWeight");
-            if (hInp) hInp.value = "";
-            if (wInp) wInp.value = "";
-          } else if (currentRegWizStep === 4) {
-            const gwInp = document.getElementById("regGoalWeight");
-            if (gwInp) gwInp.value = "";
-          }
-          if (currentRegWizStep < totalRegWizSteps) {
-            currentRegWizStep++;
-            updateRegWizardUI();
-          }
-        });
-      }
+      document.getElementById("bpWizNextBtn")?.addEventListener("click", () => {
+        handleBpNextStep();
+      });
 
       if (regForm) {
         regForm.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" && currentRegWizStep < totalRegWizSteps) {
+          if (e.key === "Enter") {
             e.preventDefault();
-            if (currentRegWizStep === 1 && !validateRegWizStep1()) return;
-            showAuthAlert("");
-            currentRegWizStep++;
-            updateRegWizardUI();
+            handleBpNextStep();
           }
         });
-
-        regForm.addEventListener("submit", async (e) => {
+        regForm.addEventListener("submit", (e) => {
           e.preventDefault();
-          if (currentRegWizStep < totalRegWizSteps) {
-            if (currentRegWizStep === 1 && !validateRegWizStep1()) return;
-            currentRegWizStep++;
-            updateRegWizardUI();
-            return;
-          }
-          if (!validateRegWizStep1()) {
-            currentRegWizStep = 1;
-            updateRegWizardUI();
-            return;
-          }
-          showAuthAlert("");
-          const weightVal = Number(document.getElementById("regWeight")?.value) || 78;
-          const goalWeightVal = Number(document.getElementById("regGoalWeight")?.value) || Math.max(48, Math.round(weightVal - 5));
-          const payload = {
-            name: document.getElementById("regName").value.trim(),
-            email: document.getElementById("regEmail").value.trim(),
-            password: document.getElementById("regPassword").value.trim(),
-            roleRequested: document.getElementById("regRoleRequested").value || "patient",
-            inviteCode: (document.getElementById("regInviteCode")?.value || "").trim(),
-            profile: {
-              sex: document.getElementById("regSex")?.value || "male",
-              age: Number(document.getElementById("regAge")?.value) || 30,
-              height: Number(document.getElementById("regHeight")?.value) || 172,
-              weight: weightVal,
-              goalWeight: goalWeightVal,
-              activity: Number(document.getElementById("regActivity")?.value) || 1.375,
-              deficitType: document.getElementById("regDeficitType")?.value || "recommended",
-              moodMode: document.getElementById("regMoodMode")?.value || "sarcastic"
-            }
-          };
-          try {
-            const res = await fetch("/api/auth/register", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (!res.ok || !data.ok) {
-              if (res.status === 409 || res.status === 400) {
-                currentRegWizStep = 1;
-                updateRegWizardUI();
-              }
-              showAuthAlert(data.error || "Error al crear la cuenta.");
-              return;
-            }
-            currentAuthToken = data.token;
-            localStorage.setItem("michufit_auth_token", currentAuthToken);
-            currentUserInfo = data.user;
-            showAuthModal("pending");
-          } catch (err) {
-            showAuthAlert("No se pudo conectar con el servidor.");
-          }
+          handleBpNextStep();
         });
       }
 
