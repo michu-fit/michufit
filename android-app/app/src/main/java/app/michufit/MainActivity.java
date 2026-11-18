@@ -20,8 +20,11 @@ import android.health.connect.ReadRecordsRequestUsingFilters;
 import android.health.connect.ReadRecordsResponse;
 import android.health.connect.TimeInstantRangeFilter;
 import android.health.connect.datatypes.ActiveCaloriesBurnedRecord;
+import android.health.connect.datatypes.DataOrigin;
+import android.health.connect.datatypes.Device;
 import android.health.connect.datatypes.ExerciseSessionRecord;
 import android.health.connect.datatypes.ExerciseSessionType;
+import android.health.connect.datatypes.Metadata;
 import android.health.connect.datatypes.StepsRecord;
 import android.health.connect.datatypes.units.Energy;
 import android.net.Uri;
@@ -293,8 +296,13 @@ public class MainActivity extends Activity implements SensorEventListener {
                     .setEndTime(endInstant)
                     .build();
 
+            final DataOrigin shealthOrigin = new DataOrigin.Builder()
+                    .setPackageName("com.sec.android.app.shealth")
+                    .build();
+
             AggregateRecordsRequest<Long> stepsReq = new AggregateRecordsRequest.Builder<Long>(timeFilter)
                     .addAggregationType(StepsRecord.STEPS_COUNT_TOTAL)
+                    .addDataOriginsFilter(shealthOrigin)
                     .build();
 
             manager.aggregate(
@@ -303,25 +311,107 @@ public class MainActivity extends Activity implements SensorEventListener {
                     new OutcomeReceiver<AggregateRecordsResponse<Long>, HealthConnectException>() {
                         @Override
                         public void onResult(AggregateRecordsResponse<Long> result) {
-                            long steps = 0L;
+                            long shealthAggSteps = 0L;
                             if (result != null) {
                                 Long val = result.get(StepsRecord.STEPS_COUNT_TOTAL);
-                                if (val != null) steps = val;
+                                if (val != null) shealthAggSteps = val;
                             }
-                            if (steps <= 0L && finalDate.equals(LocalDate.now()) && latestSensorStepsToday > 0L) {
-                                steps = latestSensorStepsToday;
-                            }
-                            readCaloriesAndExercisesApi34(manager, timeFilter, finalDate.toString(), steps);
+                            refineStepsByDeviceAndOriginApi34(manager, timeFilter, finalDate, shealthAggSteps);
                         }
 
                         @Override
                         public void onError(HealthConnectException error) {
-                            sendSensorFallbackToWeb(finalDate.toString());
+                            refineStepsByDeviceAndOriginApi34(manager, timeFilter, finalDate, 0L);
                         }
                     }
             );
         } catch (Exception e) {
             sendSensorFallbackToWeb(targetDate);
+        }
+    }
+
+    private void refineStepsByDeviceAndOriginApi34(
+            final HealthConnectManager manager,
+            final TimeInstantRangeFilter timeFilter,
+            final LocalDate finalDate,
+            final long shealthAggSteps
+    ) {
+        if (Build.VERSION.SDK_INT < 34) {
+            sendSensorFallbackToWeb(finalDate.toString());
+            return;
+        }
+        try {
+            ReadRecordsRequestUsingFilters<StepsRecord> rawStepsReq =
+                    new ReadRecordsRequestUsingFilters.Builder<>(StepsRecord.class)
+                            .setTimeRangeFilter(timeFilter)
+                            .setPageSize(2000)
+                            .build();
+
+            manager.readRecords(
+                    rawStepsReq,
+                    Executors.newSingleThreadExecutor(),
+                    new OutcomeReceiver<ReadRecordsResponse<StepsRecord>, HealthConnectException>() {
+                        @Override
+                        public void onResult(ReadRecordsResponse<StepsRecord> result) {
+                            long shealthPrimarySteps = 0L;
+                            long shealthPhoneModelSteps = 0L;
+                            long otherOriginsSteps = 0L;
+
+                            if (result != null && result.getRecords() != null) {
+                                for (StepsRecord rec : result.getRecords()) {
+                                    if (rec == null) continue;
+                                    long c = Math.max(0L, rec.getCount());
+                                    Metadata meta = rec.getMetadata();
+                                    String pkg = (meta != null && meta.getDataOrigin() != null && meta.getDataOrigin().getPackageName() != null)
+                                            ? meta.getDataOrigin().getPackageName().trim()
+                                            : "";
+                                    Device dev = meta != null ? meta.getDevice() : null;
+                                    String model = (dev != null && dev.getModel() != null) ? dev.getModel().trim().toUpperCase() : "";
+                                    int devType = dev != null ? dev.getType() : Device.DEVICE_TYPE_UNKNOWN;
+
+                                    if ("com.sec.android.app.shealth".equalsIgnoreCase(pkg)) {
+                                        boolean isPhoneHardwareEntry = model.contains("A56") || model.contains("SM-A") || devType == Device.DEVICE_TYPE_PHONE;
+                                        if (isPhoneHardwareEntry) {
+                                            shealthPhoneModelSteps += c;
+                                        } else {
+                                            shealthPrimarySteps += c;
+                                        }
+                                    } else {
+                                        otherOriginsSteps += c;
+                                    }
+                                }
+                            }
+
+                            long chosenSteps = shealthAggSteps;
+                            // Si adentro de Samsung Health vienen separados "Samsung Health" (shealthPrimarySteps) y el teléfono "A56" (shealthPhoneModelSteps),
+                            // tomamos exclusivamente el conteo principal de Samsung Health para no sumar el doble con el teléfono.
+                            if (shealthPrimarySteps > 0L && shealthPhoneModelSteps > 0L) {
+                                chosenSteps = shealthPrimarySteps;
+                            } else if (chosenSteps <= 0L) {
+                                if (shealthPrimarySteps + shealthPhoneModelSteps > 0L) {
+                                    chosenSteps = shealthPrimarySteps + shealthPhoneModelSteps;
+                                } else if (otherOriginsSteps > 0L) {
+                                    chosenSteps = otherOriginsSteps;
+                                } else if (finalDate.equals(LocalDate.now()) && latestSensorStepsToday > 0L) {
+                                    chosenSteps = latestSensorStepsToday;
+                                }
+                            }
+
+                            readCaloriesAndExercisesApi34(manager, timeFilter, finalDate.toString(), chosenSteps);
+                        }
+
+                        @Override
+                        public void onError(HealthConnectException error) {
+                            long fallbackSteps = shealthAggSteps;
+                            if (fallbackSteps <= 0L && finalDate.equals(LocalDate.now()) && latestSensorStepsToday > 0L) {
+                                fallbackSteps = latestSensorStepsToday;
+                            }
+                            readCaloriesAndExercisesApi34(manager, timeFilter, finalDate.toString(), fallbackSteps);
+                        }
+                    }
+            );
+        } catch (Exception e) {
+            readCaloriesAndExercisesApi34(manager, timeFilter, finalDate.toString(), shealthAggSteps);
         }
     }
 
@@ -336,8 +426,12 @@ public class MainActivity extends Activity implements SensorEventListener {
             return;
         }
         try {
+            DataOrigin shealthOrigin = new DataOrigin.Builder()
+                    .setPackageName("com.sec.android.app.shealth")
+                    .build();
             AggregateRecordsRequest<Energy> kcalReq = new AggregateRecordsRequest.Builder<Energy>(timeFilter)
                     .addAggregationType(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL)
+                    .addDataOriginsFilter(shealthOrigin)
                     .build();
 
             manager.aggregate(

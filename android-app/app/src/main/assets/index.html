@@ -416,13 +416,19 @@
     @media (max-width: 768px) {
       .nav-tabs {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 6px;
       }
-      .tab-btn {
+      .nav-tabs .tab-btn {
         min-width: 0;
-        padding: 9px 6px;
-        font-size: 0.76rem;
+        width: 100%;
+        padding: 8px 5px;
+        font-size: 0.73rem;
+        line-height: 1.2;
+        flex-direction: column;
+        gap: 4px;
+        overflow: hidden;
+        word-break: break-word;
       }
     }
 
@@ -1222,11 +1228,7 @@
       gap: 10px;
       margin-bottom: 14px;
     }
-    @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
-      #btnOpenMobileModal {
-        display: none !important;
-      }
-    }
+    /* Botón Instalar en Celu siempre visible salvo dentro del APK nativo */
 
     /* Minimalist Topbar & Hamburger Menu */
     .topbar-minimal {
@@ -1391,8 +1393,11 @@
         <button type="button" class="btn btn-sm" id="btnOpenSettings" onclick="window.openModal && window.openModal('modalSettings')">
           ⚙️ IA & Backup
         </button>
+        <button type="button" class="btn btn-sm btn-purple" onclick="window.syncSamsungHealthSteps && window.syncSamsungHealthSteps()">
+          ⌚ Samsung Health / Pasos
+        </button>
         <button type="button" class="btn btn-sm btn-primary" id="btnOpenMobileModal" onclick="window.openModal && window.openModal('modalMobileApp')">
-          📱 Instalar en Celu
+          📱 Instalar en Celu / Descargar .APK
         </button>
       </div>
     </header>
@@ -1592,11 +1597,13 @@
       </button>
       <button type="button" class="tab-btn" data-tab="tab-fasting" id="navTabFasting">
         <span>⏳ Ayuno Intermitente</span>
-        <span id="navFastingBadge" style="display:none;font-size:0.68rem;padding:2px 6px;border-radius:999px;background:var(--purple-soft);color:var(--purple);font-weight:800;">EN CURSO</span>
-        <label class="nav-if-switch" id="navFastingSlideLabel" onclick="event.stopPropagation();" title="Activar o desactivar Ayuno Intermitente">
-          <input type="checkbox" id="navFastingSlideInput" aria-label="Activar o desactivar Ayuno Intermitente" />
-          <span class="nav-if-slider"></span>
-        </label>
+        <span style="display:inline-flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;">
+          <span id="navFastingBadge" style="display:none;font-size:0.65rem;padding:2px 5px;border-radius:999px;background:var(--purple-soft);color:var(--purple);font-weight:800;white-space:nowrap;">EN CURSO</span>
+          <label class="nav-if-switch" id="navFastingSlideLabel" onclick="event.stopPropagation();" title="Activar o desactivar Ayuno Intermitente">
+            <input type="checkbox" id="navFastingSlideInput" aria-label="Activar o desactivar Ayuno Intermitente" />
+            <span class="nav-if-slider"></span>
+          </label>
+        </span>
       </button>
       <button type="button" class="tab-btn" data-tab="tab-progress">
         📈 Seguimiento de Peso y Gráficos
@@ -1670,7 +1677,7 @@
           <div class="macro-list">
             <div>
               <div class="macro-row-head">
-                <span>🥩 Proteínas <small style="color:var(--text-muted);font-weight:500;">(preserva músculo en déficit)</small></span>
+                <span>🥩 Proteínas <small id="macroProteinSubLabel" style="color:var(--text-muted);font-weight:500;">(preserva músculo en déficit)</small></span>
                 <span id="macroProteinText">19 / 165 g</span>
               </div>
               <div class="progress-track">
@@ -1879,9 +1886,9 @@
             <div class="field">
               <label for="profMacroPreset">Distribución de Macros</label>
               <select id="profMacroPreset">
-                <option value="high_protein">Alta Proteína / Fitness (2.0g/kg prot, 25% grasas)</option>
-                <option value="balanced">Equilibrado (30% Prot / 40% Carbos / 30% Grasas)</option>
-                <option value="low_carb">Low-Carb Saciedad (35% Prot / 25% Carbos / 40% Grasas)</option>
+                <option value="high_protein">Alta Proteína / Fitness (2.1g/kg masa magra o 2.0g/kg peso, 25% grasas)</option>
+                <option value="balanced">Equilibrado (1.8g/kg masa magra o 30% Prot / 40% Carbos / 30% Grasas)</option>
+                <option value="low_carb">Low-Carb Saciedad (2.2g/kg masa magra o 35% Prot / 25% Carbos / 40% Grasas)</option>
               </select>
             </div>
             <div class="field">
@@ -1944,6 +1951,138 @@
           </div>
           <div class="chart-box" id="WeeklyCalorieChartContainer"></div>
           <div id="weeklyDeficitSummaryBox" style="margin-top:16px;"></div>
+        </div>
+
+        <!-- CARD 3: CIRCUNFERENCIAS CORPORALES, GUÍA VISUAL Y % DE GRASA (U.S. NAVY) -->
+        <div class="card" style="grid-column: 1 / -1;">
+          <div class="card-header" style="flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;">
+            <div>
+              <div class="card-title">📏 Circunferencias Corporales y % de Grasa Corporal</div>
+              <small style="color:var(--text-muted);font-size:0.76rem;">
+                Tocá cualquier medida para ver en el esquema exactamente dónde apoyar el centímetro • Calcula tu % de grasa real (Fórmula U.S. Navy)
+              </small>
+            </div>
+            <button type="button" class="btn btn-sm" id="btnForceSyncMeasurements" title="Sincronizar medidas y datos con la nube ahora">
+              🔄 Sincronizar nube
+            </button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:18px;align-items:start;">
+            <!-- Columna Izquierda: Esquema Anatómico Liviano + Formulario de Carga -->
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px;">
+              <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+                <!-- Gráfico SVG liviano con zonas de medición -->
+                <div style="flex:0 0 135px;margin:0 auto;text-align:center;">
+                  <svg id="bodyGuideSvg" viewBox="0 0 160 250" style="width:135px;height:210px;background:var(--bg-elev);border-radius:12px;border:1px solid var(--border);" role="img" aria-label="Guía visual de zonas de medición corporal">
+                    <!-- Silueta humana estilizada -->
+                    <circle cx="80" cy="28" r="15" fill="rgba(148,163,184,0.18)" stroke="#64748b" stroke-width="1.8" />
+                    <!-- Cuello -->
+                    <rect x="73" y="43" width="14" height="11" rx="3" fill="rgba(148,163,184,0.18)" stroke="#64748b" stroke-width="1.5" />
+                    <!-- Torso y Brazos -->
+                    <path d="M52,54 C42,56 36,64 34,82 L30,124 C29,130 35,132 38,126 L45,86 L50,86 L54,112 L50,142 L62,146 L66,222 C66,229 75,229 76,222 L79,156 L81,156 L84,222 C85,229 94,229 94,222 L98,146 L110,142 L106,112 L110,86 L115,86 L122,126 C125,132 131,130 130,124 L126,82 C124,64 118,56 108,54 Z"
+                      fill="rgba(148,163,184,0.16)" stroke="#64748b" stroke-width="1.8" stroke-linejoin="round" />
+
+                    <!-- 1. CUELLO -->
+                    <g class="meas-svg-zone" data-zone="neck" style="cursor:pointer;">
+                      <line x1="65" y1="49" x2="95" y2="49" stroke="#38bdf8" stroke-width="3" stroke-dasharray="3,2" />
+                      <circle cx="104" cy="49" r="7" fill="#38bdf8" />
+                      <text x="104" y="52" fill="#0f172a" font-size="8.5" font-weight="900" text-anchor="middle">1</text>
+                    </g>
+
+                    <!-- 2. PECHO -->
+                    <g class="meas-svg-zone" data-zone="chest" style="cursor:pointer;">
+                      <line x1="48" y1="76" x2="112" y2="76" stroke="#a855f7" stroke-width="3" stroke-dasharray="4,2" />
+                      <circle cx="123" cy="76" r="7" fill="#a855f7" />
+                      <text x="123" y="79" fill="#ffffff" font-size="8.5" font-weight="900" text-anchor="middle">2</text>
+                    </g>
+
+                    <!-- 3. BRAZO -->
+                    <g class="meas-svg-zone" data-zone="arm" style="cursor:pointer;">
+                      <line x1="31" y1="92" x2="48" y2="95" stroke="#f59e0b" stroke-width="3" stroke-dasharray="3,2" />
+                      <circle cx="21" cy="91" r="7" fill="#f59e0b" />
+                      <text x="21" y="94" fill="#0f172a" font-size="8.5" font-weight="900" text-anchor="middle">3</text>
+                    </g>
+
+                    <!-- 4. CINTURA -->
+                    <g class="meas-svg-zone" data-zone="waist" style="cursor:pointer;">
+                      <line x1="53" y1="112" x2="107" y2="112" stroke="#22c55e" stroke-width="3.5" stroke-dasharray="4,2" />
+                      <circle cx="119" cy="112" r="7.5" fill="#22c55e" />
+                      <text x="119" y="115" fill="#0f172a" font-size="8.5" font-weight="900" text-anchor="middle">4</text>
+                    </g>
+
+                    <!-- 5. CADERA -->
+                    <g class="meas-svg-zone" data-zone="hip" style="cursor:pointer;">
+                      <line x1="49" y1="138" x2="111" y2="138" stroke="#ec4899" stroke-width="3" stroke-dasharray="4,2" />
+                      <circle cx="123" cy="138" r="7" fill="#ec4899" />
+                      <text x="123" y="141" fill="#ffffff" font-size="8.5" font-weight="900" text-anchor="middle">5</text>
+                    </g>
+
+                    <!-- 6. PIERNA / MUSLO -->
+                    <g class="meas-svg-zone" data-zone="thigh" style="cursor:pointer;">
+                      <line x1="61" y1="174" x2="79" y2="174" stroke="#06b6d4" stroke-width="3" stroke-dasharray="3,2" />
+                      <circle cx="49" cy="174" r="7" fill="#06b6d4" />
+                      <text x="49" y="177" fill="#0f172a" font-size="8.5" font-weight="900" text-anchor="middle">6</text>
+                    </g>
+                  </svg>
+                </div>
+
+                <!-- Explicación interactiva de dónde medir -->
+                <div style="flex:1;min-width:165px;">
+                  <div id="measGuideTipBox" style="background:var(--bg-elev);border:1.5px solid #22c55e;border-radius:11px;padding:10px 12px;font-size:0.79rem;line-height:1.45;margin-bottom:8px;">
+                    <strong style="color:#22c55e;display:block;margin-bottom:3px;">④ Cintura (Clave para % Grasa)</strong>
+                    Rodeá el abdomen con la cinta horizontal <strong>a la altura del ombligo</strong> (o en la parte más estrecha del torso), al final de una exhalación normal y sin meter panza.
+                  </div>
+                  <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.38;">
+                    💡 <strong>Para calcular % de Grasa:</strong> cargá al menos <strong>① Cuello</strong> y <strong>④ Cintura</strong> (y <strong>⑤ Cadera</strong> si sos mujer).
+                  </div>
+                </div>
+              </div>
+
+              <!-- Formulario de carga de circunferencias -->
+              <form id="bodyMeasurementsForm" class="form-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));gap:9px;">
+                <div class="field" style="grid-column: 1 / -1;">
+                  <label for="measDateInput">📅 Fecha de medición</label>
+                  <input type="date" id="measDateInput" required />
+                </div>
+                <div class="field">
+                  <label for="measNeckInput" style="color:#38bdf8;">① Cuello (cm) *</label>
+                  <input type="number" id="measNeckInput" data-guide-zone="neck" step="0.1" min="20" max="75" placeholder="Ej: 38.5" />
+                </div>
+                <div class="field">
+                  <label for="measWaistInput" style="color:#22c55e;">④ Cintura (cm) *</label>
+                  <input type="number" id="measWaistInput" data-guide-zone="waist" step="0.1" min="45" max="190" placeholder="Ej: 86.0" />
+                </div>
+                <div class="field">
+                  <label for="measHipInput" style="color:#ec4899;">⑤ Cadera (cm)</label>
+                  <input type="number" id="measHipInput" data-guide-zone="hip" step="0.1" min="55" max="190" placeholder="Ej: 98.0" />
+                </div>
+                <div class="field">
+                  <label for="measChestInput" style="color:#a855f7;">② Pecho / Tórax (cm)</label>
+                  <input type="number" id="measChestInput" data-guide-zone="chest" step="0.1" min="55" max="180" placeholder="Ej: 101.0" />
+                </div>
+                <div class="field">
+                  <label for="measArmInput" style="color:#f59e0b;">③ Brazo / Bíceps (cm)</label>
+                  <input type="number" id="measArmInput" data-guide-zone="arm" step="0.1" min="15" max="70" placeholder="Ej: 34.5" />
+                </div>
+                <div class="field">
+                  <label for="measThighInput" style="color:#06b6d4;">⑥ Pierna / Muslo (cm)</label>
+                  <input type="number" id="measThighInput" data-guide-zone="thigh" step="0.1" min="30" max="110" placeholder="Ej: 56.0" />
+                </div>
+                <div style="grid-column: 1 / -1; margin-top:4px;">
+                  <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+                    📏 Guardar Medidas y Calcular % de Grasa
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Columna Derecha: Diagnóstico de % de Grasa, Gráfico Evolutivo e Historial -->
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div id="bodyFatSummaryCards"></div>
+              <div class="chart-box" id="measurementsChartContainer"></div>
+              <div id="measurementsHistoryList" style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;"></div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -2902,26 +3041,26 @@
 
     const _nativeFetch = window.fetch.bind(window);
 
-    async function sbFetchWithTimeout(url, options = {}, timeoutMs = 6000) {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-      try {
-        return await _nativeFetch(url, { ...options, signal: ctrl.signal });
-      } finally {
-        clearTimeout(timer);
+    async function sbFetchWithTimeout(url, options = {}, timeoutMs = 30000) {
+      let lastErr = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+        try {
+          return await _nativeFetch(url, { ...options, signal: ctrl.signal });
+        } catch (err) {
+          lastErr = err;
+          if (attempt === 0) {
+            await new Promise(r => setTimeout(r, 400));
+          }
+        } finally {
+          clearTimeout(timer);
+        }
       }
+      throw lastErr || new Error("Supabase network timeout");
     }
 
-    async function sbFetchAllUsers() {
-      const res = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?select=*`, {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-          "Cache-Control": "no-store"
-        }
-      }, 6000);
-      if (!res.ok) throw new Error("Supabase fetch error " + res.status);
-      const rows = await res.json();
+    function sbMapRowsToUsers(rows) {
       const sysFoodRow = (rows || []).find(r => r.id === "sys-food-catalog");
       if (sysFoodRow && sysFoodRow.user_doc && Array.isArray(sysFoodRow.user_doc.learnedFoods)) {
         if (typeof window.mergeCloudLearnedFoods === "function") {
@@ -2942,6 +3081,35 @@
           doc.status = r.status || doc.status || "pending";
           return doc;
         });
+    }
+
+    async function sbFetchUsersByIds(idsList) {
+      const cleanIds = Array.from(new Set((idsList || []).filter(Boolean)));
+      if (cleanIds.length === 0) return sbFetchAllUsers();
+      const inClause = cleanIds.map(id => encodeURIComponent(id)).join(",");
+      const res = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=in.(${inClause})&select=*`, {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "Cache-Control": "no-store"
+        }
+      }, 30000);
+      if (!res.ok) throw new Error("Supabase targeted fetch error " + res.status);
+      const rows = await res.json();
+      return sbMapRowsToUsers(rows);
+    }
+
+    async function sbFetchAllUsers() {
+      const res = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?select=*`, {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "Cache-Control": "no-store"
+        }
+      }, 30000);
+      if (!res.ok) throw new Error("Supabase fetch error " + res.status);
+      const rows = await res.json();
+      return sbMapRowsToUsers(rows);
     }
 
     async function sbSaveLearnedFoodCatalog(learnedList) {
@@ -2968,7 +3136,7 @@
             "Prefer": "resolution=merge-duplicates,return=minimal"
           },
           body: JSON.stringify([row])
-        }, 6000);
+        }, 30000);
       } catch (e) {
         console.warn("No se pudo guardar alimento aprendido en Supabase:", e);
       }
@@ -2995,7 +3163,7 @@
           "Prefer": "resolution=merge-duplicates,return=minimal"
         },
         body: JSON.stringify([row])
-      }, 6000);
+      }, 30000);
       if (!res.ok) throw new Error("Supabase upsert error " + res.status);
     }
 
@@ -3006,7 +3174,7 @@
           "apikey": SUPABASE_KEY,
           "Authorization": `Bearer ${SUPABASE_KEY}`
         }
-      }, 6000);
+      }, 30000);
       if (!res.ok) throw new Error("Supabase delete error " + res.status);
     }
 
@@ -3129,7 +3297,7 @@
       return false;
     }
 
-    function sbResolveAuthUser(users, headersObj) {
+    function sbResolveAuthUid(headersObj) {
       let token = "";
       if (headersObj) {
         if (typeof headersObj.get === "function") {
@@ -3148,7 +3316,13 @@
         // Compatibilidad con sesiones previas guardadas en el navegador
         uid = "u-owner";
       }
-      if (!token || !uid) return null;
+      if (!token || !uid) return "";
+      return uid;
+    }
+
+    function sbResolveAuthUser(users, headersObj) {
+      const uid = sbResolveAuthUid(headersObj);
+      if (!uid) return null;
       return users.find(u => u.id === uid) || null;
     }
 
@@ -3182,9 +3356,23 @@
       try {
         // 1. GET /api/data
         if (method === "GET" && path.endsWith("/api/data")) {
-          const users = await sbFetchAllUsers();
-          const user = sbResolveAuthUser(users, init.headers);
+          const actorUid = sbResolveAuthUid(init.headers);
+          const targetId = parsed.searchParams.get("targetUserId");
           const hasGemKey = Boolean(localStorage.getItem("michufit_gemini_key"));
+
+          if (!actorUid) {
+            return sbJsonResponse({
+              ok: true,
+              authRequired: true,
+              hasGeminiKey: hasGemKey,
+              lanUrl: publicUrl,
+              localWifiUrl: publicUrl,
+              tunnelUrl: publicUrl
+            });
+          }
+
+          const users = await sbFetchUsersByIds([actorUid, targetId, "sys-food-catalog"]);
+          const user = sbResolveAuthUser(users, init.headers);
 
           if (!user) {
             return sbJsonResponse({
@@ -3209,7 +3397,6 @@
             });
           }
 
-          const targetId = parsed.searchParams.get("targetUserId");
           let targetUser = user;
           let inspectedInfo = null;
           if (targetId && targetId !== user.id) {
@@ -3371,13 +3558,17 @@
 
         // 6. POST /api/data
         if (method === "POST" && path.endsWith("/api/data")) {
-          const users = await sbFetchAllUsers();
-          const actor = sbResolveAuthUser(users, init.headers);
+          const actorUid = sbResolveAuthUid(init.headers);
           const data = body.data;
           const targetId = body.targetUserId;
           if (!data || typeof data !== "object") {
             return sbJsonResponse({ ok: false, error: "Falta objeto data" }, 400);
           }
+          if (!actorUid) {
+            return sbJsonResponse({ ok: false, error: "Iniciá sesión con una cuenta aprobada" }, 403);
+          }
+          const users = await sbFetchUsersByIds([actorUid, targetId]);
+          const actor = sbResolveAuthUser(users, init.headers);
           if (!actor || actor.status !== "approved") {
             return sbJsonResponse({ ok: false, error: "Iniciá sesión con una cuenta aprobada" }, 403);
           }
@@ -3389,12 +3580,23 @@
             }
             targetUser = cand;
           }
-          targetUser.trackerData = data;
+          const prevTd = targetUser.trackerData || {};
+          if (typeof mergeLocalAndServerData === "function") {
+            // El payload entrante (data) tiene prioridad, pero conservamos registros de otros dispositivos (como measurementsLog o weightLog)
+            const { merged: combinedTd } = mergeLocalAndServerData(data, prevTd);
+            const delMeas = new Set(Array.isArray(data.deletedMeasurementDates) ? data.deletedMeasurementDates : []);
+            if (delMeas.size > 0 && Array.isArray(combinedTd.measurementsLog)) {
+              combinedTd.measurementsLog = combinedTd.measurementsLog.filter(m => m && !delMeas.has(m.date));
+            }
+            targetUser.trackerData = combinedTd;
+          } else {
+            targetUser.trackerData = data;
+          }
           if (data.profile && data.profile.name) {
             targetUser.name = data.profile.name;
           }
           await sbUpsertUser(targetUser);
-          return sbJsonResponse({ ok: true, savedAt: new Date().toISOString() });
+          return sbJsonResponse({ ok: true, savedAt: new Date().toISOString(), data: targetUser.trackerData });
         }
 
         // 7. POST /api/admin/update-user
@@ -3699,8 +3901,26 @@
     }
 
     // =========================================================================
-    // CÁLCULO CIENTÍFICO DE TMB (Mifflin-St Jeor), TDEE Y MACROS
+    // CÁLCULO CIENTÍFICO DE TMB (Mifflin-St Jeor), TDEE Y MACROS (POR MASA MAGRA)
     // =========================================================================
+    function getLatestBodyComposition(prof = appData.profile) {
+      const mLogs = [...((appData && appData.measurementsLog) || [])]
+        .filter(m => m && m.date)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      if (mLogs.length === 0 || typeof computeNavyBodyFat !== "function") return null;
+      const curW = Number(prof && prof.weight) || 78;
+      for (let i = mLogs.length - 1; i >= 0; i--) {
+        const st = computeNavyBodyFat({ ...mLogs[i], weight: curW });
+        if (st && st.bfPct !== null && st.leanKg !== null && st.leanKg > 20) {
+          return {
+            ...st,
+            date: mLogs[i].date
+          };
+        }
+      }
+      return null;
+    }
+
     function computeNutritionTargets(prof = appData.profile) {
       const w = Number(prof.weight) || 75;
       const h = Number(prof.height) || 170;
@@ -3723,23 +3943,48 @@
       const targetKcal = Math.max(minSafe, tdee - deficit);
       const effectiveDeficit = tdee - targetKcal;
 
+      // Detectar si el usuario tiene % de Grasa y Masa Magra (LBM) calculada por circunferencias
+      const bodyComp = getLatestBodyComposition(prof);
+      const usingLeanMass = Boolean(bodyComp && bodyComp.leanKg > 20);
+      const leanKg = usingLeanMass ? bodyComp.leanKg : null;
+      const bfPct = usingLeanMass ? bodyComp.bfPct : null;
+      const fatKg = usingLeanMass ? bodyComp.fatKg : null;
+
       let proteinG = 140;
       let fatG = 55;
       let carbsG = 160;
+      let proteinPerKgLbm = 2.1;
 
       if (prof.macroPreset === "high_protein") {
-        proteinG = Math.round(w * 2.0);
+        proteinPerKgLbm = 2.1;
+        proteinG = usingLeanMass ? Math.round(leanKg * proteinPerKgLbm) : Math.round(w * 2.0);
         fatG = Math.round((targetKcal * 0.25) / 9);
         const remKcal = Math.max(200, targetKcal - (proteinG * 4 + fatG * 9));
         carbsG = Math.round(remKcal / 4);
       } else if (prof.macroPreset === "balanced") {
-        proteinG = Math.round((targetKcal * 0.30) / 4);
-        carbsG = Math.round((targetKcal * 0.40) / 4);
-        fatG = Math.round((targetKcal * 0.30) / 9);
+        proteinPerKgLbm = 1.8;
+        if (usingLeanMass) {
+          proteinG = Math.round(leanKg * proteinPerKgLbm);
+          fatG = Math.round((targetKcal * 0.30) / 9);
+          const remKcal = Math.max(200, targetKcal - (proteinG * 4 + fatG * 9));
+          carbsG = Math.round(remKcal / 4);
+        } else {
+          proteinG = Math.round((targetKcal * 0.30) / 4);
+          carbsG = Math.round((targetKcal * 0.40) / 4);
+          fatG = Math.round((targetKcal * 0.30) / 9);
+        }
       } else {
-        proteinG = Math.round((targetKcal * 0.35) / 4);
-        carbsG = Math.round((targetKcal * 0.25) / 4);
-        fatG = Math.round((targetKcal * 0.40) / 9);
+        proteinPerKgLbm = 2.2;
+        if (usingLeanMass) {
+          proteinG = Math.round(leanKg * proteinPerKgLbm);
+          fatG = Math.round((targetKcal * 0.40) / 9);
+          const remKcal = Math.max(120, targetKcal - (proteinG * 4 + fatG * 9));
+          carbsG = Math.round(remKcal / 4);
+        } else {
+          proteinG = Math.round((targetKcal * 0.35) / 4);
+          carbsG = Math.round((targetKcal * 0.25) / 4);
+          fatG = Math.round((targetKcal * 0.40) / 9);
+        }
       }
 
       const kgToLose = Math.max(0, Number((w - (Number(prof.goalWeight) || w)).toFixed(1)));
@@ -3757,6 +4002,11 @@
         proteinG,
         carbsG,
         fatG,
+        usingLeanMass,
+        leanKg,
+        bfPct,
+        fatKg,
+        proteinPerKgLbm,
         kgToLose,
         weeklyLossKg,
         weeksNeeded,
@@ -4246,6 +4496,45 @@
           hadLocalChanges = true;
         }
       }
+      if (Array.isArray(localData.weightLog)) {
+        merged.weightLog = Array.isArray(merged.weightLog) ? merged.weightLog : [];
+        const sWeightDates = new Set(merged.weightLog.map(w => w && w.date));
+        for (const w of localData.weightLog) {
+          if (w && w.date && !sWeightDates.has(w.date)) {
+            merged.weightLog.push(w);
+            hadLocalChanges = true;
+          }
+        }
+      }
+      if (Array.isArray(localData.measurementsLog)) {
+        merged.measurementsLog = Array.isArray(merged.measurementsLog) ? merged.measurementsLog : [];
+        const delSet = new Set(Array.isArray(merged.deletedMeasurementDates) ? merged.deletedMeasurementDates : []);
+        const byDate = new Map();
+        for (const sm of merged.measurementsLog) {
+          if (sm && sm.date && !delSet.has(sm.date)) byDate.set(sm.date, { ...sm });
+        }
+        for (const lm of localData.measurementsLog) {
+          if (!lm || !lm.date || delSet.has(lm.date)) continue;
+          if (!byDate.has(lm.date)) {
+            byDate.set(lm.date, { ...lm });
+            hadLocalChanges = true;
+          } else {
+            const cur = byDate.get(lm.date);
+            const lTime = Number(lm.updatedAt) || 0;
+            const sTime = Number(cur.updatedAt) || 0;
+            for (const k of ["neck", "waist", "hip", "chest", "arm", "thigh", "weight"]) {
+              const lVal = Number(lm[k]) || 0;
+              const sVal = Number(cur[k]) || 0;
+              if (lVal > 0 && (sVal === 0 || (lTime > sTime && lVal !== sVal))) {
+                cur[k] = lVal;
+                hadLocalChanges = true;
+              }
+            }
+            if (lTime > sTime) cur.updatedAt = lTime;
+          }
+        }
+        merged.measurementsLog = Array.from(byDate.values());
+      }
       return { merged, hadLocalChanges };
     }
 
@@ -4260,6 +4549,26 @@
       return uid === "u-owner" || uid === "default" ? "michufit_backup_v1" : `michufit_backup_${uid}`;
     }
 
+    function getConsolidatedLocalBackup() {
+      const primaryKey = getBackupStorageKey();
+      const candidateKeys = Array.from(new Set([primaryKey, "michufit_backup_v1", "michufit_backup_u-owner", "pachofit_backup_v1"]));
+      let combined = null;
+      for (const k of candidateKeys) {
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        try {
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== "object") continue;
+          if (!combined) {
+            combined = parsed;
+          } else {
+            combined = mergeLocalAndServerData(combined, parsed).merged;
+          }
+        } catch (_) {}
+      }
+      return combined;
+    }
+
     async function loadFromServer() {
       if (!currentAuthToken) {
         document.documentElement.setAttribute("data-auth-state", "logged-out");
@@ -4271,16 +4580,12 @@
         } catch (_) {}
       }
       renderLocalQrSvg(document.getElementById("mobileLanUrlText").textContent);
-      const storageKey = getBackupStorageKey();
-      const savedRaw = localStorage.getItem(storageKey) || (storageKey === "michufit_backup_v1" ? localStorage.getItem("pachofit_backup_v1") : null);
-      let localBackup = null;
-      if (savedRaw) {
-        try { localBackup = JSON.parse(savedRaw); } catch (err) {}
-      }
+      const localBackup = getConsolidatedLocalBackup();
       if (localBackup) {
         appData = localBackup;
       }
       renderAll();
+      updateSyncBadge("🔄 Sincronizando con la nube...", true);
       try {
         const qs = inspectedUserId ? `?targetUserId=${encodeURIComponent(inspectedUserId)}` : "";
         const res = await fetch(`/api/data${qs}`, {
@@ -4320,19 +4625,20 @@
 
           if (payload.ok && payload.data) {
             const isOwnProfile = !inspectedUserId || (currentUserInfo && inspectedUserId === currentUserInfo.id);
+            const hasPendingPush = localStorage.getItem("michufit_pending_push") === "1";
             if (isOwnProfile && localBackup) {
               const { merged, hadLocalChanges } = mergeLocalAndServerData(payload.data, localBackup);
               appData = merged;
               localStorage.setItem(getBackupStorageKey(), JSON.stringify(appData));
-              if (hadLocalChanges) {
-                saveToServer();
+              if (hadLocalChanges || hasPendingPush) {
+                await saveToServer();
               } else {
-                updateSyncBadge("💾 Sincronizado con Servidor", true);
+                updateSyncBadge("☁️ Sincronizado con la nube ✓", true);
               }
             } else {
               appData = payload.data;
               localStorage.setItem(getBackupStorageKey(), JSON.stringify(appData));
-              updateSyncBadge(inspectedUserInfo ? `👁️ Viendo a ${inspectedUserInfo.name}` : "💾 Sincronizado", true);
+              updateSyncBadge(inspectedUserInfo ? `👁️ Viendo a ${inspectedUserInfo.name}` : "☁️ Sincronizado ✓", true);
             }
             renderAll();
             if (currentUserInfo && (currentUserInfo.role === "superadmin" || currentUserInfo.role === "nutritionist")) {
@@ -4344,16 +4650,20 @@
       } catch (e) {
         console.warn("Modo local / offline (usando memoria del dispositivo):", e);
       }
-      // Fallback a localStorage si está en el celu sin túnel o sin servidor Python activo
+      // Fallback a localStorage si la red tardó demasiado
       if (localBackup) {
         appData = localBackup;
       }
-      updateSyncBadge("📱 Modo autónomo (guardado en el celu)", false);
+      updateSyncBadge("📱 Modo local (tocá para reintentar nube)", false);
       renderAll();
     }
 
+    let _retrySaveTimer = null;
+
     async function saveToServer() {
       localStorage.setItem(getBackupStorageKey(), JSON.stringify(appData));
+      localStorage.setItem("michufit_pending_push", "1");
+      updateSyncBadge("⏳ Guardando en la nube...", true);
       try {
         const res = await fetch("/api/data", {
           method: "POST",
@@ -4367,16 +4677,37 @@
           })
         });
         if (res.ok) {
-          updateSyncBadge(inspectedUserInfo ? `💾 Guardado en ${inspectedUserInfo.name}` : "💾 Guardado en servidor", true);
+          localStorage.removeItem("michufit_pending_push");
+          try {
+            const savedJson = await res.json();
+            if (savedJson && savedJson.data && typeof savedJson.data === "object") {
+              appData = savedJson.data;
+              localStorage.setItem(getBackupStorageKey(), JSON.stringify(appData));
+              renderAll();
+            }
+          } catch (_) {}
+          updateSyncBadge(inspectedUserInfo ? `☁️ Guardado en ${inspectedUserInfo.name}` : "☁️ Guardado en la nube ✓", true);
+          return true;
         }
       } catch (e) {
-        updateSyncBadge("💾 Guardado en navegador", false);
+        console.warn("Error guardando en la nube, se reintentará automáticamente:", e);
       }
+      updateSyncBadge("⚠️ Guardado en celu (reintentando nube...)", false);
+      if (_retrySaveTimer) clearTimeout(_retrySaveTimer);
+      _retrySaveTimer = setTimeout(() => {
+        if (localStorage.getItem("michufit_pending_push") === "1") {
+          saveToServer();
+        }
+      }, 4500);
+      return false;
     }
 
     function updateSyncBadge(text, ok) {
       const badge = document.getElementById("syncBadge");
+      if (!badge) return;
       badge.textContent = text;
+      badge.style.cursor = "pointer";
+      badge.title = "Tocá para sincronizar ahora con la nube";
       badge.style.background = ok ? "var(--accent-soft)" : "var(--info-soft)";
       badge.style.color = ok ? "var(--accent)" : "var(--info)";
     }
@@ -4472,6 +4803,12 @@
       }
 
       // Barras de Macros
+      const protSubEl = document.getElementById("macroProteinSubLabel");
+      if (protSubEl) {
+        protSubEl.innerHTML = targets.usingLeanMass
+          ? `(según <strong>${targets.leanKg} kg</strong> de masa magra • ${targets.proteinPerKgLbm}g/kg)`
+          : `(preserva músculo en déficit • según peso total)`;
+      }
       document.getElementById("macroProteinText").textContent = `${totals.p} / ${targets.proteinG} g`;
       document.getElementById("macroCarbsText").textContent = `${totals.c} / ${targets.carbsG} g`;
       document.getElementById("macroFatText").textContent = `${totals.f} / ${targets.fatG} g`;
@@ -4812,6 +5149,7 @@
             </div>
             <div class="meal-item-right">
               <strong style="color:var(--accent);">-${ex.kcal} kcal</strong>
+              <button type="button" class="icon-del" data-edit-ex-id="${ex.id}" title="Editar pasos o calorías">✏️</button>
               <button type="button" class="icon-del" data-del-ex-id="${ex.id}" title="Eliminar ejercicio">🗑️</button>
             </div>
           </div>
@@ -4850,6 +5188,12 @@
         }
       });
 
+      grid.querySelectorAll("[data-edit-ex-id]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          editExerciseById(btn.getAttribute("data-edit-ex-id"));
+        });
+      });
+
       grid.querySelectorAll("[data-del-ex-id]").forEach(btn => {
         btn.addEventListener("click", () => {
           deleteExerciseById(btn.getAttribute("data-del-ex-id"));
@@ -4857,6 +5201,45 @@
       });
 
       renderModalExercisesList();
+    }
+
+    function editExerciseById(exId) {
+      const day = ensureDayRecord(selectedDate);
+      const ex = (day.exercises || []).find(x => x.id === exId);
+      if (!ex) return;
+
+      const isStepsRecord = String(ex.id || "").startsWith("ex-sh-steps") || /pasos/i.test(ex.name || "");
+      const weightKg = Math.max(40, Math.min(220, Number(appData?.profile?.weight) || 78));
+
+      if (isStepsRecord) {
+        const curStepsMatch = String(ex.name || "").replace(/\./g, "").match(/(\d+)/);
+        const curSteps = curStepsMatch ? Number(curStepsMatch[1]) : 6500;
+        const inputVal = prompt("✏️ Editar cantidad exacta de pasos (ej: lo que marca Samsung Health):", String(curSteps));
+        if (inputVal === null) return;
+        const newSteps = Math.round(Number(String(inputVal).replace(/[^\d]/g, "")) || 0);
+        if (newSteps < 50) {
+          alert("Ingresá un número válido de pasos (ej: 6505).");
+          return;
+        }
+        const estMinutes = Math.max(5, Math.round(newSteps / 105));
+        const calcKcal = Math.max(10, Math.round(2.9 * weightKg * (estMinutes / 60)));
+        ex.name = `${newSteps.toLocaleString("es-AR")} pasos (Samsung Health)`;
+        ex.minutes = estMinutes;
+        ex.kcal = calcKcal;
+        day.exerciseKcal = day.exercises.reduce((acc, x) => acc + (Number(x.kcal) || 0), 0);
+        saveToServer();
+        renderAll();
+        setRaccoonSpeech(`"👟 ¡Pasos corregidos a ${newSteps.toLocaleString("es-AR")} pasos (-${calcKcal} kcal en ~${estMinutes} min) 🐱✅!"`);
+      } else {
+        const inputKcal = prompt(`✏️ Editar calorías quemadas para "${ex.name}":`, String(ex.kcal || 150));
+        if (inputKcal === null) return;
+        const newKcal = Math.round(Number(String(inputKcal).replace(/[^\d.]/g, "")) || 0);
+        if (newKcal <= 0) return;
+        ex.kcal = newKcal;
+        day.exerciseKcal = day.exercises.reduce((acc, x) => acc + (Number(x.kcal) || 0), 0);
+        saveToServer();
+        renderAll();
+      }
     }
 
     function deleteExerciseById(exId) {
@@ -4889,10 +5272,17 @@
           </div>
           <div class="meal-item-right">
             <strong style="color:var(--accent);">-${ex.kcal} kcal</strong>
+            <button type="button" class="icon-del" data-modal-edit-ex="${ex.id}" title="Editar pasos o calorías">✏️</button>
             <button type="button" class="icon-del" data-modal-del-ex="${ex.id}" title="Eliminar ejercicio">🗑️</button>
           </div>
         </div>
       `).join("");
+
+      list.querySelectorAll("[data-modal-edit-ex]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          editExerciseById(btn.getAttribute("data-modal-edit-ex"));
+        });
+      });
 
       list.querySelectorAll("[data-modal-del-ex]").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -5662,11 +6052,19 @@
         </div>
 
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
-          <strong style="font-size:0.9rem;display:block;margin-bottom:8px;">🥗 Tus Macros Diarios Recomendados</strong>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+            <strong style="font-size:0.9rem;">🥗 Tus Macros Diarios Recomendados</strong>
+            <span style="font-size:0.73rem;padding:2px 8px;border-radius:999px;font-weight:700;background:${t.usingLeanMass ? 'var(--accent-soft)' : 'var(--bg-elev)'};color:${t.usingLeanMass ? 'var(--accent)' : 'var(--text-muted)'};">
+              ${t.usingLeanMass ? `🧬 Proteína según Masa Magra (${t.leanKg} kg • ${t.bfPct}% grasa)` : `⚖️ Proteína según Peso Total (cargá medidas para usar Masa Magra)`}
+            </span>
+          </div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
             <div style="padding:8px;border-radius:9px;background:var(--bg-elev);">
               <div style="color:#22c55e;font-weight:800;font-size:1.1rem;">${t.proteinG}g</div>
               <div style="font-size:0.75rem;color:var(--text-muted);">Proteínas (${t.proteinG * 4} kcal)</div>
+              <div style="font-size:0.69rem;color:#22c55e;margin-top:2px;">
+                ${t.usingLeanMass ? `${t.proteinPerKgLbm}g × ${t.leanKg} kg magros` : `${(t.proteinG / Math.max(1, Number(p.weight) || 75)).toFixed(1)}g × ${p.weight} kg`}
+              </div>
             </div>
             <div style="padding:8px;border-radius:9px;background:var(--bg-elev);">
               <div style="color:#38bdf8;font-weight:800;font-size:1.1rem;">${t.carbsG}g</div>
@@ -5787,6 +6185,18 @@
       }
 
       // Construir todos los días transcurridos desde effectiveStart hasta hoy
+      const fastingObj = (appData && appData.fasting) || {};
+      const fastingHist = Array.isArray(fastingObj.history) ? fastingObj.history : [];
+      const isDateFasting = (dateKey) => {
+        const inHist = fastingHist.some(h => h && h.date === dateKey && (h.completed || Number(h.hours) >= Number(h.targetHours || 16)));
+        if (inHist) return true;
+        if (fastingObj.activeStart && dateKey === todayStr()) {
+          const activeHrs = (Date.now() - new Date(fastingObj.activeStart).getTime()) / 3600000;
+          if (activeHrs >= Number(fastingObj.targetHours || 16)) return true;
+        }
+        return false;
+      };
+
       const allDaysSinceStart = [];
       const endDate = new Date(todayStr() + "T12:00:00");
       const startDateObj = new Date(effectiveStart + "T12:00:00");
@@ -5797,13 +6207,23 @@
       while (cursor <= endDate && guard < 366) {
         const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
         const tot = getDayTotals(key);
-        allDaysSinceStart.push({ date: key, label: key.slice(5), kcal: tot.kcal, exercise: tot.exerciseKcal });
+        const isFast = isDateFasting(key);
+        allDaysSinceStart.push({
+          date: key,
+          label: key.slice(5),
+          kcal: tot.kcal,
+          exercise: tot.exerciseKcal,
+          isFasting: isFast
+        });
         cursor.setDate(cursor.getDate() + 1);
         guard++;
       }
 
-      // Mostrar en el gráfico los días desde el inicio (hasta las últimas 7 barras visibles)
-      const chartDays = allDaysSinceStart.slice(-7);
+      // Solo tomar días con carga de calorías (> 0) o que tengan un ayuno registrado (0 kcal por ayuno)
+      const loggedDays = allDaysSinceStart.filter(d => d.kcal > 0 || d.isFasting);
+
+      // Mostrar en el gráfico únicamente los días válidos (con comidas cargadas o ayuno), hasta las últimas 7 barras
+      const chartDays = loggedDays.slice(-7);
       const numBars = Math.max(1, chartDays.length);
 
       const maxBarKcal = Math.max(targets.tdee + 300, ...chartDays.map(d => d.kcal), 2400);
@@ -5815,7 +6235,9 @@
       const targetY = yBar(targets.targetKcal).toFixed(1);
       const tdeeY = yBar(targets.tdee).toFixed(1);
 
-      document.getElementById("WeeklyCalorieChartContainer").innerHTML = `
+      document.getElementById("WeeklyCalorieChartContainer").innerHTML = chartDays.length === 0
+        ? `<p style="color:var(--text-muted);font-size:0.85rem;padding:12px;">Sin días con comidas o ayunos registrados en este período.</p>`
+        : `
         <svg viewBox="0 0 ${bw} ${bh}" style="width:100%;height:auto;background:var(--bg-card);border-radius:12px;border:1px solid var(--border);">
           <!-- Línea TDEE Mantenimiento -->
           <line x1="${bPadL}" y1="${tdeeY}" x2="${bw - bPadR}" y2="${tdeeY}" stroke="#f59e0b" stroke-dasharray="4,4" stroke-width="1.5" />
@@ -5830,33 +6252,339 @@
             const barW = Math.min(44, Math.max(22, slotW * 0.45));
             const x = bPadL + idx * slotW + (slotW - barW) / 2;
             const y = yBar(d.kcal);
-            const h = Math.max(3, bPadT + bPlotH - y);
-            const color = d.kcal === 0 ? "#475569" : (d.kcal <= targets.targetKcal + d.exercise ? "#22c55e" : (d.kcal <= targets.tdee + d.exercise ? "#f59e0b" : "#ef4444"));
+            const h = Math.max(4, bPadT + bPlotH - y);
+            const color = d.kcal === 0 && d.isFasting
+              ? "#a855f7"
+              : (d.kcal <= targets.targetKcal + d.exercise ? "#22c55e" : (d.kcal <= targets.tdee + d.exercise ? "#f59e0b" : "#ef4444"));
+            const barLabel = d.kcal === 0 && d.isFasting ? "0 (Ayuno)" : String(d.kcal);
             return `
               <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="5" fill="${color}" />
-              <text x="${(x + barW / 2).toFixed(1)}" y="${Math.max(12, y - 5).toFixed(1)}" fill="var(--text)" font-size="9.5" font-weight="700" text-anchor="middle">${d.kcal || "-"}</text>
+              <text x="${(x + barW / 2).toFixed(1)}" y="${Math.max(12, y - 5).toFixed(1)}" fill="var(--text)" font-size="9.5" font-weight="700" text-anchor="middle">${barLabel}</text>
               <text x="${(x + barW / 2).toFixed(1)}" y="${bh - 10}" fill="var(--text-muted)" font-size="9.5" text-anchor="middle">${d.label}</text>
             `;
           }).join("")}
         </svg>
       `;
 
-      // Resumen de déficit acumulado desde la fecha de inicio efectiva
+      // Resumen de déficit acumulado tomando únicamente los días con carga (> 0 kcal) o con ayuno registrado (vs. TDEE)
       const totalElapsedDays = allDaysSinceStart.length;
-      const loggedDays = allDaysSinceStart.filter(d => d.kcal > 0);
-      const totalAccumDeficit = loggedDays.reduce((acc, d) => acc + ((targets.tdee + d.exercise) - d.kcal), 0);
+      const totalAccumDeficit = loggedDays.reduce((acc, d) => acc + (targets.tdee - d.kcal), 0);
       const eqKg = (totalAccumDeficit / 7700).toFixed(2);
+
+      // Gasto neto por ejercicio descontando la cuota de actividad física que ya está incluida dentro del TDEE (TDEE - BMR*1.2)
+      const sedentaryTdee = Math.round((Number(targets.bmr) || 1700) * 1.2);
+      const tdeeIncludedExPerDay = Math.max(0, targets.tdee - sedentaryTdee);
+      const netExerciseBurn = loggedDays.reduce((acc, d) => acc + Math.max(0, (Number(d.exercise) || 0) - tdeeIncludedExPerDay), 0);
+      const eqExKg = (netExerciseBurn / 7700).toFixed(2);
       const dayWord = totalElapsedDays === 1 ? "día" : "días";
 
       document.getElementById("weeklyDeficitSummaryBox").innerHTML = `
         <div class="stat-box" style="background:var(--bg-card);">
-          <div style="font-size:0.85rem;">
-            📅 <strong>Días registrados (desde ${effectiveStart}):</strong> ${loggedDays.length} de ${totalElapsedDays} ${dayWord}<br/>
-            🔥 <strong>Déficit neto acumulado:</strong> <span style="color:var(--accent);font-weight:800;">${totalAccumDeficit >= 0 ? `-${totalAccumDeficit.toLocaleString("es-AR")} kcal` : `+${Math.abs(totalAccumDeficit)} kcal`}</span>
-            (Equivalente a <strong>${eqKg} kg</strong> de cambio en reservas de grasa).
+          <div style="font-size:0.85rem;display:flex;flex-direction:column;gap:6px;">
+            <div>
+              📅 <strong>Días registrados (desde ${effectiveStart}):</strong> ${loggedDays.length} de ${totalElapsedDays} ${dayWord} <small style="color:var(--text-muted);">(días sin carga excluidos)</small>
+            </div>
+            <div>
+              🔥 <strong>Déficit neto por alimentación:</strong> <span style="color:var(--accent);font-weight:800;">${totalAccumDeficit >= 0 ? `-${totalAccumDeficit.toLocaleString("es-AR")} kcal` : `+${Math.abs(totalAccumDeficit).toLocaleString("es-AR")} kcal`}</span>
+              (Equivalente a <strong>${eqKg} kg</strong> de quema de grasa).
+            </div>
+            <div>
+              🏃 <strong>Gasto por ejercicio <small style="color:var(--text-muted);font-weight:500;">(restando ${tdeeIncludedExPerDay} kcal/día incluidas en TDEE)</small>:</strong> <span style="color:var(--purple);font-weight:800;">-${netExerciseBurn.toLocaleString("es-AR")} kcal</span>
+              (Equivalente a <strong>${eqExKg} kg</strong> de quema de grasa).
+            </div>
           </div>
         </div>
       `;
+
+      renderBodyMeasurementsSection();
+    }
+
+    const MEAS_ZONE_GUIDES = {
+      neck: {
+        num: "①",
+        title: "Cuello (Clave para % Grasa)",
+        color: "#38bdf8",
+        desc: "Colocá la cinta horizontal justo <strong>debajo de la nuez</strong>, mirando al frente con los hombros relajados y sin apretar la piel."
+      },
+      chest: {
+        num: "②",
+        title: "Pecho / Tórax",
+        color: "#a855f7",
+        desc: "Pasá la cinta por debajo de las axilas rodeando la <strong>parte más ancha del torso/pectoral</strong>, al final de una exhalación normal."
+      },
+      arm: {
+        num: "③",
+        title: "Brazo / Bíceps",
+        color: "#f59e0b",
+        desc: "Medí en el <strong>punto medio entre el hueso del hombro y el codo</strong> (hacé siempre la medición igual: o siempre relajado o siempre contrayendo)."
+      },
+      waist: {
+        num: "④",
+        title: "Cintura (Clave para % Grasa)",
+        color: "#22c55e",
+        desc: "Rodeá el abdomen con la cinta horizontal <strong>a la altura del ombligo</strong> (o en la parte más estrecha del torso), al exhalar normal y sin meter panza."
+      },
+      hip: {
+        num: "⑤",
+        title: "Cadera (Clave en Mujeres e ICC)",
+        color: "#ec4899",
+        desc: "Con los pies juntos, rodeá horizontalmente la <strong>parte más prominente de los glúteos</strong> cuidando que la cinta quede paralela al piso."
+      },
+      thigh: {
+        num: "⑥",
+        title: "Pierna / Muslo",
+        color: "#06b6d4",
+        desc: "Parado con el peso repartido en ambos pies, medí el contorno en la <strong>parte media-alta del muslo</strong> (unos 10 cm debajo del pliegue glúteo)."
+      }
+    };
+
+    function highlightMeasurementZone(zoneKey) {
+      const info = MEAS_ZONE_GUIDES[zoneKey] || MEAS_ZONE_GUIDES.waist;
+      const tipBox = document.getElementById("measGuideTipBox");
+      if (tipBox && info) {
+        tipBox.style.borderColor = info.color;
+        tipBox.innerHTML = `
+          <strong style="color:${info.color};display:block;margin-bottom:3px;">${info.num} ${info.title}</strong>
+          ${info.desc}
+        `;
+      }
+      document.querySelectorAll("#bodyGuideSvg .meas-svg-zone").forEach(g => {
+        const isActive = g.getAttribute("data-zone") === zoneKey;
+        g.style.opacity = isActive ? "1" : "0.42";
+        g.style.filter = isActive ? "drop-shadow(0 0 4px rgba(255,255,255,0.65))" : "none";
+      });
+    }
+
+    function computeNavyBodyFat(entry) {
+      if (!entry) return { bfPct: null, category: null, fatKg: null, leanKg: null, ica: null };
+      const prof = (appData && appData.profile) || {};
+      const sex = prof.sex || "male";
+      const height = Number(prof.height) || 172;
+      const weight = Number(entry.weight) || Number(prof.weight) || 78;
+      const neck = Number(entry.neck) || 0;
+      const waist = Number(entry.waist) || 0;
+      const hip = Number(entry.hip) || 0;
+
+      let bfPct = null;
+      if (sex === "female") {
+        if (neck >= 20 && waist >= 45 && hip >= 55 && (waist + hip - neck) > 15 && height >= 110) {
+          const raw = 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.22100 * Math.log10(height)) - 450;
+          if (isFinite(raw)) bfPct = Math.round(Math.max(8, Math.min(60, raw)) * 10) / 10;
+        }
+      } else {
+        if (neck >= 22 && waist >= 45 && (waist - neck) > 8 && height >= 110) {
+          const raw = 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(height)) - 450;
+          if (isFinite(raw)) bfPct = Math.round(Math.max(4, Math.min(55, raw)) * 10) / 10;
+        }
+      }
+
+      let category = null;
+      let catColor = "var(--accent)";
+      if (bfPct !== null) {
+        if (sex === "female") {
+          if (bfPct < 21) { category = "Atlético / Deportivo"; catColor = "#38bdf8"; }
+          else if (bfPct < 25) { category = "Fitness"; catColor = "#22c55e"; }
+          else if (bfPct <= 31) { category = "Saludable / Aceptable"; catColor = "#f59e0b"; }
+          else { category = "Elevado"; catColor = "#ef4444"; }
+        } else {
+          if (bfPct < 14) { category = "Atlético / Deportivo"; catColor = "#38bdf8"; }
+          else if (bfPct < 18) { category = "Fitness"; catColor = "#22c55e"; }
+          else if (bfPct <= 24) { category = "Saludable / Aceptable"; catColor = "#f59e0b"; }
+          else { category = "Elevado"; catColor = "#ef4444"; }
+        }
+      }
+
+      const fatKg = bfPct !== null ? Math.round((weight * (bfPct / 100)) * 10) / 10 : null;
+      const leanKg = bfPct !== null ? Math.round((weight - fatKg) * 10) / 10 : null;
+      const ica = waist > 0 && height > 0 ? Math.round((waist / height) * 100) / 100 : null;
+
+      return { bfPct, category, catColor, fatKg, leanKg, ica, weight };
+    }
+
+    function renderBodyMeasurementsSection() {
+      const summaryBox = document.getElementById("bodyFatSummaryCards");
+      const chartBox = document.getElementById("measurementsChartContainer");
+      const listBox = document.getElementById("measurementsHistoryList");
+      const dateInp = document.getElementById("measDateInput");
+      if (!summaryBox || !chartBox || !listBox) return;
+
+      if (dateInp && !dateInp.value) {
+        dateInp.value = selectedDate || todayStr();
+      }
+
+      const mLogs = [...(appData.measurementsLog || [])]
+        .filter(m => m && m.date)
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      if (mLogs.length === 0) {
+        const isFemale = (appData.profile && appData.profile.sex) === "female";
+        summaryBox.innerHTML = `
+          <div class="stat-box" style="background:var(--bg-card);border:1px dashed var(--border);padding:14px;">
+            <strong style="font-size:0.88rem;color:var(--text);display:block;margin-bottom:4px;">
+              🧬 Todavía no cargaste circunferencias
+            </strong>
+            <span style="font-size:0.79rem;color:var(--text-muted);line-height:1.45;">
+              Cargá a la izquierda tus medidas en centímetros (con <strong>Cuello + Cintura${isFemale ? " + Cadera" : ""}</strong> ya se calcula automáticamente tu <strong>% de Grasa Corporal</strong>, tus kg de masa muscular magra y tu evolución en cm).
+            </span>
+          </div>
+        `;
+        chartBox.innerHTML = "";
+        listBox.innerHTML = "";
+        return;
+      }
+
+      const first = mLogs[0];
+      const latest = mLogs[mLogs.length - 1];
+      const firstStats = computeNavyBodyFat(first);
+      const latestStats = computeNavyBodyFat(latest);
+
+      const deltaWaist = (Number(latest.waist) && Number(first.waist))
+        ? Math.round((Number(latest.waist) - Number(first.waist)) * 10) / 10
+        : null;
+      const deltaBf = (latestStats.bfPct !== null && firstStats.bfPct !== null)
+        ? Math.round((latestStats.bfPct - firstStats.bfPct) * 10) / 10
+        : null;
+
+      const sumKeys = ["neck", "chest", "arm", "waist", "hip", "thigh"];
+      let totalCmDiff = 0;
+      let comparedCount = 0;
+      for (const k of sumKeys) {
+        if (Number(latest[k]) > 0 && Number(first[k]) > 0) {
+          totalCmDiff += (Number(latest[k]) - Number(first[k]));
+          comparedCount++;
+        }
+      }
+      totalCmDiff = Math.round(totalCmDiff * 10) / 10;
+
+      summaryBox.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(145px, 1fr));gap:9px;">
+          <div class="stat-box" style="background:var(--bg-card);">
+            <span class="label">🔥 % Grasa Corporal (Navy)</span>
+            <span class="val" style="color:${latestStats.catColor || 'var(--accent)'};">
+              ${latestStats.bfPct !== null ? `${latestStats.bfPct}%` : "Falta Cuello/Cintura"}
+            </span>
+            <small style="font-size:0.72rem;color:var(--text-muted);">
+              ${latestStats.category ? `${latestStats.category}${deltaBf !== null && mLogs.length > 1 ? ` (${deltaBf > 0 ? "+" : ""}${deltaBf}%)` : ""}` : "Cargá cuello y cintura"}
+            </small>
+          </div>
+          <div class="stat-box" style="background:var(--bg-card);">
+            <span class="label">💪 Composición Corporal</span>
+            <span class="val" style="font-size:0.96rem;">
+              ${latestStats.leanKg !== null ? `${latestStats.leanKg} kg magros` : "—"}
+            </span>
+            <small style="font-size:0.72rem;color:var(--text-muted);">
+              ${latestStats.fatKg !== null ? `🧈 ${latestStats.fatKg} kg grasos • 🥩 Meta prot: <strong>${computeNutritionTargets().proteinG}g/día</strong>` : "Estimado según tu peso actual"}
+            </small>
+          </div>
+          <div class="stat-box" style="background:var(--bg-card);">
+            <span class="label">📏 Cintura & Riesgo (ICA)</span>
+            <span class="val" style="font-size:0.96rem;color:${latestStats.ica && latestStats.ica < 0.5 ? '#22c55e' : '#f59e0b'};">
+              ${latest.waist ? `${latest.waist} cm` : "—"} ${deltaWaist !== null && mLogs.length > 1 ? `(${deltaWaist > 0 ? "+" : ""}${deltaWaist} cm)` : ""}
+            </span>
+            <small style="font-size:0.72rem;color:var(--text-muted);">
+              ${latestStats.ica ? `Índice Cintura/Altura: ${latestStats.ica} ${latestStats.ica < 0.5 ? "🟢 Óptimo" : "🟡 Reducir"}` : "Medida abdominal"}
+            </small>
+          </div>
+          <div class="stat-box" style="background:var(--bg-card);">
+            <span class="label">📉 Cambio Total en cm</span>
+            <span class="val" style="font-size:0.96rem;color:${totalCmDiff <= 0 ? '#22c55e' : '#f59e0b'};">
+              ${mLogs.length > 1 && comparedCount > 0 ? `${totalCmDiff > 0 ? "+" : ""}${totalCmDiff} cm` : "1° Registro"}
+            </span>
+            <small style="font-size:0.72rem;color:var(--text-muted);">
+              Desde ${first.date} (${mLogs.length} ${mLogs.length === 1 ? "medición" : "mediciones"})
+            </small>
+          </div>
+        </div>
+      `;
+
+      // Gráfico SVG de evolución de Cintura (cm) y % de Grasa
+      const waistPtsLogs = mLogs.filter(m => Number(m.waist) > 0);
+      if (waistPtsLogs.length >= 1) {
+        const wVals = waistPtsLogs.map(m => Number(m.waist));
+        const minW = Math.min(...wVals) - 2;
+        const maxW = Math.max(...wVals) + 2;
+        const width = 520, height = 185, padL = 40, padR = 36, padT = 22, padB = 30;
+        const plotW = width - padL - padR;
+        const plotH = height - padT - padB;
+        const xCoord = (i) => padL + (waistPtsLogs.length === 1 ? plotW / 2 : (i / (waistPtsLogs.length - 1)) * plotW);
+        const yWaist = (val) => padT + plotH - ((val - minW) / Math.max(1, maxW - minW)) * plotH;
+
+        const waistPoly = waistPtsLogs.map((m, i) => `${xCoord(i).toFixed(1)},${yWaist(Number(m.waist)).toFixed(1)}`).join(" ");
+
+        const bfVals = waistPtsLogs.map(m => computeNavyBodyFat(m).bfPct).filter(v => v !== null);
+        const minBf = bfVals.length > 0 ? Math.min(...bfVals) - 1.5 : 10;
+        const maxBf = bfVals.length > 0 ? Math.max(...bfVals) + 1.5 : 30;
+        const yBf = (val) => padT + plotH - ((val - minBf) / Math.max(1, maxBf - minBf)) * plotH;
+
+        const bfPointsArr = [];
+        waistPtsLogs.forEach((m, i) => {
+          const bf = computeNavyBodyFat(m).bfPct;
+          if (bf !== null) bfPointsArr.push({ i, date: m.date, bf, x: xCoord(i), y: yBf(bf) });
+        });
+        const bfPoly = bfPointsArr.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+
+        chartBox.innerHTML = `
+          <svg viewBox="0 0 ${width} ${height}" style="width:100%;height:auto;background:var(--bg-card);border-radius:12px;border:1px solid var(--border);">
+            ${bfPoly ? `<polyline fill="none" stroke="#a855f7" stroke-width="2.4" stroke-dasharray="4,2" points="${bfPoly}" />` : ""}
+            <polyline fill="none" stroke="#22c55e" stroke-width="3" points="${waistPoly}" />
+            ${waistPtsLogs.map((m, i) => `
+              <circle cx="${xCoord(i).toFixed(1)}" cy="${yWaist(Number(m.waist)).toFixed(1)}" r="4.2" fill="#22c55e" stroke="#0f141c" stroke-width="1.5" />
+              <text x="${xCoord(i).toFixed(1)}" y="${Math.max(12, yWaist(Number(m.waist)) - 8).toFixed(1)}" fill="#22c55e" font-size="9.5" font-weight="800" text-anchor="middle">${m.waist}cm</text>
+              <text x="${xCoord(i).toFixed(1)}" y="${height - 9}" fill="var(--text-muted)" font-size="9.5" text-anchor="middle">${m.date.slice(5)}</text>
+            `).join("")}
+            ${bfPointsArr.map(p => `
+              <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.6" fill="#a855f7" stroke="#0f141c" stroke-width="1.2" />
+              <text x="${p.x.toFixed(1)}" y="${Math.min(height - 20, p.y + 13).toFixed(1)}" fill="#a855f7" font-size="9" font-weight="700" text-anchor="middle">${p.bf}%</text>
+            `).join("")}
+          </svg>
+          <div style="display:flex;gap:14px;font-size:0.74rem;color:var(--text-muted);margin-top:5px;flex-wrap:wrap;">
+            <span>🟢 Cintura (cm)</span>
+            <span>🟣 % Grasa Corporal (U.S. Navy)</span>
+          </div>
+        `;
+      } else {
+        chartBox.innerHTML = "";
+      }
+
+      // Historial detallado de circunferencias
+      const labelsMap = [
+        { k: "waist", label: "Cintura", color: "#22c55e" },
+        { k: "neck", label: "Cuello", color: "#38bdf8" },
+        { k: "hip", label: "Cadera", color: "#ec4899" },
+        { k: "chest", label: "Pecho", color: "#a855f7" },
+        { k: "arm", label: "Brazo", color: "#f59e0b" },
+        { k: "thigh", label: "Pierna", color: "#06b6d4" }
+      ];
+
+      listBox.innerHTML = [...mLogs].reverse().map(m => {
+        const st = computeNavyBodyFat(m);
+        const badges = labelsMap
+          .filter(x => Number(m[x.k]) > 0)
+          .map(x => `<span style="font-size:0.73rem;padding:2px 7px;border-radius:6px;background:var(--bg-elev);border:1px solid var(--border);"><strong style="color:${x.color};">${x.label}:</strong> ${m[x.k]} cm</span>`)
+          .join(" ");
+        return `
+          <div class="meal-item" style="align-items:flex-start;">
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <strong>📅 ${m.date}</strong>
+                ${st.bfPct !== null ? `<span class="chip" style="padding:2px 8px;font-size:0.72rem;font-weight:800;background:var(--purple-soft);color:var(--purple);">🔥 ${st.bfPct}% Grasa (${st.leanKg}kg magros)</span>` : ""}
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;">${badges}</div>
+            </div>
+            <button type="button" class="icon-del" data-del-meas="${m.date}" title="Borrar medición">🗑️</button>
+          </div>
+        `;
+      }).join("");
+
+      listBox.querySelectorAll("[data-del-meas]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const d = btn.getAttribute("data-del-meas");
+          appData.measurementsLog = (appData.measurementsLog || []).filter(item => item.date !== d);
+          appData.deletedMeasurementDates = Array.from(new Set([...(appData.deletedMeasurementDates || []), d]));
+          saveToServer();
+          renderProgressCharts();
+        });
+      });
     }
 
     // =========================================================================
@@ -6515,9 +7243,25 @@
 
       if (isAdminMode) {
         refreshAdminUsersTable();
+      } else {
+        syncCloudDataIfNeeded();
       }
     }
     window.switchTab = switchTab;
+
+    let _lastCloudSyncTs = 0;
+    function syncCloudDataIfNeeded() {
+      const now = Date.now();
+      if (now - _lastCloudSyncTs < 3500) return;
+      _lastCloudSyncTs = now;
+      if (typeof loadFromServer === "function") {
+        loadFromServer();
+      }
+    }
+    window.addEventListener("focus", syncCloudDataIfNeeded);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") syncCloudDataIfNeeded();
+    });
 
     document.querySelectorAll(".tab-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -7339,6 +8083,112 @@
       renderAll();
     });
 
+    // Guía interactiva de circunferencias y guardado de medidas corporales
+    document.querySelectorAll("#bodyMeasurementsForm input[data-guide-zone]").forEach(inp => {
+      const z = inp.getAttribute("data-guide-zone");
+      inp.addEventListener("focus", () => highlightMeasurementZone(z));
+      inp.addEventListener("click", () => highlightMeasurementZone(z));
+    });
+
+    document.querySelectorAll("#bodyGuideSvg .meas-svg-zone").forEach(zoneEl => {
+      zoneEl.addEventListener("click", () => {
+        const z = zoneEl.getAttribute("data-zone");
+        highlightMeasurementZone(z);
+        const targetInp = document.querySelector(`#bodyMeasurementsForm input[data-guide-zone="${z}"]`);
+        if (targetInp) targetInp.focus();
+      });
+    });
+
+    const bodyMeasForm = document.getElementById("bodyMeasurementsForm");
+    if (bodyMeasForm) {
+      bodyMeasForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const d = document.getElementById("measDateInput").value || selectedDate || todayStr();
+        const neck = Number(document.getElementById("measNeckInput").value) || 0;
+        const waist = Number(document.getElementById("measWaistInput").value) || 0;
+        const hip = Number(document.getElementById("measHipInput").value) || 0;
+        const chest = Number(document.getElementById("measChestInput").value) || 0;
+        const arm = Number(document.getElementById("measArmInput").value) || 0;
+        const thigh = Number(document.getElementById("measThighInput").value) || 0;
+
+        if (!neck && !waist && !hip && !chest && !arm && !thigh) {
+          alert("Ingresá al menos una medida en centímetros (por ejemplo Cuello y Cintura).");
+          return;
+        }
+
+        appData.measurementsLog = Array.isArray(appData.measurementsLog) ? appData.measurementsLog : [];
+        if (Array.isArray(appData.deletedMeasurementDates)) {
+          appData.deletedMeasurementDates = appData.deletedMeasurementDates.filter(x => x !== d);
+        }
+        const existing = appData.measurementsLog.find(item => item && item.date === d) || {};
+        const mergedEntry = {
+          date: d,
+          updatedAt: Date.now(),
+          weight: Number(appData.profile && appData.profile.weight) || 78,
+          neck: neck || Number(existing.neck) || 0,
+          waist: waist || Number(existing.waist) || 0,
+          hip: hip || Number(existing.hip) || 0,
+          chest: chest || Number(existing.chest) || 0,
+          arm: arm || Number(existing.arm) || 0,
+          thigh: thigh || Number(existing.thigh) || 0
+        };
+
+        appData.measurementsLog = appData.measurementsLog.filter(item => item && item.date !== d);
+        appData.measurementsLog.push(mergedEntry);
+
+        ["measNeckInput", "measWaistInput", "measHipInput", "measChestInput", "measArmInput", "measThighInput"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+
+        saveToServer();
+        renderAll();
+        const st = computeNavyBodyFat(mergedEntry);
+        if (st.bfPct !== null) {
+          setRaccoonSpeech(`"📏 ¡Medidas guardadas! Tu estimado actual es ${st.bfPct}% de grasa corporal (${st.category}) con ${st.leanKg} kg de masa magra 🐱💪."`);
+        } else {
+          setRaccoonSpeech(`"📏 ¡Circunferencias registradas! Acordate de cargar Cuello y Cintura cuando quieras calcular tu % de grasa corporal 🐱🐾."`);
+        }
+      });
+    }
+
+    const btnForceSyncMeas = document.getElementById("btnForceSyncMeasurements");
+    if (btnForceSyncMeas) {
+      btnForceSyncMeas.addEventListener("click", async () => {
+        btnForceSyncMeas.disabled = true;
+        btnForceSyncMeas.textContent = "⏳ Sincronizando...";
+        try {
+          await loadFromServer();
+        } finally {
+          btnForceSyncMeas.disabled = false;
+          btnForceSyncMeas.textContent = "🔄 Sincronizar nube";
+        }
+      });
+    }
+
+    const topSyncBadge = document.getElementById("syncBadge");
+    if (topSyncBadge) {
+      topSyncBadge.addEventListener("click", () => {
+        loadFromServer();
+      });
+    }
+
+    let _lastAutoSyncTs = 0;
+    function triggerAutoSyncIfNeeded() {
+      const now = Date.now();
+      if (now - _lastAutoSyncTs < 8000) return;
+      _lastAutoSyncTs = now;
+      loadFromServer();
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        triggerAutoSyncIfNeeded();
+      }
+    });
+    window.addEventListener("focus", () => {
+      triggerAutoSyncIfNeeded();
+    });
+
     // Selector de fecha "Contar desde" o modo Automático (1° día con datos)
     document.getElementById("trackingStartDateInput").addEventListener("change", (e) => {
       appData.profile.trackingStartDate = e.target.value || "";
@@ -7531,13 +8381,8 @@
     function updateMobileInstallButtonVisibility() {
       const btnMobile = document.getElementById("btnOpenMobileModal");
       if (!btnMobile) return;
-      const isStandalone =
-        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
-        (window.matchMedia && window.matchMedia("(display-mode: fullscreen)").matches) ||
-        window.navigator.standalone === true ||
-        document.referrer.includes("android-app://") ||
-        localStorage.getItem("michufit_pwa_installed") === "1";
-      btnMobile.style.display = isStandalone ? "none" : "inline-flex";
+      const isNativeApk = Boolean(window.MichuAndroidHealth);
+      btnMobile.style.display = isNativeApk ? "none" : "inline-flex";
     }
     updateMobileInstallButtonVisibility();
     window.addEventListener("appinstalled", () => {
@@ -9029,7 +9874,7 @@
         if (steps >= 50) {
           const estMinutes = Math.max(5, Math.round(steps / 105));
           const calcKcal = Math.max(10, Math.round(2.9 * weightKg * (estMinutes / 60)));
-          const finalKcal = Number(activeKcalFromHc) > calcKcal ? Math.round(Number(activeKcalFromHc)) : calcKcal;
+          const finalKcal = calcKcal;
 
           // Reemplaza el registro de pasos sincronizado previo del mismo día para no duplicar
           day.exercises = day.exercises.filter(ex => !String(ex.id || "").startsWith("ex-sh-steps") && !/pasos.*samsung|pasos.*health/i.test(ex.name || ""));
@@ -9044,10 +9889,23 @@
           updatedAnything = true;
         }
 
+        // Limpia sesiones previas sincronizadas de Samsung Health (incluyendo caminatas duplicadas)
+        day.exercises = day.exercises.filter(ex =>
+          !String(ex.id || "").startsWith("ex-sh-sess-") &&
+          !/^caminata\s*\(.*health/i.test(String(ex.name || "").trim())
+        );
+
         if (Array.isArray(sessionsList) && sessionsList.length > 0) {
-          day.exercises = day.exercises.filter(ex => !String(ex.id || "").startsWith("ex-sh-sess-"));
-          sessionsList.forEach((sess, idx) => {
-            const mins = Math.max(5, Math.round(Number(sess.minutes) || 30));
+          // Excluye sesiones de "Caminata / Walking" cuando ya se contabilizan los pasos totales del día para no duplicar calorías
+          const nonDuplicateSessions = sessionsList.filter(sess => {
+            const t = String(sess.title || "").trim().toLowerCase();
+            if (steps >= 50 && /caminata|walk|paseo|senderismo|hiking/.test(t)) {
+              return false;
+            }
+            return true;
+          });
+          nonDuplicateSessions.forEach((sess, idx) => {
+            const mins = Math.max(5, Math.round(Number(sess.minutes || sess.durationMinutes) || 30));
             const title = (sess.title || "Entrenamiento Samsung Health").trim();
             const kcal = Number(sess.kcal) > 0
               ? Math.round(Number(sess.kcal))

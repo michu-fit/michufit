@@ -5149,6 +5149,7 @@
             </div>
             <div class="meal-item-right">
               <strong style="color:var(--accent);">-${ex.kcal} kcal</strong>
+              <button type="button" class="icon-del" data-edit-ex-id="${ex.id}" title="Editar pasos o calorías">✏️</button>
               <button type="button" class="icon-del" data-del-ex-id="${ex.id}" title="Eliminar ejercicio">🗑️</button>
             </div>
           </div>
@@ -5187,6 +5188,12 @@
         }
       });
 
+      grid.querySelectorAll("[data-edit-ex-id]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          editExerciseById(btn.getAttribute("data-edit-ex-id"));
+        });
+      });
+
       grid.querySelectorAll("[data-del-ex-id]").forEach(btn => {
         btn.addEventListener("click", () => {
           deleteExerciseById(btn.getAttribute("data-del-ex-id"));
@@ -5194,6 +5201,45 @@
       });
 
       renderModalExercisesList();
+    }
+
+    function editExerciseById(exId) {
+      const day = ensureDayRecord(selectedDate);
+      const ex = (day.exercises || []).find(x => x.id === exId);
+      if (!ex) return;
+
+      const isStepsRecord = String(ex.id || "").startsWith("ex-sh-steps") || /pasos/i.test(ex.name || "");
+      const weightKg = Math.max(40, Math.min(220, Number(appData?.profile?.weight) || 78));
+
+      if (isStepsRecord) {
+        const curStepsMatch = String(ex.name || "").replace(/\./g, "").match(/(\d+)/);
+        const curSteps = curStepsMatch ? Number(curStepsMatch[1]) : 6500;
+        const inputVal = prompt("✏️ Editar cantidad exacta de pasos (ej: lo que marca Samsung Health):", String(curSteps));
+        if (inputVal === null) return;
+        const newSteps = Math.round(Number(String(inputVal).replace(/[^\d]/g, "")) || 0);
+        if (newSteps < 50) {
+          alert("Ingresá un número válido de pasos (ej: 6505).");
+          return;
+        }
+        const estMinutes = Math.max(5, Math.round(newSteps / 105));
+        const calcKcal = Math.max(10, Math.round(2.9 * weightKg * (estMinutes / 60)));
+        ex.name = `${newSteps.toLocaleString("es-AR")} pasos (Samsung Health)`;
+        ex.minutes = estMinutes;
+        ex.kcal = calcKcal;
+        day.exerciseKcal = day.exercises.reduce((acc, x) => acc + (Number(x.kcal) || 0), 0);
+        saveToServer();
+        renderAll();
+        setRaccoonSpeech(`"👟 ¡Pasos corregidos a ${newSteps.toLocaleString("es-AR")} pasos (-${calcKcal} kcal en ~${estMinutes} min) 🐱✅!"`);
+      } else {
+        const inputKcal = prompt(`✏️ Editar calorías quemadas para "${ex.name}":`, String(ex.kcal || 150));
+        if (inputKcal === null) return;
+        const newKcal = Math.round(Number(String(inputKcal).replace(/[^\d.]/g, "")) || 0);
+        if (newKcal <= 0) return;
+        ex.kcal = newKcal;
+        day.exerciseKcal = day.exercises.reduce((acc, x) => acc + (Number(x.kcal) || 0), 0);
+        saveToServer();
+        renderAll();
+      }
     }
 
     function deleteExerciseById(exId) {
@@ -5226,10 +5272,17 @@
           </div>
           <div class="meal-item-right">
             <strong style="color:var(--accent);">-${ex.kcal} kcal</strong>
+            <button type="button" class="icon-del" data-modal-edit-ex="${ex.id}" title="Editar pasos o calorías">✏️</button>
             <button type="button" class="icon-del" data-modal-del-ex="${ex.id}" title="Eliminar ejercicio">🗑️</button>
           </div>
         </div>
       `).join("");
+
+      list.querySelectorAll("[data-modal-edit-ex]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          editExerciseById(btn.getAttribute("data-modal-edit-ex"));
+        });
+      });
 
       list.querySelectorAll("[data-modal-del-ex]").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -9821,7 +9874,7 @@
         if (steps >= 50) {
           const estMinutes = Math.max(5, Math.round(steps / 105));
           const calcKcal = Math.max(10, Math.round(2.9 * weightKg * (estMinutes / 60)));
-          const finalKcal = Number(activeKcalFromHc) > calcKcal ? Math.round(Number(activeKcalFromHc)) : calcKcal;
+          const finalKcal = calcKcal;
 
           // Reemplaza el registro de pasos sincronizado previo del mismo día para no duplicar
           day.exercises = day.exercises.filter(ex => !String(ex.id || "").startsWith("ex-sh-steps") && !/pasos.*samsung|pasos.*health/i.test(ex.name || ""));
