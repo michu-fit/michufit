@@ -3581,17 +3581,20 @@
             targetUser = cand;
           }
           const prevTd = targetUser.trackerData || {};
-          if (typeof mergeLocalAndServerData === "function") {
-            // El payload entrante (data) tiene prioridad, pero conservamos registros de otros dispositivos (como measurementsLog o weightLog)
-            const { merged: combinedTd } = mergeLocalAndServerData(data, prevTd);
+          // El payload entrante (data) es la fuente de verdad de las ediciones y borrados del usuario activo;
+          // únicamente preservamos circunferencias previas de otras fechas que no hayan sido eliminadas.
+          if (Array.isArray(prevTd.measurementsLog) && prevTd.measurementsLog.length > 0) {
             const delMeas = new Set(Array.isArray(data.deletedMeasurementDates) ? data.deletedMeasurementDates : []);
-            if (delMeas.size > 0 && Array.isArray(combinedTd.measurementsLog)) {
-              combinedTd.measurementsLog = combinedTd.measurementsLog.filter(m => m && !delMeas.has(m.date));
+            const incomingMeas = Array.isArray(data.measurementsLog) ? data.measurementsLog : [];
+            const incomingDates = new Set(incomingMeas.map(m => m && m.date));
+            for (const pm of prevTd.measurementsLog) {
+              if (pm && pm.date && !delMeas.has(pm.date) && !incomingDates.has(pm.date)) {
+                incomingMeas.push(pm);
+              }
             }
-            targetUser.trackerData = combinedTd;
-          } else {
-            targetUser.trackerData = data;
+            data.measurementsLog = incomingMeas.filter(m => m && !delMeas.has(m.date));
           }
+          targetUser.trackerData = data;
           if (data.profile && data.profile.name) {
             targetUser.name = data.profile.name;
           }
@@ -4433,32 +4436,75 @@
       if (!localData || typeof localData !== "object") return { merged: serverData, hadLocalChanges: false };
       let hadLocalChanges = false;
       const merged = JSON.parse(JSON.stringify(serverData));
+      const delItemSet = new Set([
+        ...(Array.isArray(serverData.deletedItemIds) ? serverData.deletedItemIds : []),
+        ...(Array.isArray(localData.deletedItemIds) ? localData.deletedItemIds : [])
+      ]);
+      if (delItemSet.size > 0) {
+        const prevDelLen = Array.isArray(merged.deletedItemIds) ? merged.deletedItemIds.length : 0;
+        merged.deletedItemIds = Array.from(delItemSet).slice(-500);
+        if (merged.deletedItemIds.length > prevDelLen) hadLocalChanges = true;
+      }
+
       merged.days = merged.days || {};
       const localDays = localData.days || {};
       for (const [dateKey, lDay] of Object.entries(localDays)) {
         if (!lDay || typeof lDay !== "object") continue;
         if (!merged.days[dateKey]) {
-          merged.days[dateKey] = lDay;
+          merged.days[dateKey] = JSON.parse(JSON.stringify(lDay));
+          merged.days[dateKey].meals = (merged.days[dateKey].meals || []).filter(m => m && !delItemSet.has(m.id));
+          merged.days[dateKey].exercises = (merged.days[dateKey].exercises || []).filter(ex => ex && !delItemSet.has(ex.id));
+          merged.days[dateKey].exerciseKcal = merged.days[dateKey].exercises.reduce((acc, x) => acc + (Number(x.kcal) || 0), 0);
           hadLocalChanges = true;
           continue;
         }
         const sDay = merged.days[dateKey];
-        sDay.meals = sDay.meals || [];
-        const sMealIds = new Set(sDay.meals.map(m => m.id));
+        const origMealsLen = (sDay.meals || []).length;
+        sDay.meals = (sDay.meals || []).filter(m => m && !delItemSet.has(m.id));
+        if (sDay.meals.length !== origMealsLen) hadLocalChanges = true;
+
+        const sMealMap = new Map(sDay.meals.map(m => [m.id, m]));
         for (const m of (lDay.meals || [])) {
-          if (m && m.id && !sMealIds.has(m.id)) {
+          if (!m || !m.id || delItemSet.has(m.id)) continue;
+          if (!sMealMap.has(m.id)) {
             sDay.meals.push(m);
+            sMealMap.set(m.id, m);
             hadLocalChanges = true;
           }
         }
-        sDay.exercises = sDay.exercises || [];
-        const sExIds = new Set(sDay.exercises.map(ex => ex.id));
+
+        const origExLen = (sDay.exercises || []).length;
+        sDay.exercises = (sDay.exercises || []).filter(ex => ex && !delItemSet.has(ex.id));
+        if (sDay.exercises.length !== origExLen) hadLocalChanges = true;
+
+        const sExMap = new Map(sDay.exercises.map((ex, idx) => [ex.id, idx]));
         for (const ex of (lDay.exercises || [])) {
-          if (ex && ex.id && !sExIds.has(ex.id)) {
+          if (!ex || !ex.id || delItemSet.has(ex.id)) continue;
+          if (!sExMap.has(ex.id)) {
             sDay.exercises.push(ex);
+            sExMap.set(ex.id, sDay.exercises.length - 1);
             hadLocalChanges = true;
+          } else {
+            const idx = sExMap.get(ex.id);
+            const sEx = sDay.exercises[idx];
+            const lUpd = Number(ex.updatedAt) || 0;
+            const sUpd = Number(sEx.updatedAt) || 0;
+            if (lUpd > sUpd && (ex.kcal !== sEx.kcal || ex.name !== sEx.name)) {
+              sDay.exercises[idx] = { ...ex };
+              hadLocalChanges = true;
+            }
           }
         }
+
+        const lStepUpd = Number(lDay.manualStepsUpdatedAt) || 0;
+        const sStepUpd = Number(sDay.manualStepsUpdatedAt) || 0;
+        if (lStepUpd > sStepUpd) {
+          sDay.manualStepsOverride = lDay.manualStepsOverride;
+          sDay.manualStepsBaseHc = lDay.manualStepsBaseHc;
+          sDay.manualStepsUpdatedAt = lStepUpd;
+          hadLocalChanges = true;
+        }
+
         sDay.exerciseKcal = sDay.exercises.reduce((acc, x) => acc + (Number(x.kcal) || 0), 0);
         if ((lDay.water || 0) > (sDay.water || 0)) {
           sDay.water = lDay.water;
@@ -4661,7 +4707,14 @@
     let _retrySaveTimer = null;
 
     async function saveToServer() {
-      localStorage.setItem(getBackupStorageKey(), JSON.stringify(appData));
+      const jsonStr = JSON.stringify(appData);
+      const primaryKey = getBackupStorageKey();
+      localStorage.setItem(primaryKey, jsonStr);
+      if (primaryKey !== "michufit_backup_v1") {
+        localStorage.setItem("michufit_backup_v1", jsonStr);
+      }
+      localStorage.removeItem("pachofit_backup_v1");
+      localStorage.removeItem("michufit_backup_u-owner");
       localStorage.setItem("michufit_pending_push", "1");
       updateSyncBadge("⏳ Guardando en la nube...", true);
       try {
@@ -4678,14 +4731,6 @@
         });
         if (res.ok) {
           localStorage.removeItem("michufit_pending_push");
-          try {
-            const savedJson = await res.json();
-            if (savedJson && savedJson.data && typeof savedJson.data === "object") {
-              appData = savedJson.data;
-              localStorage.setItem(getBackupStorageKey(), JSON.stringify(appData));
-              renderAll();
-            }
-          } catch (_) {}
           updateSyncBadge(inspectedUserInfo ? `☁️ Guardado en ${inspectedUserInfo.name}` : "☁️ Guardado en la nube ✓", true);
           return true;
         }
@@ -5112,6 +5157,7 @@
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-del-id");
           day.meals = day.meals.filter(m => m.id !== id);
+          appData.deletedItemIds = Array.from(new Set([...(appData.deletedItemIds || []), id])).slice(-500);
           saveToServer();
           renderAll();
         });
@@ -5226,16 +5272,24 @@
         ex.name = `${newSteps.toLocaleString("es-AR")} pasos (Samsung Health)`;
         ex.minutes = estMinutes;
         ex.kcal = calcKcal;
+        ex.updatedAt = Date.now();
+        day.manualStepsOverride = newSteps;
+        day.manualStepsBaseHc = Math.max(Number(day.lastRawHcSteps) || 0, curSteps, newSteps);
+        day.manualStepsUpdatedAt = Date.now();
+        if (Array.isArray(appData.deletedItemIds)) {
+          appData.deletedItemIds = appData.deletedItemIds.filter(id => id !== ex.id);
+        }
         day.exerciseKcal = day.exercises.reduce((acc, x) => acc + (Number(x.kcal) || 0), 0);
         saveToServer();
         renderAll();
-        setRaccoonSpeech(`"👟 ¡Pasos corregidos a ${newSteps.toLocaleString("es-AR")} pasos (-${calcKcal} kcal en ~${estMinutes} min) 🐱✅!"`);
+        setRaccoonSpeech(`"👟 ¡Pasos corregidos a ${newSteps.toLocaleString("es-AR")} pasos (-${calcKcal} kcal en ~${estMinutes} min) 🐱✅! Si volvés a sincronizar hoy, Michu respeta tu corrección."`);
       } else {
         const inputKcal = prompt(`✏️ Editar calorías quemadas para "${ex.name}":`, String(ex.kcal || 150));
         if (inputKcal === null) return;
         const newKcal = Math.round(Number(String(inputKcal).replace(/[^\d.]/g, "")) || 0);
         if (newKcal <= 0) return;
         ex.kcal = newKcal;
+        ex.updatedAt = Date.now();
         day.exerciseKcal = day.exercises.reduce((acc, x) => acc + (Number(x.kcal) || 0), 0);
         saveToServer();
         renderAll();
@@ -5244,8 +5298,15 @@
 
     function deleteExerciseById(exId) {
       const day = ensureDayRecord(selectedDate);
+      const targetEx = (day.exercises || []).find(x => x.id === exId);
       day.exercises = (day.exercises || []).filter(x => x.id !== exId);
       day.exerciseKcal = day.exercises.reduce((acc, x) => acc + (Number(x.kcal) || 0), 0);
+      appData.deletedItemIds = Array.from(new Set([...(appData.deletedItemIds || []), exId])).slice(-500);
+      if (targetEx && (String(targetEx.id || "").startsWith("ex-sh-steps") || /pasos/i.test(targetEx.name || ""))) {
+        day.manualStepsOverride = 0;
+        day.manualStepsBaseHc = 0;
+        day.manualStepsUpdatedAt = Date.now();
+      }
       saveToServer();
       renderAll();
     }
@@ -9862,29 +9923,60 @@
     // PUENTE NATIVO ANDROID (.APK) CON SAMSUNG HEALTH / HEALTH CONNECT
     // =========================================================================
     (function setupSamsungHealthBridge() {
-      function applySyncedStepsAndExercises(dateKey, stepsCount, activeKcalFromHc, sessionsList, sourceLabel = "Samsung Health") {
-        const day = ensureDayRecord(dateKey || selectedDate || todayStr());
+      function applySyncedStepsAndExercises(dateKey, stepsCount, activeKcalFromHc, sessionsList, sourceLabel = "Samsung Health", isManualQuickInput = false) {
+        const effDate = dateKey || selectedDate || todayStr();
+        const day = ensureDayRecord(effDate);
         day.exercises = day.exercises || [];
         const weightKg = Math.max(40, Math.min(220, Number(appData?.profile?.weight) || 78));
         const now = new Date();
         const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
         let updatedAnything = false;
-        const steps = Math.round(Number(stepsCount) || 0);
+        const rawSteps = Math.round(Number(stepsCount) || 0);
+        let steps = rawSteps;
+
+        if (isManualQuickInput && rawSteps >= 50) {
+          day.manualStepsOverride = rawSteps;
+          day.manualStepsBaseHc = Math.max(Number(day.lastRawHcSteps) || 0, rawSteps);
+          day.manualStepsUpdatedAt = Date.now();
+        } else if (rawSteps >= 50) {
+          day.lastRawHcSteps = Math.max(Number(day.lastRawHcSteps) || 0, rawSteps);
+          if (Number(day.manualStepsOverride) > 0) {
+            const baseHc = Number(day.manualStepsBaseHc) || rawSteps;
+            if (rawSteps <= baseHc) {
+              // Si Health Connect sigue reportando el mismo total con duplicados (ej: 12.579), respetamos los 6.505 corregidos por el usuario
+              steps = Number(day.manualStepsOverride);
+            } else {
+              // Si caminó pasos nuevos después de editar, sumamos solo la mitad del incremento (descontando el duplicado de A56)
+              const extraWalked = Math.round((rawSteps - baseHc) / 2);
+              steps = Number(day.manualStepsOverride) + extraWalked;
+              day.manualStepsOverride = steps;
+              day.manualStepsBaseHc = rawSteps;
+              day.manualStepsUpdatedAt = Date.now();
+            }
+          }
+        }
+
         if (steps >= 50) {
           const estMinutes = Math.max(5, Math.round(steps / 105));
           const calcKcal = Math.max(10, Math.round(2.9 * weightKg * (estMinutes / 60)));
           const finalKcal = calcKcal;
+          const stepItemId = "ex-sh-steps-" + effDate;
+
+          if (Array.isArray(appData.deletedItemIds)) {
+            appData.deletedItemIds = appData.deletedItemIds.filter(id => id !== stepItemId);
+          }
 
           // Reemplaza el registro de pasos sincronizado previo del mismo día para no duplicar
           day.exercises = day.exercises.filter(ex => !String(ex.id || "").startsWith("ex-sh-steps") && !/pasos.*samsung|pasos.*health/i.test(ex.name || ""));
           day.exercises.unshift({
-            id: "ex-sh-steps-" + (dateKey || todayStr()),
+            id: stepItemId,
             name: `${steps.toLocaleString("es-AR")} pasos (${sourceLabel})`,
             kcal: finalKcal,
             minutes: estMinutes,
             emoji: "👟",
-            time: timeStr
+            time: timeStr,
+            updatedAt: Date.now()
           });
           updatedAnything = true;
         }
@@ -9989,7 +10081,7 @@
             alert("Ingresá una cantidad de pasos válida (ej: 6500).");
             return;
           }
-          applySyncedStepsAndExercises(selectedDate || todayStr(), steps, 0, [], "Salud / Pasos");
+          applySyncedStepsAndExercises(selectedDate || todayStr(), steps, 0, [], "Samsung Health", true);
           if (inp) inp.value = "";
           closeModal("modalSamsungHealthSync");
         });
