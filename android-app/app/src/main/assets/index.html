@@ -805,6 +805,157 @@
       color: var(--accent);
     }
 
+    /* Onboarding Interview Wizard */
+    .wiz-progress-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .wiz-progress-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    .wiz-progress-track {
+      width: 100%;
+      height: 7px;
+      background: var(--bg-card);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .wiz-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--purple), var(--accent));
+      border-radius: 999px;
+      transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .wiz-michu-bubble {
+      display: flex;
+      gap: 11px;
+      align-items: flex-start;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.13), rgba(34, 197, 94, 0.08));
+      border: 1px solid rgba(168, 85, 247, 0.38);
+      border-radius: 14px;
+      padding: 11px 13px;
+      margin-bottom: 12px;
+      font-size: 0.84rem;
+      line-height: 1.42;
+      color: var(--text);
+    }
+
+    .wiz-michu-avatar {
+      font-size: 1.85rem;
+      line-height: 1;
+      flex-shrink: 0;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+    }
+
+    .wiz-step-page {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      animation: wizFadeIn 0.22s ease;
+    }
+
+    .wiz-step-page.active {
+      display: flex;
+    }
+
+    @keyframes wizFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .wiz-question-title {
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .wiz-opt-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .wiz-opt-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .wiz-opt-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 11px 13px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--text);
+      transition: all 0.16s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .wiz-opt-card:hover {
+      border-color: var(--purple);
+      transform: translateY(-1px);
+    }
+
+    .wiz-opt-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .wiz-opt-card .wiz-opt-icon {
+      font-size: 1.45rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .wiz-opt-card .wiz-opt-title {
+      font-weight: 800;
+      font-size: 0.88rem;
+      display: block;
+    }
+
+    .wiz-opt-card .wiz-opt-sub {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      display: block;
+      margin-top: 2px;
+    }
+
+    .wiz-big-input {
+      font-size: 1.15rem !important;
+      font-weight: 800 !important;
+      padding: 12px 14px !important;
+      text-align: center;
+    }
+
+    .wiz-nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
     /* Forms & Inputs */
     .form-grid {
       display: grid;
@@ -2623,47 +2774,235 @@
           </button>
         </form>
 
-        <!-- FORMULARIO REGISTRO (CON APROBACIÓN DEL ADMINISTRADOR) -->
-        <form id="authRegisterForm" style="display:none;flex-direction:column;gap:11px;">
-          <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:10px;">
-            <div class="field" style="grid-column: 1 / -1;">
-              <label for="regName">Tu Nombre y Apellido</label>
-              <input type="text" id="regName" placeholder="Ej: Martín Pérez" required />
+        <!-- FORMULARIO REGISTRO (WIZARD AMIGABLE ESTILO ENTREVISTA POR PÁGINA) -->
+        <form id="authRegisterForm" style="display:none;flex-direction:column;gap:8px;" novalidate>
+          <!-- Barra de progreso de la entrevista -->
+          <div class="wiz-progress-wrap">
+            <div class="wiz-progress-top">
+              <span id="regWizStepBadge" style="color:var(--purple);">✨ Paso 1 de 6</span>
+              <span id="regWizOptionalBadge" style="color:var(--accent);">Obligatorio para tu cuenta</span>
             </div>
-            <div class="field" style="grid-column: 1 / -1;">
-              <label for="regEmail">Email o Nombre de Usuario</label>
-              <input type="text" id="regEmail" placeholder="Ej: martin@gmail.com" required />
-            </div>
-            <div class="field">
-              <label for="regPassword">Contraseña</label>
-              <input type="password" id="regPassword" placeholder="Mínimo 4 caracteres" required />
-            </div>
-            <div class="field">
-              <label for="regRoleRequested">Tipo de Perfil</label>
-              <select id="regRoleRequested">
-                <option value="patient">🐱 Paciente / Usuario</option>
-                <option value="nutritionist">🩺 Soy Nutricionista / Coach</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="regWeight">Peso actual (kg)</label>
-              <input type="number" id="regWeight" step="0.1" min="35" max="250" value="78" required />
-            </div>
-            <div class="field">
-              <label for="regGoalWeight">Peso objetivo (kg)</label>
-              <input type="number" id="regGoalWeight" step="0.1" min="35" max="250" value="72" required />
-            </div>
-            <div class="field" style="grid-column: 1 / -1;">
-              <label for="regInviteCode">🩺 Código de tu Nutricionista (Opcional)</label>
-              <input type="text" id="regInviteCode" placeholder="Ej: NUTRI-LAURA (Dejalo vacío si no tenés)" style="text-transform:uppercase;" />
+            <div class="wiz-progress-track">
+              <div class="wiz-progress-fill" id="regWizProgressFill" style="width:16.6%;"></div>
             </div>
           </div>
-          <button type="submit" class="btn btn-purple" style="justify-content:center;padding:12px;margin-top:4px;">
-            📨 Solicitar Creación de Cuenta
-          </button>
-          <small style="font-size:0.75rem;color:var(--text-muted);text-align:center;">
-            🔒 Al crear tu perfil, el administrador recibirá tu solicitud para aprobar y activar tu cuenta.
-          </small>
+
+          <!-- Burbuja conversacional de Michu -->
+          <div class="wiz-michu-bubble">
+            <span class="wiz-michu-avatar" id="regWizMichuEmoji">🐱</span>
+            <div id="regWizMichuText">
+              <strong>¡Hola! Soy Michu, tu compañero de ruta.</strong><br/>
+              Antes de armar tu plan, contame cómo te llamás y elegí con qué usuario y clave vas a entrar.
+            </div>
+          </div>
+
+          <!-- Valores ocultos sincronizados con las tarjetas interactivas -->
+          <input type="hidden" id="regRoleRequested" value="patient" />
+          <input type="hidden" id="regSex" value="male" />
+          <input type="hidden" id="regDeficitType" value="recommended" />
+          <input type="hidden" id="regActivity" value="1.375" />
+          <input type="hidden" id="regMoodMode" value="sarcastic" />
+
+          <!-- PÁGINA 1: Nombre, Usuario/Email y Contraseña (Obligatorio) -->
+          <div class="wiz-step-page active" data-wiz-step="1">
+            <div class="wiz-question-title">👋 ¿Cómo te llamás y cómo vas a iniciar sesión?</div>
+            <div class="field">
+              <label for="regName">¿Cómo te llamás o cómo querés que te diga Michu?</label>
+              <input type="text" id="regName" placeholder="Ej: Martín" autocomplete="name" />
+            </div>
+            <div class="field">
+              <label for="regEmail">Tu Email o Nombre de Usuario</label>
+              <input type="text" id="regEmail" placeholder="Ej: martin@gmail.com o martin_fit" autocomplete="username" />
+            </div>
+            <div class="field">
+              <label for="regPassword">Elegí una contraseña (mínimo 4 caracteres)</label>
+              <input type="password" id="regPassword" placeholder="••••••••" autocomplete="new-password" />
+            </div>
+            <div class="field" style="margin-top:2px;">
+              <label>¿Qué tipo de cuenta vas a usar?</label>
+              <div class="wiz-opt-grid">
+                <button type="button" class="wiz-opt-card selected" data-wiz-pick="regRoleRequested" data-wiz-val="patient">
+                  <span class="wiz-opt-icon">🐱</span>
+                  <span>
+                    <span class="wiz-opt-title">Paciente / Usuario</span>
+                    <span class="wiz-opt-sub">Llevar mi diario y metas</span>
+                  </span>
+                </button>
+                <button type="button" class="wiz-opt-card" data-wiz-pick="regRoleRequested" data-wiz-val="nutritionist">
+                  <span class="wiz-opt-icon">🩺</span>
+                  <span>
+                    <span class="wiz-opt-title">Nutricionista</span>
+                    <span class="wiz-opt-sub">Supervisar pacientes</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PÁGINA 2: Edad y Sexo Biológico (Opcional) -->
+          <div class="wiz-step-page" data-wiz-step="2">
+            <div class="wiz-question-title">🎂 ¿Qué edad tenés y cuál es tu sexo biológico?</div>
+            <div class="field">
+              <label>Sexo biológico (para la fórmula de tasa metabólica)</label>
+              <div class="wiz-opt-grid">
+                <button type="button" class="wiz-opt-card selected" data-wiz-pick="regSex" data-wiz-val="male">
+                  <span class="wiz-opt-icon">🙋‍♂️</span>
+                  <span>
+                    <span class="wiz-opt-title">Hombre</span>
+                    <span class="wiz-opt-sub">Fórmula Mifflin-St Jeor M</span>
+                  </span>
+                </button>
+                <button type="button" class="wiz-opt-card" data-wiz-pick="regSex" data-wiz-val="female">
+                  <span class="wiz-opt-icon">🙋‍♀️</span>
+                  <span>
+                    <span class="wiz-opt-title">Mujer</span>
+                    <span class="wiz-opt-sub">Fórmula Mifflin-St Jeor F</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div class="field" style="margin-top:4px;">
+              <label for="regAge">¿Qué edad tenés? (en años)</label>
+              <input type="number" id="regAge" class="wiz-big-input" min="12" max="100" step="1" placeholder="Ej: 30" />
+            </div>
+          </div>
+
+          <!-- PÁGINA 3: Altura y Peso Actual (Opcional) -->
+          <div class="wiz-step-page" data-wiz-step="3">
+            <div class="wiz-question-title">📏 ¿Qué altura tenés y cuánto estás pesando?</div>
+            <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="field">
+                <label for="regHeight">📏 Tu altura (en cm)</label>
+                <input type="number" id="regHeight" class="wiz-big-input" min="120" max="230" step="1" placeholder="Ej: 175" />
+                <small style="font-size:0.72rem;color:var(--text-muted);text-align:center;">Ej: 1,75 m = 175 cm</small>
+              </div>
+              <div class="field">
+                <label for="regWeight">⚖️ Peso actual (en kg)</label>
+                <input type="number" id="regWeight" class="wiz-big-input" step="0.1" min="35" max="250" placeholder="Ej: 78.5" />
+                <small style="font-size:0.72rem;color:var(--text-muted);text-align:center;">Podés poner un aproximado</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- PÁGINA 4: Objetivo y Peso Meta (Opcional) -->
+          <div class="wiz-step-page" data-wiz-step="4">
+            <div class="wiz-question-title">🎯 ¿Cuál es tu objetivo principal?</div>
+            <div class="wiz-opt-list">
+              <button type="button" class="wiz-opt-card selected" data-wiz-pick="regDeficitType" data-wiz-val="recommended">
+                <span class="wiz-opt-icon">🔥</span>
+                <span>
+                  <span class="wiz-opt-title">Bajar grasa de forma constante (Recomendado)</span>
+                  <span class="wiz-opt-sub">Déficit de -500 kcal/día • Bajás ~0.45 kg por semana cuidando músculo</span>
+                </span>
+              </button>
+              <button type="button" class="wiz-opt-card" data-wiz-pick="regDeficitType" data-wiz-val="mild">
+                <span class="wiz-opt-icon">🌿</span>
+                <span>
+                  <span class="wiz-opt-title">Ir de a poco y muy flexible (Déficit suave)</span>
+                  <span class="wiz-opt-sub">Déficit de -300 kcal/día • Ideal para adaptarte sin nada de hambre</span>
+                </span>
+              </button>
+              <button type="button" class="wiz-opt-card" data-wiz-pick="regDeficitType" data-wiz-val="aggressive">
+                <span class="wiz-opt-icon">⚡</span>
+                <span>
+                  <span class="wiz-opt-title">Resultados más rápidos (Déficit intenso)</span>
+                  <span class="wiz-opt-sub">Déficit de -700 kcal/día • Priorizando alta proteína diaria</span>
+                </span>
+              </button>
+            </div>
+            <div class="field" style="margin-top:4px;">
+              <label for="regGoalWeight">🏁 ¿A qué peso objetivo te gustaría llegar? (en kg)</label>
+              <input type="number" id="regGoalWeight" class="wiz-big-input" step="0.1" min="35" max="250" placeholder="Ej: 72.0" />
+            </div>
+          </div>
+
+          <!-- PÁGINA 5: Nivel de Actividad Física (Opcional) -->
+          <div class="wiz-step-page" data-wiz-step="5">
+            <div class="wiz-question-title">🏃‍♂️ ¿Qué tan activo sos durante la semana?</div>
+            <div class="wiz-opt-list">
+              <button type="button" class="wiz-opt-card" data-wiz-pick="regActivity" data-wiz-val="1.2">
+                <span class="wiz-opt-icon">🪑</span>
+                <span>
+                  <span class="wiz-opt-title">Sedentario / Trabajo de oficina</span>
+                  <span class="wiz-opt-sub">Poco movimiento diario, sin entrenamiento fijo</span>
+                </span>
+              </button>
+              <button type="button" class="wiz-opt-card selected" data-wiz-pick="regActivity" data-wiz-val="1.375">
+                <span class="wiz-opt-icon">🚶</span>
+                <span>
+                  <span class="wiz-opt-title">Actividad ligera (1 a 2 días por semana)</span>
+                  <span class="wiz-opt-sub">Caminatas frecuentes o ejercicio suave 1-2 veces/sem</span>
+                </span>
+              </button>
+              <button type="button" class="wiz-opt-card" data-wiz-pick="regActivity" data-wiz-val="1.55">
+                <span class="wiz-opt-icon">🏋️</span>
+                <span>
+                  <span class="wiz-opt-title">Moderado (3 a 5 días por semana)</span>
+                  <span class="wiz-opt-sub">Gimnasio, pesas, running o deporte regular</span>
+                </span>
+              </button>
+              <button type="button" class="wiz-opt-card" data-wiz-pick="regActivity" data-wiz-val="1.725">
+                <span class="wiz-opt-icon">🔥</span>
+                <span>
+                  <span class="wiz-opt-title">Muy activo / Intenso (6+ días por semana)</span>
+                  <span class="wiz-opt-sub">Entrenamiento exigente casi todos los días</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <!-- PÁGINA 6: Resumen Personalizado + Humor de Michu + Código Nutricionista (Opcional) -->
+          <div class="wiz-step-page" data-wiz-step="6">
+            <div class="wiz-question-title">🚀 ¡Todo listo! Así queda tu plan inicial</div>
+            <div id="regWizSummaryBox" style="background:var(--bg-card);border:1.5px solid var(--accent);border-radius:12px;padding:12px 14px;font-size:0.83rem;"></div>
+
+            <div class="field">
+              <label>🐱 ¿Con qué personalidad querés que te hable Michu?</label>
+              <div class="wiz-opt-grid">
+                <button type="button" class="wiz-opt-card selected" data-wiz-pick="regMoodMode" data-wiz-val="sarcastic">
+                  <span class="wiz-opt-icon">😼</span>
+                  <span>
+                    <span class="wiz-opt-title">Sarcástico</span>
+                    <span class="wiz-opt-sub">Humor picante y sin filtro</span>
+                  </span>
+                </button>
+                <button type="button" class="wiz-opt-card" data-wiz-pick="regMoodMode" data-wiz-val="cute">
+                  <span class="wiz-opt-icon">💚</span>
+                  <span>
+                    <span class="wiz-opt-title">Tierno</span>
+                    <span class="wiz-opt-sub">100% dulce y motivador</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="regInviteCode">🩺 ¿Tenés código de tu Nutricionista? (Opcional)</label>
+              <input type="text" id="regInviteCode" placeholder="Ej: NUTRI-LAURA (Dejalo vacío si no tenés)" style="text-transform:uppercase;" />
+            </div>
+
+            <small style="font-size:0.74rem;color:var(--text-muted);text-align:center;">
+              🔒 Al finalizar, el administrador recibirá tu solicitud para aprobar y activar tu cuenta.
+            </small>
+          </div>
+
+          <!-- Barra de navegación del Wizard (Atrás / Omitir / Siguiente / Crear Cuenta) -->
+          <div class="wiz-nav-bar">
+            <button type="button" class="btn btn-sm" id="btnRegWizBack" style="display:none;">
+              ⬅️ Atrás
+            </button>
+            <div style="display:flex;gap:8px;margin-left:auto;align-items:center;">
+              <button type="button" class="btn btn-sm" id="btnRegWizSkip" style="display:none;color:var(--text-muted);">
+                Omitir paso ⏭️
+              </button>
+              <button type="button" class="btn btn-primary" id="btnRegWizNext" style="padding:10px 18px;">
+                Siguiente ➡️
+              </button>
+              <button type="submit" class="btn btn-purple" id="btnRegWizSubmit" style="display:none;padding:11px 18px;">
+                🚀 Crear mi Cuenta
+              </button>
+            </div>
+          </div>
         </form>
       </div>
 
@@ -3178,24 +3517,26 @@
       if (!res.ok) throw new Error("Supabase delete error " + res.status);
     }
 
-    function sbCreateEmptyTrackerData(name, sex = "male", age = 30, weight = 78.0, goalWeight = 72.0, height = 172) {
+    function sbCreateEmptyTrackerData(name, sex = "male", age = 30, weight = 78.0, goalWeight = 72.0, height = 172, extra = {}) {
       const d = new Date();
       const todayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const wVal = Number(weight) || 78.0;
+      const gwVal = Number(goalWeight) || Math.max(48, Math.round(wVal - 5));
       return {
         profile: {
           name: name || "Paciente",
           sex: sex || "male",
           age: Number(age) || 30,
-          weight: Number(weight) || 78.0,
-          startWeight: Number(weight) || 78.0,
-          goalWeight: Number(goalWeight) || 72.0,
+          weight: wVal,
+          startWeight: wVal,
+          goalWeight: gwVal,
           height: Number(height) || 172,
-          activity: 1.375,
-          deficitType: "recommended",
+          activity: Number(extra.activity) || 1.375,
+          deficitType: extra.deficitType || "recommended",
           customDeficit: 500,
           macroPreset: "high_protein",
           waterGoal: 8,
-          moodMode: "sarcastic",
+          moodMode: extra.moodMode || "sarcastic",
           MascotName: "Michu"
         },
         customFoods: [
@@ -3534,7 +3875,15 @@
             coachNoteUpdatedAt: "",
             coachName: nutriUser ? nutriUser.name : "",
             createdAt: createdStr,
-            trackerData: sbCreateEmptyTrackerData(name, profInit.sex, profInit.age, profInit.weight, profInit.goalWeight, profInit.height)
+            trackerData: sbCreateEmptyTrackerData(
+              name,
+              profInit.sex,
+              profInit.age,
+              profInit.weight,
+              profInit.goalWeight,
+              profInit.height,
+              profInit
+            )
           };
 
           await sbUpsertUser(newUser);
@@ -8850,6 +9199,9 @@
         if (regForm) regForm.style.display = isReg ? "flex" : "none";
         if (btnLogin) btnLogin.className = isReg ? "btn btn-sm" : "btn btn-sm btn-primary";
         if (btnReg) btnReg.className = isReg ? "btn btn-sm btn-purple" : "btn btn-sm";
+        if (isReg && typeof window.resetRegWizard === "function") {
+          window.resetRegWizard();
+        }
       }
       openModal("modalAuthOverlay");
     }
@@ -9395,19 +9747,294 @@
       }
 
       const regForm = document.getElementById("authRegisterForm");
+      let currentRegWizStep = 1;
+      const totalRegWizSteps = 6;
+
+      function getRegWizardFirstName() {
+        const raw = (document.getElementById("regName")?.value || "").trim();
+        return raw ? raw.split(/\s+/)[0] : "Campeón";
+      }
+
+      function renderRegWizardSummary() {
+        const box = document.getElementById("regWizSummaryBox");
+        if (!box) return;
+        const name = getRegWizardFirstName();
+        const sex = document.getElementById("regSex")?.value || "male";
+        const ageRaw = Number(document.getElementById("regAge")?.value);
+        const heightRaw = Number(document.getElementById("regHeight")?.value);
+        const weightRaw = Number(document.getElementById("regWeight")?.value);
+        const goalRaw = Number(document.getElementById("regGoalWeight")?.value);
+        const activity = Number(document.getElementById("regActivity")?.value) || 1.375;
+        const deficitType = document.getElementById("regDeficitType")?.value || "recommended";
+
+        const age = ageRaw > 0 ? ageRaw : 30;
+        const height = heightRaw > 0 ? heightRaw : 172;
+        const weight = weightRaw > 0 ? weightRaw : 78;
+        const goalWeight = goalRaw > 0 ? goalRaw : Math.max(48, Math.round(weight - 5));
+
+        const previewTargets = computeNutritionTargets({
+          name,
+          sex,
+          age,
+          height,
+          weight,
+          goalWeight,
+          activity,
+          deficitType,
+          customDeficit: 500,
+          macroPreset: "high_protein"
+        });
+
+        const skippedAny = !ageRaw || !heightRaw || !weightRaw || !goalRaw;
+        box.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+            <strong style="color:var(--accent);font-size:0.95rem;">🎯 Tu Meta Inicial: ${previewTargets.targetKcal.toLocaleString("es-AR")} kcal/día</strong>
+            <span class="chip" style="background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:0.74rem;">
+              🥩 ${previewTargets.proteinG}g Proteína/día
+            </span>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.79rem;color:var(--text);">
+            <span>⚖️ Peso: <strong>${weight} kg</strong> → Meta: <strong>${goalWeight} kg</strong></span>
+            <span>📏 Altura: <strong>${height} cm</strong> • 🎂 <strong>${age} años</strong></span>
+          </div>
+          ${skippedAny ? `
+            <div style="margin-top:6px;font-size:0.73rem;color:var(--text-muted);">
+              💡 Usamos valores estimados para los pasos que omitiste. Podés ajustarlos cuando quieras desde la pestaña <strong>⚖️ Calculadora TDEE</strong>.
+            </div>
+          ` : `
+            <div style="margin-top:6px;font-size:0.73rem;color:var(--text-muted);">
+              ✨ Podés ajustar cualquiera de estos valores en cualquier momento desde tu perfil.
+            </div>
+          `}
+        `;
+      }
+
+      function updateRegWizardUI() {
+        const fname = getRegWizardFirstName();
+        const pages = document.querySelectorAll("#authRegisterForm .wiz-step-page");
+        pages.forEach(p => {
+          const s = Number(p.getAttribute("data-wiz-step"));
+          p.classList.toggle("active", s === currentRegWizStep);
+        });
+
+        const badge = document.getElementById("regWizStepBadge");
+        if (badge) badge.textContent = `✨ Paso ${currentRegWizStep} de ${totalRegWizSteps}`;
+
+        const optBadge = document.getElementById("regWizOptionalBadge");
+        if (optBadge) {
+          if (currentRegWizStep === 1) {
+            optBadge.textContent = "Obligatorio para tu cuenta";
+            optBadge.style.color = "var(--accent)";
+          } else if (currentRegWizStep < totalRegWizSteps) {
+            optBadge.textContent = "Opcional • Podés omitirlo";
+            optBadge.style.color = "var(--text-muted)";
+          } else {
+            optBadge.textContent = "¡Último paso!";
+            optBadge.style.color = "var(--purple)";
+          }
+        }
+
+        const fill = document.getElementById("regWizProgressFill");
+        if (fill) {
+          fill.style.width = `${Math.round((currentRegWizStep / totalRegWizSteps) * 100)}%`;
+        }
+
+        const bubbleEmoji = document.getElementById("regWizMichuEmoji");
+        const bubbleTxt = document.getElementById("regWizMichuText");
+        const stepMessages = {
+          1: {
+            emoji: "🐱",
+            html: `<strong>¡Hola! Soy Michu, tu compañero de ruta.</strong><br/>Antes de armar tu plan, contame cómo te llamás y elegí con qué usuario y clave vas a entrar.`
+          },
+          2: {
+            emoji: "🐾",
+            html: `<strong>¡Mucho gusto, ${fname}!</strong><br/>Contame qué edad tenés y tu sexo biológico para calcular cuántas calorías gasta tu cuerpo en reposo (si preferís, podés omitirlo).`
+          },
+          3: {
+            emoji: "📏",
+            html: `<strong>¡Vamos re bien, ${fname}!</strong><br/>¿Qué altura tenés y cuánto estás pesando hoy? No hace falta que sea exacto al gramo, o podés omitirlo y cargarlo después.`
+          },
+          4: {
+            emoji: "🎯",
+            html: `<strong>Hablemos de tu objetivo, ${fname}.</strong><br/>¿A qué ritmo te gustaría ir y a qué peso te gustaría llegar?`
+          },
+          5: {
+            emoji: "🏃‍♂️",
+            html: `<strong>¡Casi terminamos!</strong><br/>¿Qué tan activo sos en tu semana habitual? Con esto calculo tu gasto calórico diario total.`
+          },
+          6: {
+            emoji: "🚀",
+            html: `<strong>¡Listo, ${fname}! Ya calculé tu plan inicial.</strong><br/>Elegí con qué humor querés que te acompañe cada día y creá tu cuenta.`
+          }
+        };
+
+        const msg = stepMessages[currentRegWizStep] || stepMessages[1];
+        if (bubbleEmoji) bubbleEmoji.textContent = msg.emoji;
+        if (bubbleTxt) bubbleTxt.innerHTML = msg.html;
+
+        const btnBack = document.getElementById("btnRegWizBack");
+        const btnSkip = document.getElementById("btnRegWizSkip");
+        const btnNext = document.getElementById("btnRegWizNext");
+        const btnSubmit = document.getElementById("btnRegWizSubmit");
+
+        if (btnBack) btnBack.style.display = currentRegWizStep > 1 ? "inline-flex" : "none";
+        if (btnSkip) btnSkip.style.display = (currentRegWizStep > 1 && currentRegWizStep < totalRegWizSteps) ? "inline-flex" : "none";
+        if (btnNext) btnNext.style.display = currentRegWizStep < totalRegWizSteps ? "inline-flex" : "none";
+        if (btnSubmit) btnSubmit.style.display = currentRegWizStep === totalRegWizSteps ? "inline-flex" : "none";
+
+        if (currentRegWizStep === 4) {
+          const wVal = Number(document.getElementById("regWeight")?.value);
+          const gwInp = document.getElementById("regGoalWeight");
+          if (wVal > 40 && gwInp && !gwInp.value) {
+            gwInp.placeholder = `Ej: ${Math.max(48, Math.round(wVal - 5))} kg`;
+          }
+        }
+
+        if (currentRegWizStep === totalRegWizSteps) {
+          renderRegWizardSummary();
+        }
+
+        setTimeout(() => {
+          const activePage = document.querySelector(`#authRegisterForm .wiz-step-page[data-wiz-step="${currentRegWizStep}"]`);
+          const firstInput = activePage ? activePage.querySelector("input:not([type='hidden'])") : null;
+          if (firstInput && window.innerWidth > 640) {
+            try { firstInput.focus(); } catch (_) {}
+          }
+        }, 60);
+      }
+
+      function validateRegWizStep1() {
+        const name = (document.getElementById("regName")?.value || "").trim();
+        const email = (document.getElementById("regEmail")?.value || "").trim();
+        const pwd = (document.getElementById("regPassword")?.value || "").trim();
+        if (!name) {
+          showAuthAlert("Por favor contanos cómo te llamás para continuar.");
+          document.getElementById("regName")?.focus();
+          return false;
+        }
+        if (!email) {
+          showAuthAlert("Ingresá un email o nombre de usuario para poder iniciar sesión.");
+          document.getElementById("regEmail")?.focus();
+          return false;
+        }
+        if (pwd.length < 4) {
+          showAuthAlert("Elegí una contraseña de al menos 4 caracteres.");
+          document.getElementById("regPassword")?.focus();
+          return false;
+        }
+        showAuthAlert("");
+        return true;
+      }
+
+      window.resetRegWizard = function () {
+        currentRegWizStep = 1;
+        showAuthAlert("");
+        updateRegWizardUI();
+      };
+
+      document.querySelectorAll("#authRegisterForm [data-wiz-pick]").forEach(card => {
+        card.addEventListener("click", () => {
+          const fieldId = card.getAttribute("data-wiz-pick");
+          const val = card.getAttribute("data-wiz-val");
+          const hiddenInp = document.getElementById(fieldId);
+          if (hiddenInp) hiddenInp.value = val;
+          document.querySelectorAll(`#authRegisterForm [data-wiz-pick="${fieldId}"]`).forEach(c => {
+            c.classList.toggle("selected", c === card);
+          });
+          if (currentRegWizStep === totalRegWizSteps) {
+            renderRegWizardSummary();
+          }
+        });
+      });
+
+      const btnWizBack = document.getElementById("btnRegWizBack");
+      if (btnWizBack) {
+        btnWizBack.addEventListener("click", () => {
+          showAuthAlert("");
+          if (currentRegWizStep > 1) {
+            currentRegWizStep--;
+            updateRegWizardUI();
+          }
+        });
+      }
+
+      const btnWizNext = document.getElementById("btnRegWizNext");
+      if (btnWizNext) {
+        btnWizNext.addEventListener("click", () => {
+          if (currentRegWizStep === 1 && !validateRegWizStep1()) return;
+          showAuthAlert("");
+          if (currentRegWizStep < totalRegWizSteps) {
+            currentRegWizStep++;
+            updateRegWizardUI();
+          }
+        });
+      }
+
+      const btnWizSkip = document.getElementById("btnRegWizSkip");
+      if (btnWizSkip) {
+        btnWizSkip.addEventListener("click", () => {
+          showAuthAlert("");
+          if (currentRegWizStep === 2) {
+            const ageInp = document.getElementById("regAge");
+            if (ageInp) ageInp.value = "";
+          } else if (currentRegWizStep === 3) {
+            const hInp = document.getElementById("regHeight");
+            const wInp = document.getElementById("regWeight");
+            if (hInp) hInp.value = "";
+            if (wInp) wInp.value = "";
+          } else if (currentRegWizStep === 4) {
+            const gwInp = document.getElementById("regGoalWeight");
+            if (gwInp) gwInp.value = "";
+          }
+          if (currentRegWizStep < totalRegWizSteps) {
+            currentRegWizStep++;
+            updateRegWizardUI();
+          }
+        });
+      }
+
       if (regForm) {
+        regForm.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && currentRegWizStep < totalRegWizSteps) {
+            e.preventDefault();
+            if (currentRegWizStep === 1 && !validateRegWizStep1()) return;
+            showAuthAlert("");
+            currentRegWizStep++;
+            updateRegWizardUI();
+          }
+        });
+
         regForm.addEventListener("submit", async (e) => {
           e.preventDefault();
+          if (currentRegWizStep < totalRegWizSteps) {
+            if (currentRegWizStep === 1 && !validateRegWizStep1()) return;
+            currentRegWizStep++;
+            updateRegWizardUI();
+            return;
+          }
+          if (!validateRegWizStep1()) {
+            currentRegWizStep = 1;
+            updateRegWizardUI();
+            return;
+          }
           showAuthAlert("");
+          const weightVal = Number(document.getElementById("regWeight")?.value) || 78;
+          const goalWeightVal = Number(document.getElementById("regGoalWeight")?.value) || Math.max(48, Math.round(weightVal - 5));
           const payload = {
             name: document.getElementById("regName").value.trim(),
             email: document.getElementById("regEmail").value.trim(),
             password: document.getElementById("regPassword").value.trim(),
-            roleRequested: document.getElementById("regRoleRequested").value,
-            inviteCode: document.getElementById("regInviteCode").value.trim(),
+            roleRequested: document.getElementById("regRoleRequested").value || "patient",
+            inviteCode: (document.getElementById("regInviteCode")?.value || "").trim(),
             profile: {
-              weight: Number(document.getElementById("regWeight").value) || 78,
-              goalWeight: Number(document.getElementById("regGoalWeight").value) || 72
+              sex: document.getElementById("regSex")?.value || "male",
+              age: Number(document.getElementById("regAge")?.value) || 30,
+              height: Number(document.getElementById("regHeight")?.value) || 172,
+              weight: weightVal,
+              goalWeight: goalWeightVal,
+              activity: Number(document.getElementById("regActivity")?.value) || 1.375,
+              deficitType: document.getElementById("regDeficitType")?.value || "recommended",
+              moodMode: document.getElementById("regMoodMode")?.value || "sarcastic"
             }
           };
           try {
@@ -9418,6 +10045,10 @@
             });
             const data = await res.json();
             if (!res.ok || !data.ok) {
+              if (res.status === 409 || res.status === 400) {
+                currentRegWizStep = 1;
+                updateRegWizardUI();
+              }
               showAuthAlert(data.error || "Error al crear la cuenta.");
               return;
             }
