@@ -805,11 +805,12 @@
       color: var(--accent);
     }
 
-    /* Onboarding Interview Wizard (BitePal Style) */
+    /* Onboarding Interview Wizard (Michu Cat Modern Animated Style) */
     .bp-wiz-shell {
       display: flex;
       flex-direction: column;
-      min-height: 510px;
+      min-height: 440px;
+      max-height: 84dvh;
       justify-content: space-between;
       position: relative;
       user-select: none;
@@ -819,8 +820,9 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       min-height: 36px;
+      flex-shrink: 0;
     }
 
     .bp-back-btn {
@@ -837,12 +839,14 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: all 0.15s ease;
+      transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .bp-back-btn:hover {
       border-color: var(--accent);
-      transform: scale(1.05);
+      background: var(--accent-soft);
+      color: var(--accent);
+      transform: translateX(-2px) scale(1.05);
     }
 
     .bp-seg-bars {
@@ -853,34 +857,37 @@
     }
 
     .bp-seg-track {
-      height: 5px;
+      height: 6px;
       border-radius: 999px;
-      background: rgba(148, 163, 184, 0.22);
+      background: rgba(148, 163, 184, 0.2);
       overflow: hidden;
     }
 
     .bp-seg-fill {
       height: 100%;
       width: 0%;
-      background: #22c55e;
+      background: linear-gradient(90deg, #22c55e, #4ade80);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.45);
       border-radius: 999px;
-      transition: width 0.28s ease;
+      transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .bp-skip-btn {
-      background: transparent;
-      border: none;
+      background: rgba(148, 163, 184, 0.1);
+      border: 1px solid transparent;
       color: var(--text-muted);
-      font-size: 0.78rem;
-      font-weight: 700;
+      font-size: 0.76rem;
+      font-weight: 800;
       cursor: pointer;
-      padding: 4px 6px;
-      border-radius: 8px;
+      padding: 5px 10px;
+      border-radius: 999px;
       white-space: nowrap;
+      transition: all 0.16s ease;
     }
 
     .bp-skip-btn:hover {
       color: var(--text);
+      border-color: var(--border);
       background: var(--bg-card);
     }
 
@@ -888,33 +895,36 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
     }
 
     .bp-mascot-mini {
-      width: 66px;
-      height: 66px;
+      width: 68px;
+      height: 68px;
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
     }
 
     .bp-speech-bubble {
       position: relative;
-      background: var(--bg-card);
-      border: 1.5px solid var(--border);
+      background: linear-gradient(135deg, var(--bg-card), rgba(34, 197, 94, 0.06));
+      border: 1.5px solid rgba(34, 197, 94, 0.32);
       border-radius: 18px;
-      padding: 13px 16px;
-      font-size: 0.98rem;
+      padding: 12px 15px;
+      font-size: 0.94rem;
       font-weight: 800;
       line-height: 1.35;
       color: var(--text);
       flex: 1;
-      min-height: 54px;
+      min-height: 50px;
       display: flex;
       align-items: center;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
     }
 
     .bp-speech-bubble::before {
@@ -923,41 +933,41 @@
       left: -8px;
       top: 50%;
       transform: translateY(-50%) rotate(45deg);
-      width: 14px;
-      height: 14px;
+      width: 13px;
+      height: 13px;
       background: var(--bg-card);
-      border-left: 1.5px solid var(--border);
-      border-bottom: 1.5px solid var(--border);
+      border-left: 1.5px solid rgba(34, 197, 94, 0.32);
+      border-bottom: 1.5px solid rgba(34, 197, 94, 0.32);
     }
 
     .bp-center-bubble {
       position: relative;
-      background: var(--bg-card);
-      border: 1.5px solid var(--border);
+      background: linear-gradient(135deg, var(--bg-card), rgba(168, 85, 247, 0.1));
+      border: 1.5px solid rgba(168, 85, 247, 0.4);
       border-radius: 20px;
-      padding: 16px 20px;
-      font-size: 1.22rem;
+      padding: 15px 18px;
+      font-size: 1.16rem;
       font-weight: 900;
       line-height: 1.3;
       color: var(--text);
-      text-align: left;
+      text-align: center;
       width: 100%;
-      max-width: 360px;
-      margin: 0 auto 16px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+      max-width: 350px;
+      margin: 0 auto 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
     }
 
     .bp-center-bubble::after {
       content: "";
       position: absolute;
       bottom: -9px;
-      left: 38%;
-      transform: rotate(45deg);
-      width: 16px;
-      height: 16px;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+      width: 15px;
+      height: 15px;
       background: var(--bg-card);
-      border-right: 1.5px solid var(--border);
-      border-bottom: 1.5px solid var(--border);
+      border-right: 1.5px solid rgba(168, 85, 247, 0.4);
+      border-bottom: 1.5px solid rgba(168, 85, 247, 0.4);
     }
 
     .bp-stage-body {
@@ -966,12 +976,83 @@
       flex-direction: column;
       justify-content: center;
       gap: 10px;
-      animation: bpFadeSlide 0.22s ease;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 2px 2px;
     }
 
-    @keyframes bpFadeSlide {
-      from { opacity: 0; transform: translateY(7px); }
-      to { opacity: 1; transform: translateY(0); }
+    .bp-stage-body.nav-next {
+      animation: bpSlideNext 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .bp-stage-body.nav-prev {
+      animation: bpSlidePrev 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes bpSlideNext {
+      from { opacity: 0; transform: translateX(26px) scale(0.97); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
+    @keyframes bpSlidePrev {
+      from { opacity: 0; transform: translateX(-26px) scale(0.97); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
+    /* Animaciones vivas de Michu el Gato Gris Atigrado */
+    @keyframes bpCatFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+    }
+
+    @keyframes bpCatTailWag {
+      0%, 100% { transform: rotate(-6deg); }
+      50% { transform: rotate(10deg); }
+    }
+
+    @keyframes bpCatEarTwitch {
+      0%, 88%, 100% { transform: rotate(0deg); }
+      93% { transform: rotate(-7deg); }
+      96% { transform: rotate(4deg); }
+    }
+
+    @keyframes bpHeartPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.18); }
+    }
+
+    @keyframes bpPawWave {
+      0%, 100% { transform: rotate(0deg) translateY(0); }
+      50% { transform: rotate(-18deg) translateY(-6px); }
+    }
+
+    @keyframes bpDrawCurve {
+      from { stroke-dashoffset: 400; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    .michu-anim-float {
+      animation: bpCatFloat 2.8s ease-in-out infinite;
+    }
+
+    .michu-anim-tail {
+      transform-origin: 132px 150px;
+      animation: bpCatTailWag 2.1s ease-in-out infinite;
+    }
+
+    .michu-anim-ear-l {
+      transform-origin: 60px 56px;
+      animation: bpCatEarTwitch 4.2s ease-in-out infinite;
+    }
+
+    .michu-anim-paw-r {
+      transform-origin: 140px 142px;
+      animation: bpPawWave 1.6s ease-in-out infinite;
+    }
+
+    .michu-anim-hearts {
+      transform-origin: 100px 82px;
+      animation: bpHeartPulse 1.1s ease-in-out infinite;
     }
 
     .bp-giant-input-wrap {
@@ -979,39 +1060,40 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 26px 10px;
+      padding: 20px 10px;
       gap: 8px;
     }
 
     .bp-giant-label {
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       color: var(--text-muted);
       font-weight: 700;
     }
 
     .bp-giant-input {
-      background: transparent !important;
-      border: none !important;
-      border-bottom: 2px solid transparent !important;
-      font-size: 2.35rem !important;
+      background: rgba(148, 163, 184, 0.07) !important;
+      border: 2px solid var(--border) !important;
+      border-radius: 16px !important;
+      font-size: 2.05rem !important;
       font-weight: 900 !important;
       text-align: center !important;
       color: var(--text) !important;
       outline: none !important;
-      box-shadow: none !important;
-      padding: 4px 8px !important;
+      padding: 10px 14px !important;
       width: 100%;
       max-width: 340px;
+      transition: all 0.18s ease;
     }
 
     .bp-giant-input:focus {
-      border-bottom-color: var(--accent) !important;
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15) !important;
     }
 
     .bp-talk-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 11px;
+      gap: 10px;
     }
 
     .bp-talk-card {
@@ -1019,14 +1101,14 @@
       background: var(--bg-card);
       border: 2px solid var(--border);
       border-radius: 18px;
-      padding: 14px 10px;
+      padding: 12px 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
-      gap: 8px;
+      gap: 6px;
       cursor: pointer;
-      transition: all 0.16s ease;
+      transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
       color: var(--text);
     }
 
@@ -1037,14 +1119,14 @@
 
     .bp-talk-card.selected {
       border-color: #22c55e;
-      background: rgba(34, 197, 94, 0.08);
-      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.15);
+      background: linear-gradient(145deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.04));
+      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.18);
     }
 
     .bp-talk-check {
       position: absolute;
-      top: 9px;
-      right: 9px;
+      top: 8px;
+      right: 8px;
       width: 22px;
       height: 22px;
       border-radius: 999px;
@@ -1064,46 +1146,47 @@
     .bp-choice-list {
       display: flex;
       flex-direction: column;
-      gap: 9px;
+      gap: 8px;
     }
 
     .bp-choice-card {
       background: var(--bg-card);
-      border: 2px solid var(--border);
-      border-radius: 16px;
-      padding: 13px 15px;
+      border: 1.8px solid var(--border);
+      border-radius: 15px;
+      padding: 11px 14px;
       display: flex;
       align-items: center;
       gap: 12px;
       cursor: pointer;
       text-align: left;
       color: var(--text);
-      transition: all 0.15s ease;
+      transition: all 0.16s ease;
     }
 
     .bp-choice-card:hover {
       border-color: rgba(34, 197, 94, 0.5);
+      transform: translateX(2px);
     }
 
     .bp-choice-card.selected {
       border-color: #22c55e;
-      background: rgba(34, 197, 94, 0.1);
+      background: linear-gradient(90deg, rgba(34, 197, 94, 0.13), rgba(34, 197, 94, 0.03));
     }
 
     .bp-choice-icon {
-      font-size: 1.45rem;
+      font-size: 1.4rem;
       line-height: 1;
       flex-shrink: 0;
     }
 
     .bp-choice-title {
-      font-size: 0.94rem;
+      font-size: 0.91rem;
       font-weight: 800;
       display: block;
     }
 
     .bp-choice-sub {
-      font-size: 0.76rem;
+      font-size: 0.74rem;
       color: var(--text-muted);
       display: block;
       margin-top: 2px;
@@ -1130,48 +1213,60 @@
       color: #052e14;
     }
 
-    /* Vertical Drum / Wheel Picker */
+    /* Modern 3D Cylinder / Drum Wheel Picker */
     .bp-wheel-container {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 8px 0;
+      padding: 6px 12px;
+      background: linear-gradient(180deg, rgba(15, 20, 28, 0.2), rgba(34, 197, 94, 0.06), rgba(15, 20, 28, 0.2));
+      border: 1px solid var(--border);
+      border-radius: 18px;
       user-select: none;
       touch-action: pan-x;
+      min-width: 110px;
     }
 
     .bp-wheel-row {
-      padding: 4px 16px;
+      padding: 3px 14px;
       cursor: pointer;
-      transition: all 0.14s ease;
+      transition: all 0.16s cubic-bezier(0.22, 1, 0.36, 1);
       text-align: center;
       line-height: 1.15;
+      width: 100%;
     }
 
     .bp-wheel-row.dist-2 {
-      font-size: 1.35rem;
+      font-size: 1.18rem;
       font-weight: 700;
       color: var(--text-muted);
-      opacity: 0.28;
+      opacity: 0.25;
+      transform: scale(0.88);
     }
 
     .bp-wheel-row.dist-1 {
-      font-size: 1.85rem;
+      font-size: 1.58rem;
       font-weight: 800;
       color: var(--text-muted);
       opacity: 0.58;
+      transform: scale(0.94);
     }
 
     .bp-wheel-row.dist-0 {
-      font-size: 2.75rem;
+      font-size: 2.45rem;
       font-weight: 900;
       color: var(--text);
-      padding: 6px 18px;
+      padding: 6px 16px;
+      margin: 2px 0;
+      border-top: 1.5px solid rgba(34, 197, 94, 0.45);
+      border-bottom: 1.5px solid rgba(34, 197, 94, 0.45);
+      background: rgba(34, 197, 94, 0.09);
+      border-radius: 10px;
       display: flex;
       align-items: baseline;
       justify-content: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .bp-pill-cloud {
@@ -1183,12 +1278,12 @@
     }
 
     .bp-allergy-pill {
-      padding: 10px 16px;
-      border-radius: 14px;
+      padding: 9px 15px;
+      border-radius: 13px;
       background: var(--bg-card);
       border: 1.5px solid var(--border);
       color: var(--text);
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -1196,7 +1291,7 @@
 
     .bp-allergy-pill.selected {
       border-color: #22c55e;
-      background: rgba(34, 197, 94, 0.14);
+      background: rgba(34, 197, 94, 0.15);
       color: #22c55e;
     }
 
@@ -1204,17 +1299,19 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-top: 14px;
+      margin-top: 10px;
       padding-top: 8px;
+      border-top: 1px solid rgba(148, 163, 184, 0.14);
+      flex-shrink: 0;
     }
 
     .bp-dice-btn {
-      width: 50px;
-      height: 50px;
+      width: 48px;
+      height: 48px;
       border-radius: 999px;
       border: 1.5px solid var(--border);
       background: var(--bg-card);
-      font-size: 1.35rem;
+      font-size: 1.3rem;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -1223,19 +1320,14 @@
       transition: transform 0.18s ease;
     }
 
-    .bp-dice-btn:hover {
-      transform: rotate(25deg) scale(1.06);
-      border-color: var(--accent);
-    }
-
     .bp-main-btn {
       flex: 1;
-      height: 52px;
+      height: 48px;
       border-radius: 999px;
       border: none;
       background: linear-gradient(135deg, #22c55e, #16a34a);
       color: #042410;
-      font-size: 1.02rem;
+      font-size: 0.98rem;
       font-weight: 900;
       cursor: pointer;
       display: inline-flex;
@@ -1243,12 +1335,12 @@
       justify-content: center;
       gap: 8px;
       box-shadow: 0 6px 18px rgba(34, 197, 94, 0.28);
-      transition: all 0.16s ease;
+      transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .bp-main-btn:hover {
       transform: translateY(-1px);
-      filter: brightness(1.05);
+      filter: brightness(1.06);
     }
 
     .bp-main-btn:disabled {
@@ -3063,7 +3155,7 @@
   <!-- OVERLAY PANTALLA DE LOGIN / CREACIÓN DE CUENTA / SALA DE ESPERA DE APROBACIÓN -->
   <div class="custom-modal-overlay" id="modalAuthOverlay" role="dialog" aria-modal="true" style="background:rgba(8, 12, 20, 0.94);backdrop-filter:blur(8px);">
     <div class="modal-inner" style="max-width:480px;">
-      <div style="text-align:center;margin-bottom:14px;">
+      <div id="authModalHeaderIntro" style="text-align:center;margin-bottom:14px;">
         <div style="font-size:2.6rem;line-height:1;">🐱</div>
         <h2 style="font-size:1.35rem;font-weight:900;margin-top:4px;">Bienvenido a Michu Fit</h2>
         <p style="font-size:0.82rem;color:var(--text-muted);">Plataforma de Déficit Calórico, Ayuno Intermitente y Seguimiento Nutricional</p>
@@ -3071,7 +3163,7 @@
 
       <!-- Vista 1: Formularios de Login y Registro -->
       <div id="authFormsView">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;background:var(--bg-card);padding:5px;border-radius:11px;border:1px solid var(--border);">
+        <div id="authModalSwitchTabs" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;background:var(--bg-card);padding:5px;border-radius:11px;border:1px solid var(--border);">
           <button type="button" class="btn btn-sm btn-primary" id="btnSwitchAuthLogin" style="justify-content:center;">🔑 Iniciar Sesión</button>
           <button type="button" class="btn btn-sm" id="btnSwitchAuthRegister" style="justify-content:center;">✨ Crear Cuenta</button>
         </div>
@@ -9309,9 +9401,13 @@
       const regForm = document.getElementById("authRegisterForm");
       const btnLogin = document.getElementById("btnSwitchAuthLogin");
       const btnReg = document.getElementById("btnSwitchAuthRegister");
+      const headerIntro = document.getElementById("authModalHeaderIntro");
+      const switchTabs = document.getElementById("authModalSwitchTabs");
 
       showAuthAlert("");
       if (mode === "pending") {
+        if (headerIntro) headerIntro.style.display = "block";
+        if (switchTabs) switchTabs.style.display = "grid";
         if (formsView) formsView.style.display = "none";
         if (pendingView) pendingView.style.display = "block";
         const summaryTxt = document.getElementById("pendingUserSummaryText");
@@ -9322,6 +9418,9 @@
         if (formsView) formsView.style.display = "block";
         if (pendingView) pendingView.style.display = "none";
         const isReg = mode === "register";
+        // Ocultar la cabecera de bienvenida y las pestañas durante el wizard para dar 100% de espacio limpio
+        if (headerIntro) headerIntro.style.display = isReg ? "none" : "block";
+        if (switchTabs) switchTabs.style.display = isReg ? "none" : "grid";
         if (loginForm) loginForm.style.display = isReg ? "none" : "flex";
         if (regForm) regForm.style.display = isReg ? "flex" : "none";
         if (btnLogin) btnLogin.className = isReg ? "btn btn-sm" : "btn btn-sm btn-primary";
@@ -9909,9 +10008,9 @@
         inviteCode: ""
       };
 
-      const MASCOT_FUN_NAMES = ["Michu", "Chickpea", "Mochi", "Garritas", "Milaneso", "Bigotes", "Pelusa", "Chimuelo", "Atún", "Bambú"];
       let bpTypewriterTimer = null;
       let bpBuildTimers = [];
+      let bpNavDir = "next";
 
       function clearBpTimers() {
         if (bpTypewriterTimer) {
@@ -9935,11 +10034,11 @@
             clearInterval(bpTypewriterTimer);
             bpTypewriterTimer = null;
           }
-        }, 18);
+        }, 16);
       }
 
       function bpMascotSvg(variant = "notepad", size = 66) {
-        // Ilustración vectorial estilo mapache/gatito BitePal con libreta, ojos de corazón, estrellas, gorra, etc.
+        // Michu auténtico: Gato Atigrado Gris (Grey Tabby Cat) con animaciones vivas (cola, orejas, flotación, patita)
         const isHeart = variant === "hearts";
         const isStar = variant === "stars";
         const isKind = variant === "kind";
@@ -9947,79 +10046,141 @@
         const isZen = variant === "zen";
         const isThink = variant === "think";
         const isSheet = variant === "sheet";
+        const isWave = variant === "wave";
+        const uid = Math.random().toString(36).slice(2, 7);
         return `
-          <svg viewBox="0 0 120 120" width="${size}" height="${size}" style="overflow:visible;">
-            <!-- Cola anillada -->
-            <g transform="translate(76, 68) rotate(18)">
-              <ellipse cx="18" cy="10" rx="20" ry="11" fill="#9ca3af" stroke="#1f2937" stroke-width="3.2"/>
-              <path d="M12 0 L12 20 M24 1 L24 19" stroke="#374151" stroke-width="5" stroke-linecap="round"/>
+          <svg viewBox="0 0 200 200" width="${size}" height="${size}" style="overflow:visible;cursor:pointer;transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);" onclick="this.style.transform='scale(1.12) rotate(-4deg)';setTimeout(()=>this.style.transform='',260)">
+            <defs>
+              <radialGradient id="mfFur_${uid}" cx="50%" cy="42%" r="55%">
+                <stop offset="0%" stop-color="#94a3b8"/>
+                <stop offset="68%" stop-color="#64748b"/>
+                <stop offset="100%" stop-color="#334155"/>
+              </radialGradient>
+              <radialGradient id="mfEye_${uid}" cx="45%" cy="40%" r="55%">
+                <stop offset="0%" stop-color="#fde047"/>
+                <stop offset="72%" stop-color="#eab308"/>
+                <stop offset="100%" stop-color="#ca8a04"/>
+              </radialGradient>
+            </defs>
+            <!-- Sombra de piso suave -->
+            <ellipse cx="100" cy="188" rx="48" ry="8" fill="rgba(0,0,0,0.32)"/>
+            <g class="michu-anim-float">
+              <!-- Cola atigrada animada -->
+              <g class="michu-anim-tail">
+                <path d="M138 152 Q178 140 174 102 Q171 84 156 90 Q146 95 151 114 Q154 130 134 140 Z" fill="url(#mfFur_${uid})" stroke="#1e293b" stroke-width="3.5" stroke-linejoin="round"/>
+                <path d="M168 118 L155 115 M172 104 L158 103 M163 132 L150 126" stroke="#1e293b" stroke-width="4" stroke-linecap="round"/>
+              </g>
+              <!-- Cuerpo de gatito sentado -->
+              <ellipse cx="100" cy="146" rx="42" ry="36" fill="url(#mfFur_${uid})" stroke="#1e293b" stroke-width="3.8"/>
+              <!-- Pechito crema/blanco suave de Michu -->
+              <ellipse cx="100" cy="144" rx="24" ry="23" fill="#f1f5f9"/>
+              <!-- Patitas delanteras -->
+              <ellipse cx="78" cy="174" rx="13" ry="8.5" fill="#e2e8f0" stroke="#1e293b" stroke-width="3"/>
+              <ellipse cx="122" cy="174" rx="13" ry="8.5" fill="#e2e8f0" stroke="#1e293b" stroke-width="3"/>
+              <!-- Oreja Izquierda con twitch -->
+              <g class="michu-anim-ear-l">
+                <path d="M46 74 L30 20 L82 46 Z" fill="url(#mfFur_${uid})" stroke="#1e293b" stroke-width="4" stroke-linejoin="round"/>
+                <path d="M50 66 L39 30 L74 48 Z" fill="#fbcfe8" opacity="0.82"/>
+              </g>
+              <!-- Oreja Derecha -->
+              <g>
+                <path d="M154 74 L170 20 L118 46 Z" fill="url(#mfFur_${uid})" stroke="#1e293b" stroke-width="4" stroke-linejoin="round"/>
+                <path d="M150 66 L161 30 L126 48 Z" fill="#fbcfe8" opacity="0.82"/>
+              </g>
+              <!-- Cabeza redonda de gato con pelaje en mejillas -->
+              <path d="M42 88 C30 98, 34 116, 48 122 C62 134, 138 134, 152 122 C166 116, 170 98, 158 88 C160 54, 136 38, 100 38 C64 38, 40 54, 42 88 Z" fill="url(#mfFur_${uid})" stroke="#1e293b" stroke-width="4" stroke-linejoin="round"/>
+              <!-- Rayas atigradas en mejillas -->
+              <path d="M42 92 L56 95 M40 102 L55 103" stroke="#1e293b" stroke-width="3.2" stroke-linecap="round" opacity="0.78"/>
+              <path d="M158 92 L144 95 M160 102 L145 103" stroke="#1e293b" stroke-width="3.2" stroke-linecap="round" opacity="0.78"/>
+              <!-- Clásica "M" atigrada de gato tabby en la frente -->
+              <path d="M76 58 L85 45 L93 56 L100 44 L107 56 L115 45 L124 58" fill="none" stroke="#1e293b" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Vincha deportiva verde Michu Fit -->
+              <path d="M46 66 Q100 53 154 66" fill="none" stroke="#22c55e" stroke-width="8.5" stroke-linecap="round"/>
+              <path d="M46 66 Q100 53 154 66" fill="none" stroke="#86efac" stroke-width="2.2" stroke-linecap="round" opacity="0.7"/>
+              <!-- Ojos felinos según expresión -->
+              ${isHeart ? `
+                <g class="michu-anim-hearts">
+                  <path d="M72 95 C72 95 54 81 54 71 C54 63 62 59 68 65 L72 69 L76 65 C82 59 90 63 90 71 C90 81 72 95 72 95 Z" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
+                  <path d="M128 95 C128 95 110 81 110 71 C110 63 118 59 124 65 L128 69 L132 65 C138 59 146 63 146 71 C146 81 128 95 128 95 Z" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
+                </g>
+              ` : isStar ? `
+                <circle cx="72" cy="82" r="15" fill="#0f172a"/>
+                <circle cx="128" cy="82" r="15" fill="#0f172a"/>
+                <polygon points="72,68 75,77 85,77 77,83 80,92 72,86 64,92 67,83 59,77 69,77" fill="#fde047"/>
+                <polygon points="128,68 131,77 141,77 133,83 136,92 128,86 120,92 123,83 115,77 125,77" fill="#fde047"/>
+                <circle cx="65" cy="74" r="3" fill="#ffffff"/>
+                <circle cx="121" cy="74" r="3" fill="#ffffff"/>
+              ` : isZen ? `
+                <path d="M57 83 Q72 93 87 83" fill="none" stroke="#0f172a" stroke-width="4.5" stroke-linecap="round"/>
+                <path d="M113 83 Q128 93 143 83" fill="none" stroke="#0f172a" stroke-width="4.5" stroke-linecap="round"/>
+              ` : `
+                <ellipse cx="72" cy="82" rx="15" ry="14" fill="url(#mfEye_${uid})" stroke="#0f172a" stroke-width="3"/>
+                <ellipse cx="72" cy="82" rx="4.2" ry="10.5" fill="#0f172a"/>
+                <circle cx="67" cy="76" r="3.8" fill="#ffffff"/>
+                <ellipse cx="128" cy="82" rx="15" ry="14" fill="url(#mfEye_${uid})" stroke="#0f172a" stroke-width="3"/>
+                <ellipse cx="128" cy="82" rx="4.2" ry="10.5" fill="#0f172a"/>
+                <circle cx="123" cy="76" r="3.8" fill="#ffffff"/>
+              `}
+              <!-- Cejas expresivas para modo directo -->
+              ${isDirect ? `
+                <path d="M56 67 L86 73" stroke="#0f172a" stroke-width="4.2" stroke-linecap="round"/>
+                <path d="M144 67 L114 73" stroke="#0f172a" stroke-width="4.2" stroke-linecap="round"/>
+              ` : ""}
+              <!-- Moñito para modo amable -->
+              ${isKind ? `
+                <g transform="translate(144, 42) rotate(14)">
+                  <ellipse cx="-9" cy="0" rx="9" ry="6" fill="#fb7185" stroke="#1e293b" stroke-width="2.5"/>
+                  <ellipse cx="9" cy="0" rx="9" ry="6" fill="#fb7185" stroke="#1e293b" stroke-width="2.5"/>
+                  <circle cx="0" cy="0" r="4" fill="#f43f5e"/>
+                </g>
+              ` : ""}
+              <!-- Rubor rosado en mejillas -->
+              <ellipse cx="54" cy="96" rx="7.5" ry="4.2" fill="#f472b6" opacity="0.55"/>
+              <ellipse cx="146" cy="96" rx="7.5" ry="4.2" fill="#f472b6" opacity="0.55"/>
+              <!-- Almohadillas blancas del hocico felino y nariz rosada -->
+              <ellipse cx="91" cy="103" rx="11" ry="8.5" fill="#f8fafc"/>
+              <ellipse cx="109" cy="103" rx="11" ry="8.5" fill="#f8fafc"/>
+              <polygon points="93,94 107,94 100,102" fill="#f472b6" stroke="#1e293b" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M100 102 L100 107 M89 107 Q95 113 100 107 Q105 113 111 107" fill="none" stroke="#1e293b" stroke-width="2.8" stroke-linecap="round"/>
+              <!-- Bigotes largos blancos de gato -->
+              <g stroke="#f8fafc" stroke-width="2.3" stroke-linecap="round" opacity="0.92">
+                <line x1="68" y1="100" x2="26" y2="94"/>
+                <line x1="68" y1="105" x2="24" y2="105"/>
+                <line x1="68" y1="110" x2="28" y2="115"/>
+                <line x1="132" y1="100" x2="174" y2="94"/>
+                <line x1="132" y1="105" x2="176" y2="105"/>
+                <line x1="132" y1="110" x2="172" y2="115"/>
+              </g>
+              <!-- Accesorios según pantalla -->
+              ${variant === "notepad" ? `
+                <g transform="translate(46, 122) rotate(-6)">
+                  <rect x="0" y="0" width="34" height="42" rx="6" fill="#fde047" stroke="#1e293b" stroke-width="3.2"/>
+                  <line x1="7" y1="12" x2="27" y2="12" stroke="#ca8a04" stroke-width="2.8" stroke-linecap="round"/>
+                  <line x1="7" y1="21" x2="24" y2="21" stroke="#ca8a04" stroke-width="2.8" stroke-linecap="round"/>
+                  <line x1="7" y1="30" x2="20" y2="30" stroke="#ca8a04" stroke-width="2.8" stroke-linecap="round"/>
+                </g>
+                <g class="michu-anim-paw-r" transform="translate(128, 118) rotate(24)">
+                  <rect x="0" y="0" width="9" height="34" rx="3" fill="#f87171" stroke="#1e293b" stroke-width="2.8"/>
+                  <polygon points="0,34 9,34 4.5,44" fill="#fde68a" stroke="#1e293b" stroke-width="2.4"/>
+                </g>
+              ` : isWave ? `
+                <g class="michu-anim-paw-r">
+                  <ellipse cx="148" cy="122" rx="12" ry="16" transform="rotate(28 148 122)" fill="#e2e8f0" stroke="#1e293b" stroke-width="3.2"/>
+                  <circle cx="151" cy="116" r="4" fill="#f472b6"/>
+                </g>
+              ` : isSheet ? `
+                <g transform="translate(36, 110) rotate(-8)">
+                  <rect x="0" y="0" width="58" height="66" rx="7" fill="#fde047" stroke="#1e293b" stroke-width="3.5"/>
+                  <line x1="10" y1="16" x2="46" y2="16" stroke="#ca8a04" stroke-width="3" stroke-linecap="round"/>
+                  <line x1="10" y1="28" x2="42" y2="28" stroke="#ca8a04" stroke-width="3" stroke-linecap="round"/>
+                  <line x1="10" y1="40" x2="36" y2="40" stroke="#ca8a04" stroke-width="3" stroke-linecap="round"/>
+                </g>
+              ` : isThink ? `
+                <text x="16" y="42" fill="#22c55e" font-size="24" font-weight="900">kcal</text>
+                <text x="158" y="46" fill="#38bdf8" font-size="26" font-weight="900">?</text>
+                <text x="92" y="18" fill="#facc15" font-size="22" font-weight="900">⚡</text>
+              ` : ""}
             </g>
-            <!-- Cuerpo -->
-            <ellipse cx="58" cy="84" rx="23" ry="22" fill="#cbd5e1" stroke="#1f2937" stroke-width="3.2"/>
-            <!-- Corazón blanco en la pancita -->
-            <path d="M58 88 C58 88 50 82 50 77 C50 74 53 72 56 74 L58 76 L60 74 C63 72 66 74 66 77 C66 82 58 88 58 88 Z" fill="#ffffff"/>
-            <!-- Orejas -->
-            <path d="M26 42 L20 16 L44 26 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="3.2" stroke-linejoin="round"/>
-            <path d="M27 36 L24 21 L39 27 Z" fill="#1f2937"/>
-            <path d="M90 42 L96 16 L72 26 Z" fill="#cbd5e1" stroke="#1f2937" stroke-width="3.2" stroke-linejoin="round"/>
-            <path d="M89 36 L92 21 L77 27 Z" fill="#1f2937"/>
-            <!-- Cabeza -->
-            <ellipse cx="58" cy="49" rx="34" ry="27" fill="#cbd5e1" stroke="#1f2937" stroke-width="3.2"/>
-            <!-- Antifaz oscuro -->
-            <ellipse cx="43" cy="49" rx="14" ry="11" fill="#374151"/>
-            <ellipse cx="73" cy="49" rx="14" ry="11" fill="#374151"/>
-            <!-- Mejillas rosadas -->
-            <ellipse cx="30" cy="57" rx="5" ry="3" fill="#f472b6" opacity="0.65"/>
-            <ellipse cx="86" cy="57" rx="5" ry="3" fill="#f472b6" opacity="0.65"/>
-            <!-- Ojos según variante -->
-            ${isHeart ? `
-              <path d="M43 55 C43 55 34 48 34 43 C34 39 38 37 41 40 L43 42 L45 40 C48 37 52 39 52 43 C52 48 43 55 43 55 Z" fill="#ef4444"/>
-              <path d="M73 55 C73 55 64 48 64 43 C64 39 68 37 71 40 L73 42 L75 40 C78 37 82 39 82 43 C82 48 73 55 73 55 Z" fill="#ef4444"/>
-            ` : isStar ? `
-              <polygon points="43,39 45,45 52,45 46,49 48,55 43,51 38,55 40,49 34,45 41,45" fill="#facc15"/>
-              <polygon points="73,39 75,45 82,45 76,49 78,55 73,51 68,55 70,49 64,45 71,45" fill="#facc15"/>
-            ` : isZen ? `
-              <path d="M36 49 Q43 54 50 49" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-              <path d="M66 49 Q73 54 80 49" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-            ` : `
-              <circle cx="43" cy="48" r="7.5" fill="#111827" stroke="#ffffff" stroke-width="2"/>
-              <circle cx="45" cy="45.5" r="2.6" fill="#ffffff"/>
-              <circle cx="73" cy="48" r="7.5" fill="#111827" stroke="#ffffff" stroke-width="2"/>
-              <circle cx="75" cy="45.5" r="2.6" fill="#ffffff"/>
-            `}
-            <!-- Moño para 'kind' -->
-            ${isKind ? `
-              <g transform="translate(72, 22) rotate(12)">
-                <ellipse cx="-6" cy="0" rx="6" ry="4" fill="#fb7185" stroke="#1f2937" stroke-width="2"/>
-                <ellipse cx="6" cy="0" rx="6" ry="4" fill="#fb7185" stroke="#1f2937" stroke-width="2"/>
-                <circle cx="0" cy="0" r="2.5" fill="#f43f5e"/>
-              </g>
-            ` : ""}
-            <!-- Gorra para 'direct' -->
-            ${isDirect ? `
-              <path d="M36 28 Q58 14 80 28 Z" fill="#38bdf8" stroke="#1f2937" stroke-width="2.6"/>
-              <circle cx="58" cy="23" r="3" fill="#facc15"/>
-            ` : ""}
-            <!-- Hocico y sonrisa -->
-            <ellipse cx="58" cy="56" rx="8" ry="6" fill="#ffffff"/>
-            <ellipse cx="58" cy="53" rx="3.2" ry="2.2" fill="#1f2937"/>
-            <path d="M53 58 Q58 64 63 58" fill="#f43f5e" stroke="#1f2937" stroke-width="2.2" stroke-linecap="round"/>
-            <!-- Accesorios: libreta y lápiz / hoja amarilla / signos -->
-            ${variant === "notepad" ? `
-              <rect x="26" y="70" width="22" height="26" rx="4" fill="#fde047" stroke="#1f2937" stroke-width="2.6"/>
-              <line x1="30" y1="77" x2="44" y2="77" stroke="#ca8a04" stroke-width="2"/>
-              <line x1="30" y1="83" x2="42" y2="83" stroke="#ca8a04" stroke-width="2"/>
-              <g transform="translate(76, 62) rotate(28)">
-                <rect x="0" y="0" width="7" height="24" rx="2" fill="#f87171" stroke="#1f2937" stroke-width="2.2"/>
-                <polygon points="0,24 7,24 3.5,31" fill="#fde68a" stroke="#1f2937" stroke-width="2"/>
-              </g>
-            ` : isSheet ? `
-              <rect x="18" y="54" width="44" height="54" rx="5" transform="rotate(-8 40 80)" fill="#fde047" stroke="#1f2937" stroke-width="3"/>
-            ` : isThink ? `
-              <text x="12" y="28" fill="#ef4444" font-size="18" font-weight="900">7</text>
-              <text x="96" y="34" fill="#38bdf8" font-size="18" font-weight="900">?</text>
-              <text x="54" y="14" fill="#facc15" font-size="17" font-weight="900">3</text>
-            ` : ""}
           </svg>
         `;
       }
@@ -10054,10 +10215,9 @@
         return dt.toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
       }
 
-      // Definición de las pantallas del Onboarding estilo BitePal
+      // Definición de las pantallas del Onboarding con Michu (sin renombrar a mapache)
       const BP_SCREENS = [
         { id: "intro_mascot", seg: 0, skippable: false },
-        { id: "name_mascot", seg: 0, skippable: true },
         { id: "user_name", seg: 0, skippable: false },
         { id: "fav_human", seg: 0, skippable: false },
         { id: "talk_style", seg: 0, skippable: true },
@@ -10090,7 +10250,8 @@
         const backBtn = document.getElementById("bpWizBackBtn");
 
         if (backBtn) {
-          backBtn.style.visibility = bpState.stepIdx > 0 && scr.id !== "building_plan" ? "visible" : "hidden";
+          backBtn.style.visibility = scr.id !== "building_plan" ? "visible" : "hidden";
+          backBtn.title = bpState.stepIdx === 0 ? "Volver a Iniciar Sesión" : "Paso anterior";
         }
         if (skipBtn) {
           skipBtn.style.display = scr.skippable ? "inline-flex" : "none";
@@ -10182,6 +10343,11 @@
         const nextBtn = document.getElementById("bpWizNextBtn");
 
         if (!stage) return;
+        // Animación direccional moderna al cambiar de paso
+        stage.classList.remove("nav-next", "nav-prev");
+        void stage.offsetWidth;
+        stage.classList.add(bpNavDir === "prev" ? "nav-prev" : "nav-next");
+
         diceBtn.style.display = "none";
         footerBar.style.display = "flex";
         nextBtn.disabled = false;
@@ -10189,64 +10355,39 @@
 
         const setHeaderBubble = (text, animate = true) => {
           mascotHeader.style.display = "flex";
-          mascotMiniSvg.innerHTML = bpMascotSvg("notepad", 64);
+          mascotMiniSvg.innerHTML = bpMascotSvg("notepad", 66);
           if (animate) typewriteBpBubble(speechEl, text);
           else speechEl.textContent = text;
         };
 
-        // 1. INTRO MASCOT (00:00)
+        // 1. INTRO MICHU (00:00)
         if (scr.id === "intro_mascot") {
           mascotHeader.style.display = "none";
           stage.innerHTML = `
-            <div style="text-align:center;padding:10px 4px;">
-              <h2 style="font-size:1.75rem;font-weight:900;line-height:1.2;margin-bottom:18px;">
-                Este mapache-michi es ahora tu mascota virtual
+            <div style="text-align:center;padding:8px 4px;">
+              <span class="chip" style="background:rgba(34,197,94,0.16);color:#22c55e;font-weight:900;font-size:0.76rem;margin-bottom:10px;">
+                🐾 TU COMPAÑERO MICHU FIT
+              </span>
+              <h2 style="font-size:1.68rem;font-weight:900;line-height:1.2;margin-bottom:14px;">
+                ¡Hola! Soy <span style="color:#22c55e;">Michu</span>, tu gato coach nutricional
               </h2>
-              <div style="display:flex;justify-content:center;margin:14px 0;">
-                ${bpMascotSvg("stars", 165)}
+              <div style="display:flex;justify-content:center;margin:10px 0;">
+                ${bpMascotSvg("wave", 172)}
               </div>
-              <p style="font-size:0.86rem;color:var(--text-muted);max-width:310px;margin:0 auto;">
-                Te acompañará todos los días para alcanzar tu peso ideal sin sufrir el proceso.
+              <p style="font-size:0.86rem;color:var(--text-muted);max-width:315px;margin:0 auto;">
+                Te acompañaré todos los días con tus comidas, ayuno y pasos para alcanzar tu peso ideal.
               </p>
             </div>
           `;
           return;
         }
 
-        // 2. NAME MASCOT (00:01)
-        if (scr.id === "name_mascot") {
-          mascotHeader.style.display = "none";
-          diceBtn.style.display = "inline-flex";
-          stage.innerHTML = `
-            <div style="display:flex;justify-content:flex-end;margin-top:-10px;margin-bottom:-10px;">
-              ${bpMascotSvg("normal", 88)}
-            </div>
-            <div class="bp-giant-input-wrap">
-              <span class="bp-giant-label">Nombra a tu mascota</span>
-              <input type="text" id="bpMascotNameInp" class="bp-giant-input" value="${bpState.mascotName}" maxlength="18" autocomplete="off" />
-            </div>
-          `;
-          const inp = document.getElementById("bpMascotNameInp");
-          if (inp) {
-            inp.addEventListener("input", () => {
-              bpState.mascotName = inp.value.trim() || "Michu";
-            });
-            setTimeout(() => inp.focus(), 60);
-          }
-          diceBtn.onclick = () => {
-            const others = MASCOT_FUN_NAMES.filter(n => n !== bpState.mascotName);
-            bpState.mascotName = others[Math.floor(Math.random() * others.length)] || "Chickpea";
-            if (inp) inp.value = bpState.mascotName;
-          };
-          return;
-        }
-
-        // 3. USER NAME (00:05)
+        // 2. USER NAME (00:05)
         if (scr.id === "user_name") {
-          setHeaderBubble(`¡${bpState.mascotName}! Me gusta. ¿Y tú cómo te llamas?`);
+          setHeaderBubble(`¡Encantado de conocerte! ¿Y vos cómo te llamás?`);
           stage.innerHTML = `
             <div class="bp-giant-input-wrap">
-              <span class="bp-giant-label">Tu nombre</span>
+              <span class="bp-giant-label">Tu nombre o apodo</span>
               <input type="text" id="bpUserNameInp" class="bp-giant-input" value="${bpState.userName}" placeholder="Tu nombre" maxlength="32" autocomplete="name" />
             </div>
           `;
@@ -10437,7 +10578,7 @@
           return;
         }
 
-        // 11. EATING WINDOW / INTERMITTENT FASTING (00:59)
+        // 11. EATING WINDOW / INTERMITTENT FASTING + RELOJ SOLAR 24H DINÁMICO (00:59)
         if (scr.id === "eating_window") {
           typewriteBpBubble(speechEl, "¿Entre qué horas comes?");
           mascotHeader.style.display = "flex";
@@ -10445,32 +10586,50 @@
 
           const renderWindow = () => {
             const winHrs = Math.max(4, (bpState.eatingEndHour - bpState.eatingStartHour + 24) % 24 || 10);
+            const fastHrs = 24 - winHrs;
             const fmtH = (h) => `${String((h + 24) % 24).padStart(2, "0")}:00`;
+            const rClock = 40;
+            const circ = 2 * Math.PI * rClock;
+            const eatLen = (winHrs / 24) * circ;
+            const startAngleDeg = (bpState.eatingStartHour / 24) * 360 - 90;
             stage.innerHTML = `
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:center;">
+              <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;text-align:center;">
                 <div>
-                  <div style="font-size:0.8rem;color:var(--text-muted);font-weight:700;margin-bottom:4px;">Inicio</div>
+                  <div style="font-size:0.76rem;color:#22c55e;font-weight:800;margin-bottom:3px;">☀️ Inicio</div>
                   <div class="bp-wheel-container" id="bpStartHr_wrap">
-                    <div class="bp-wheel-row dist-1" data-wheel-delta="-1" style="font-size:1.3rem;">${fmtH(bpState.eatingStartHour - 1)}</div>
-                    <div class="bp-wheel-row dist-0" style="font-size:2.1rem;">${fmtH(bpState.eatingStartHour)}</div>
-                    <div class="bp-wheel-row dist-1" data-wheel-delta="1" style="font-size:1.3rem;">${fmtH(bpState.eatingStartHour + 1)}</div>
+                    <div class="bp-wheel-row dist-1" data-wheel-delta="-1" style="font-size:1.15rem;">${fmtH(bpState.eatingStartHour - 1)}</div>
+                    <div class="bp-wheel-row dist-0" style="font-size:1.75rem;">${fmtH(bpState.eatingStartHour)}</div>
+                    <div class="bp-wheel-row dist-1" data-wheel-delta="1" style="font-size:1.15rem;">${fmtH(bpState.eatingStartHour + 1)}</div>
                   </div>
                 </div>
+                <!-- Reloj Circular 24h Dinámico -->
+                <div style="display:flex;flex-direction:column;align-items:center;">
+                  <svg viewBox="0 0 104 104" width="102" height="102">
+                    <circle cx="52" cy="52" r="${rClock}" fill="none" stroke="rgba(168,85,247,0.28)" stroke-width="10"/>
+                    <circle cx="52" cy="52" r="${rClock}" fill="none" stroke="#22c55e" stroke-width="10"
+                      stroke-dasharray="${eatLen.toFixed(1)} ${circ.toFixed(1)}"
+                      stroke-linecap="round"
+                      transform="rotate(${startAngleDeg} 52 52)"
+                      style="transition:all 0.28s ease;"/>
+                    <text x="52" y="49" text-anchor="middle" font-size="15" font-weight="900" fill="#f8fafc">${fastHrs}:${winHrs}</text>
+                    <text x="52" y="64" text-anchor="middle" font-size="8.5" font-weight="800" fill="#a855f7">AYUNO</text>
+                  </svg>
+                </div>
                 <div>
-                  <div style="font-size:0.8rem;color:var(--text-muted);font-weight:700;margin-bottom:4px;">Fin</div>
+                  <div style="font-size:0.76rem;color:#a855f7;font-weight:800;margin-bottom:3px;">🌙 Fin</div>
                   <div class="bp-wheel-container" id="bpEndHr_wrap">
-                    <div class="bp-wheel-row dist-1" data-wheel-delta="-1" style="font-size:1.3rem;">${fmtH(bpState.eatingEndHour - 1)}</div>
-                    <div class="bp-wheel-row dist-0" style="font-size:2.1rem;">${fmtH(bpState.eatingEndHour)}</div>
-                    <div class="bp-wheel-row dist-1" data-wheel-delta="1" style="font-size:1.3rem;">${fmtH(bpState.eatingEndHour + 1)}</div>
+                    <div class="bp-wheel-row dist-1" data-wheel-delta="-1" style="font-size:1.15rem;">${fmtH(bpState.eatingEndHour - 1)}</div>
+                    <div class="bp-wheel-row dist-0" style="font-size:1.75rem;">${fmtH(bpState.eatingEndHour)}</div>
+                    <div class="bp-wheel-row dist-1" data-wheel-delta="1" style="font-size:1.15rem;">${fmtH(bpState.eatingEndHour + 1)}</div>
                   </div>
                 </div>
               </div>
-              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:13px 15px;margin-top:8px;">
-                <strong style="color:#22c55e;font-size:0.9rem;display:block;margin-bottom:3px;">
-                  🍴 Ventana de alimentación: ${winHrs} horas (Ayuno ${24 - winHrs}:${winHrs})
+              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:11px 14px;margin-top:6px;">
+                <strong style="color:#22c55e;font-size:0.88rem;display:block;margin-bottom:2px;">
+                  🍴 Ventana de alimentación: ${winHrs}h • 🌙 Ayuno: ${fastHrs}h
                 </strong>
-                <span style="font-size:0.78rem;color:var(--text-muted);">
-                  Comer en una ventana de 8 a 10 horas puede favorecer la salud metabólica y el control de insulina.
+                <span style="font-size:0.76rem;color:var(--text-muted);">
+                  El arco verde muestra tus horas de comida y el violeta tu descanso metabólico nocturno.
                 </span>
               </div>
             `;
@@ -10715,33 +10874,55 @@
           return;
         }
 
-        // 21. BMI PERSONAL SUMMARY SCREEN (01:50)
+        // 21. BMI PERSONAL SUMMARY SCREEN + VELOCÍMETRO SEMICIRCULAR SVG (01:50)
         if (scr.id === "bmi_summary") {
           mascotHeader.style.display = "none";
           const bmi = getBpBmi();
           const cat = getBpBmiCategory(bmi);
           const pctPos = Math.max(4, Math.min(96, ((bmi - 15) / (40 - 15)) * 100));
+          const needleDeg = -90 + (pctPos / 100) * 180;
           stage.innerHTML = `
-            <div style="text-align:center;margin-bottom:6px;">
-              <h3 style="font-size:1.3rem;font-weight:900;margin-bottom:6px;">Tu resumen personal</h3>
-              <div style="display:flex;justify-content:center;">${bpMascotSvg("stars", 90)}</div>
-            </div>
-            <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:18px;padding:16px;">
-              <div style="font-size:0.82rem;color:var(--text-muted);font-weight:700;margin-bottom:18px;">Índice de masa corporal (IMC)</div>
-              <div style="position:relative;margin:14px 0 8px;">
-                <div style="position:absolute;left:${pctPos}%;top:-30px;transform:translateX(-50%);background:#111827;color:#fff;font-size:0.78rem;font-weight:900;padding:4px 9px;border-radius:8px;white-space:nowrap;border:1px solid var(--border);">
-                  Tú: ${bmi.toFixed(1).replace(".", ",")}
-                </div>
-                <div style="height:10px;border-radius:999px;background:linear-gradient(90deg, #38bdf8 0%, #22c55e 28%, #f59e0b 62%, #ef4444 100%);position:relative;">
-                  <div style="position:absolute;left:${pctPos}%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:999px;background:${cat.color};border:3px solid #fff;"></div>
-                </div>
-                <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-top:6px;">
-                  <span>Bajo peso</span><span>Normal</span><span>Sobrepeso</span><span>Obeso</span>
-                </div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:4px;">
+              ${bpMascotSvg("stars", 78)}
+              <div>
+                <span style="font-size:0.74rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;">Diagnóstico corporal</span>
+                <h3 style="font-size:1.28rem;font-weight:900;margin:0;">Tu resumen de IMC</h3>
               </div>
-              <div style="background:${cat.bg};border-radius:12px;padding:11px 13px;margin-top:12px;font-size:0.8rem;color:var(--text);">
-                <strong style="color:${cat.color};display:block;margin-bottom:3px;">💡 Diagnóstico inicial (${cat.label})</strong>
-                ¡Pequeños pasos llevan a grandes cambios! Tu plan se adaptará a tu metabolismo actual.
+            </div>
+            <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:18px;padding:14px 16px;">
+              <!-- Velocímetro Semicircular Dinámico -->
+              <div style="display:flex;justify-content:center;margin-bottom:4px;">
+                <svg viewBox="0 0 200 112" width="210" height="115" style="overflow:visible;">
+                  <defs>
+                    <linearGradient id="bmiGaugeGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stop-color="#38bdf8"/>
+                      <stop offset="32%" stop-color="#22c55e"/>
+                      <stop offset="68%" stop-color="#f59e0b"/>
+                      <stop offset="100%" stop-color="#ef4444"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M 22 96 A 78 78 0 0 1 178 96" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="16" stroke-linecap="round"/>
+                  <path d="M 22 96 A 78 78 0 0 1 178 96" fill="none" stroke="url(#bmiGaugeGrad)" stroke-width="14" stroke-linecap="round"
+                    style="stroke-dasharray:250;stroke-dashoffset:250;animation:bpDrawCurve 0.9s ease forwards;"/>
+                  <g transform="translate(100, 96) rotate(${needleDeg.toFixed(1)})" style="transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1);">
+                    <polygon points="-4,0 0,-68 4,0" fill="${cat.color}"/>
+                    <circle cx="0" cy="0" r="8" fill="#f8fafc" stroke="${cat.color}" stroke-width="3.5"/>
+                  </g>
+                  <text x="100" y="76" text-anchor="middle" font-size="22" font-weight="900" fill="${cat.color}">${bmi.toFixed(1).replace(".", ",")}</text>
+                  <text x="20" y="110" text-anchor="start" font-size="9" font-weight="800" fill="#38bdf8">15</text>
+                  <text x="100" y="14" text-anchor="middle" font-size="9" font-weight="800" fill="#22c55e">22</text>
+                  <text x="180" y="110" text-anchor="end" font-size="9" font-weight="800" fill="#ef4444">40</text>
+                </svg>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);font-weight:700;margin-top:2px;">
+                <span style="color:#38bdf8;">Bajo peso</span>
+                <span style="color:#22c55e;">Normal</span>
+                <span style="color:#f59e0b;">Sobrepeso</span>
+                <span style="color:#ef4444;">Obeso</span>
+              </div>
+              <div style="background:${cat.bg};border-radius:12px;padding:10px 13px;margin-top:10px;font-size:0.79rem;color:var(--text);">
+                <strong style="color:${cat.color};display:block;margin-bottom:2px;">💡 Categoría actual: ${cat.label}</strong>
+                Michu ajustará tus calorías y proteínas diarias según tu composición actual.
               </div>
             </div>
           `;
@@ -10779,33 +10960,49 @@
           return;
         }
 
-        // 23. GOAL SPEED SLIDER (01:55)
+        // 23. GOAL SPEED SLIDER + ANILLO METABÓLICO DINÁMICO (01:55)
         if (scr.id === "goal_speed") {
           setHeaderBubble("¿Qué tan rápido quieres alcanzar tu meta?", false);
           typewriteBpBubble(speechEl, "¿Qué tan rápido quieres alcanzar tu meta?");
           const renderSpeed = () => {
             const r = Number(bpState.weeklyRateKg) || 0.5;
             const badgeTxt = r <= 0.35 ? "Suave y flexible" : (r <= 0.65 ? "Recomendado" : "Intenso");
+            const badgeColor = r <= 0.35 ? "#38bdf8" : (r <= 0.65 ? "#22c55e" : "#f59e0b");
+            const dailyDef = Math.round(r * 1000);
+            const ringPct = Math.min(1, r / 1.0);
+            const circ = 2 * Math.PI * 36;
             stage.innerHTML = `
-              <div style="text-align:center;padding:10px 4px;">
-                <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:4px;">Pérdida de peso por semana</div>
-                <div style="font-size:2.9rem;font-weight:900;line-height:1.1;">
-                  ${r.toFixed(1).replace(".", ",")} <small style="font-size:1.35rem;color:var(--text-muted);">kg</small>
+              <div style="text-align:center;padding:4px;">
+                <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:6px;">
+                  <svg viewBox="0 0 88 88" width="84" height="84">
+                    <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8"/>
+                    <circle cx="44" cy="44" r="36" fill="none" stroke="${badgeColor}" stroke-width="8"
+                      stroke-dasharray="${(ringPct * circ).toFixed(1)} ${circ.toFixed(1)}"
+                      stroke-linecap="round" transform="rotate(-90 44 44)"/>
+                    <text x="44" y="42" text-anchor="middle" font-size="13" font-weight="900" fill="${badgeColor}">-${dailyDef}</text>
+                    <text x="44" y="55" text-anchor="middle" font-size="8.5" font-weight="800" fill="#94a3b8">kcal/día</text>
+                  </svg>
+                  <div style="text-align:left;">
+                    <div style="font-size:0.78rem;color:var(--text-muted);">Ritmo semanal</div>
+                    <div style="font-size:2.55rem;font-weight:900;line-height:1.05;">
+                      ${r.toFixed(1).replace(".", ",")} <small style="font-size:1.15rem;color:var(--text-muted);">kg/sem</small>
+                    </div>
+                    <span style="display:inline-block;margin-top:5px;background:${badgeColor};color:#052e14;font-size:0.74rem;font-weight:900;padding:2px 10px;border-radius:8px;">
+                      ${badgeTxt}
+                    </span>
+                  </div>
                 </div>
-                <span style="display:inline-block;margin:8px 0 14px;background:#22c55e;color:#052e14;font-size:0.76rem;font-weight:900;padding:3px 11px;border-radius:8px;">
-                  ${badgeTxt}
-                </span>
-                <input type="range" id="bpRateRange" min="0.2" max="1.0" step="0.1" value="${r}" style="width:100%;accent-color:#22c55e;cursor:pointer;" />
-                <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-top:4px;">
-                  <span>Lento</span><span>Óptimo</span><span>Rápido</span>
+                <input type="range" id="bpRateRange" min="0.2" max="1.0" step="0.1" value="${r}" style="width:100%;accent-color:${badgeColor};cursor:pointer;margin-top:6px;" />
+                <div style="display:flex;justify-content:space-between;font-size:0.76rem;color:var(--text-muted);margin-top:3px;">
+                  <span>🐢 Lento (0,2 kg)</span><span>⚡ Óptimo (0,5 kg)</span><span>🔥 Rápido (1,0 kg)</span>
                 </div>
               </div>
-              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:13px 15px;margin-top:6px;">
-                <strong style="color:#22c55e;font-size:0.9rem;display:block;margin-bottom:3px;">
-                  ✅ Alcanza tu meta para el ${getBpEtaDateStr()}
+              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:12px 15px;margin-top:4px;">
+                <strong style="color:#22c55e;font-size:0.88rem;display:block;margin-bottom:2px;">
+                  ✅ Meta estimada: ${getBpEtaDateStr()}
                 </strong>
-                <span style="font-size:0.78rem;color:var(--text-muted);">
-                  Se ajustará tu déficit calórico diario (-${Math.round(r * 1000)} kcal/día) priorizando proteína para cuidar tu masa muscular.
+                <span style="font-size:0.77rem;color:var(--text-muted);">
+                  Michu ajustará tu déficit diario (-${dailyDef} kcal) cuidando tu masa muscular con proteína alta.
                 </span>
               </div>
             `;
@@ -10916,6 +11113,7 @@
                 document.getElementById("bpBldBar4").style.width = "100%";
                 popupBox.style.display = "none";
                 const t = setTimeout(() => {
+                  bpNavDir = "next";
                   bpState.stepIdx++;
                   renderBpWizardScreen();
                 }, 480);
@@ -10933,7 +11131,7 @@
           return;
         }
 
-        // 26. PLAN READY + CURVA PROYECTADA + CREAR CUENTA (02:23)
+        // 26. PLAN READY + CURVA PROYECTADA ANIMADA + CREAR CUENTA (02:23)
         if (scr.id === "plan_ready") {
           mascotHeader.style.display = "none";
           nextBtn.innerHTML = `🚀 Comprometerme y Crear mi Cuenta`;
@@ -10956,48 +11154,45 @@
           });
 
           stage.innerHTML = `
-            <div style="text-align:center;margin-bottom:6px;">
-              <span style="font-size:0.78rem;color:var(--text-muted);font-weight:700;">✨ Tu plan personal está listo</span>
-              <h2 style="font-size:1.38rem;font-weight:900;line-height:1.22;margin-top:2px;">
+            <div style="text-align:center;margin-bottom:4px;">
+              <span style="font-size:0.76rem;color:#22c55e;font-weight:800;">✨ TU PLAN CON MICHU ESTÁ LISTO</span>
+              <h2 style="font-size:1.34rem;font-weight:900;line-height:1.2;margin-top:2px;">
                 Alcanzar <span style="color:#22c55e;">${goalW} kg</span> para el ${etaStr}
               </h2>
             </div>
 
-            <!-- Curva SVG de Progreso Proyectado -->
-            <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:12px 14px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                <strong style="font-size:0.86rem;">Progreso proyectado</strong>
-                <span class="chip" style="background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:0.74rem;">
-                  🎯 ${calc.targetKcal} kcal/día • 🥩 ${calc.proteinG}g P
+            <!-- Curva SVG Animada de Progreso Proyectado -->
+            <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:11px 13px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
+                <strong style="font-size:0.84rem;">Progreso proyectado</strong>
+                <span class="chip" style="background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:0.72rem;">
+                  🎯 ${calc.targetKcal} kcal • 🥩 ${calc.proteinG}g P • 🍚 ${calc.carbsG}g C • 🥑 ${calc.fatG}g G
                 </span>
               </div>
-              <svg viewBox="0 0 320 110" style="width:100%;height:auto;overflow:visible;">
+              <svg viewBox="0 0 320 106" style="width:100%;height:auto;overflow:visible;">
                 <defs>
                   <linearGradient id="bpCurveGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#22c55e" stop-opacity="0.28"/>
+                    <stop offset="0%" stop-color="#22c55e" stop-opacity="0.32"/>
                     <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0"/>
                   </linearGradient>
                 </defs>
-                <path d="M 24 26 C 110 28, 150 82, 230 82 L 296 82 L 296 102 L 24 102 Z" fill="url(#bpCurveGrad)"/>
-                <path d="M 24 26 C 110 28, 150 82, 230 82" fill="none" stroke="#94a3b8" stroke-width="3.5" stroke-linecap="round"/>
-                <path d="M 230 82 L 296 82" fill="none" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
-                <circle cx="24" cy="26" r="5" fill="var(--bg)" stroke="#94a3b8" stroke-width="3"/>
-                <text x="24" y="15" font-size="11" font-weight="900" fill="var(--text)">${curW} kg</text>
-                <rect x="202" y="54" width="54" height="20" rx="6" fill="#22c55e"/>
-                <text x="229" y="68" font-size="10.5" font-weight="900" fill="#052e14" text-anchor="middle">${goalW} kg</text>
-                <circle cx="230" cy="82" r="5" fill="#22c55e" stroke="#fff" stroke-width="2"/>
-                <text x="24" y="104" font-size="9.5" fill="var(--text-muted)">Hoy</text>
-                <text x="230" y="104" font-size="9.5" fill="#22c55e" font-weight="700" text-anchor="middle">${etaStr}</text>
+                <path d="M 24 24 C 110 26, 150 80, 230 80 L 296 80 L 296 100 L 24 100 Z" fill="url(#bpCurveGrad)"/>
+                <path d="M 24 24 C 110 26, 150 80, 230 80 L 296 80" fill="none" stroke="#22c55e" stroke-width="4" stroke-linecap="round"
+                  style="stroke-dasharray:400;stroke-dashoffset:400;animation:bpDrawCurve 1.2s ease forwards;"/>
+                <circle cx="24" cy="24" r="5.5" fill="var(--bg)" stroke="#94a3b8" stroke-width="3"/>
+                <text x="24" y="13" font-size="11" font-weight="900" fill="var(--text)">${curW} kg</text>
+                <rect x="202" y="52" width="54" height="20" rx="6" fill="#22c55e"/>
+                <text x="229" y="66" font-size="10.5" font-weight="900" fill="#052e14" text-anchor="middle">${goalW} kg</text>
+                <circle cx="230" cy="80" r="5.5" fill="#22c55e" stroke="#fff" stroke-width="2.2"/>
+                <text x="24" y="102" font-size="9.5" fill="var(--text-muted)">Hoy</text>
+                <text x="230" y="102" font-size="9.5" fill="#22c55e" font-weight="800" text-anchor="middle">${etaStr}</text>
               </svg>
-              <div style="font-size:0.76rem;color:var(--text-muted);margin-top:4px;display:flex;flex-direction:column;gap:2px;">
-                <span>✅ Verás los primeros resultados visibles en solo 3 semanas</span>
-              </div>
             </div>
 
             <!-- Datos de acceso para guardar la cuenta -->
-            <div style="background:var(--bg-card);border:1.5px solid var(--purple);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:9px;">
-              <strong style="font-size:0.84rem;color:var(--purple);">🔐 Elegí tu usuario y clave para guardar tu plan:</strong>
-              <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:var(--bg-card);border:1.5px solid var(--purple);border-radius:16px;padding:11px 13px;display:flex;flex-direction:column;gap:8px;">
+              <strong style="font-size:0.82rem;color:var(--purple);">🔐 Elegí tu usuario y clave para guardar tu plan:</strong>
+              <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:7px;">
                 <div class="field" style="grid-column:1 / -1;">
                   <input type="text" id="bpFinalEmailInp" placeholder="Tu Email o Usuario (ej: angel@gmail.com)" value="${bpState.email}" autocomplete="username" />
                 </div>
@@ -11104,7 +11299,7 @@
         if (scr.id === "user_name") {
           const v = (bpState.userName || "").trim();
           if (!v) {
-            showAuthAlert("Contanos tu nombre para que tu mascota sepa cómo llamarte.");
+            showAuthAlert("Contanos tu nombre para que Michu sepa cómo llamarte.");
             document.getElementById("bpUserNameInp")?.focus();
             return;
           }
@@ -11114,12 +11309,14 @@
           return;
         }
         if (bpState.stepIdx < BP_SCREENS.length - 1) {
+          bpNavDir = "next";
           bpState.stepIdx++;
           renderBpWizardScreen();
         }
       }
 
       window.resetRegWizard = function () {
+        bpNavDir = "next";
         bpState.stepIdx = 0;
         showAuthAlert("");
         renderBpWizardScreen();
@@ -11127,13 +11324,17 @@
 
       document.getElementById("bpWizBackBtn")?.addEventListener("click", () => {
         if (bpState.stepIdx > 0) {
+          bpNavDir = "prev";
           bpState.stepIdx--;
           renderBpWizardScreen();
+        } else {
+          showAuthModal("login");
         }
       });
 
       document.getElementById("bpWizSkipBtn")?.addEventListener("click", () => {
         if (bpState.stepIdx < BP_SCREENS.length - 1) {
+          bpNavDir = "next";
           bpState.stepIdx++;
           renderBpWizardScreen();
         }
