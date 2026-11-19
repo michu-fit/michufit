@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="es" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0f141c" />
+  <meta name="theme-color" content="#f4f7fb" id="metaThemeColor" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Michu Fit" />
@@ -1875,8 +1875,14 @@
       try {
         var tok = localStorage.getItem("michufit_auth_token");
         document.documentElement.setAttribute("data-auth-state", tok ? "logged-in" : "logged-out");
+        var savedTheme = localStorage.getItem("michufit_theme");
+        var initTheme = savedTheme === "dark" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", initTheme);
+        var mt = document.getElementById("metaThemeColor");
+        if (mt) mt.setAttribute("content", initTheme === "dark" ? "#0f141c" : "#f4f7fb");
       } catch (e) {
         document.documentElement.setAttribute("data-auth-state", "logged-out");
+        document.documentElement.setAttribute("data-theme", "light");
       }
     })();
   </script>
@@ -2461,6 +2467,13 @@
             <div class="field">
               <label for="profWaterGoal">Meta de vasos de agua (250ml c/u)</label>
               <input type="number" id="profWaterGoal" min="4" max="16" value="8" />
+            </div>
+            <div class="field">
+              <label for="profTheme">Tema Visual (Web y App)</label>
+              <select id="profTheme">
+                <option value="light">☀️ Tema Claro (Por defecto)</option>
+                <option value="dark">🌙 Tema Oscuro</option>
+              </select>
             </div>
             <div style="grid-column: 1 / -1; margin-top: 6px;">
               <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;">
@@ -5227,6 +5240,16 @@
           }
         }
       }
+      if (localData.profile && typeof localData.profile === "object") {
+        merged.profile = merged.profile || {};
+        const lThemeTs = Number(localData.profile.themeUpdatedAt) || 0;
+        const sThemeTs = Number(merged.profile.themeUpdatedAt) || 0;
+        if (lThemeTs > sThemeTs && localData.profile.theme) {
+          merged.profile.theme = localData.profile.theme;
+          merged.profile.themeUpdatedAt = lThemeTs;
+          hadLocalChanges = true;
+        }
+      }
       if (Array.isArray(localData.measurementsLog)) {
         merged.measurementsLog = Array.isArray(merged.measurementsLog) ? merged.measurementsLog : [];
         const delSet = new Set(Array.isArray(merged.deletedMeasurementDates) ? merged.deletedMeasurementDates : []);
@@ -6856,8 +6879,39 @@
     // =========================================================================
     // PESTAÑA 3: CALCULADORA TDEE Y DIAGNÓSTICO DE DÉFICIT
     // =========================================================================
+    function applyAppTheme(themeVal, { persist = false } = {}) {
+      const normalized = themeVal === "dark" ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", normalized);
+      const mt = document.getElementById("metaThemeColor");
+      if (mt) mt.setAttribute("content", normalized === "dark" ? "#0f141c" : "#f4f7fb");
+      const btnT = document.getElementById("btnToggleTheme");
+      if (btnT) {
+        btnT.innerHTML = normalized === "dark"
+          ? "☀️ Cambiar a Tema Claro"
+          : "🌙 Cambiar a Tema Oscuro";
+      }
+      const selT = document.getElementById("profTheme");
+      if (selT && selT.value !== normalized) {
+        selT.value = normalized;
+      }
+      try {
+        localStorage.setItem("michufit_theme", normalized);
+      } catch (_) {}
+      if (persist && appData && appData.profile) {
+        appData.profile.theme = normalized;
+        appData.profile.themeUpdatedAt = Date.now();
+        saveToServer();
+      }
+    }
+    window.applyAppTheme = applyAppTheme;
+
     function renderCalculatorTab() {
       const p = appData.profile;
+      const isOwnProfile = !inspectedUserId || (currentUserInfo && inspectedUserId === currentUserInfo.id);
+      const userTheme = p.theme === "dark" ? "dark" : "light";
+      if (isOwnProfile) {
+        applyAppTheme(userTheme, { persist: false });
+      }
       document.getElementById("profName").value = p.name || "Campeón";
       document.getElementById("profSex").value = p.sex || "male";
       document.getElementById("profAge").value = p.age || 29;
@@ -6869,6 +6923,8 @@
       document.getElementById("profCustomDeficit").value = Math.abs(Number(p.customDeficit) || 500);
       document.getElementById("profMacroPreset").value = p.macroPreset || "high_protein";
       document.getElementById("profWaterGoal").value = p.waterGoal || 8;
+      const profThemeEl = document.getElementById("profTheme");
+      if (profThemeEl) profThemeEl.value = userTheme;
 
       const isCustomMode = p.deficitType === "custom" || p.deficitType === "custom_surplus";
       document.getElementById("customDeficitFieldWrap").style.display = isCustomMode ? "flex" : "none";
@@ -9108,10 +9164,19 @@
       appData.profile.customDeficit = Number(document.getElementById("profCustomDeficit").value) || 500;
       appData.profile.macroPreset = document.getElementById("profMacroPreset").value;
       appData.profile.waterGoal = Number(document.getElementById("profWaterGoal").value) || 8;
+      const chosenTheme = document.getElementById("profTheme")?.value === "dark" ? "dark" : "light";
+      appData.profile.theme = chosenTheme;
+      appData.profile.themeUpdatedAt = Date.now();
+      applyAppTheme(chosenTheme, { persist: false });
 
       saveToServer();
       renderAll();
       setRaccoonSpeech(generateContextualRaccoonComment());
+    });
+
+    document.getElementById("profTheme")?.addEventListener("change", (e) => {
+      const nextTheme = e.target.value === "dark" ? "dark" : "light";
+      applyAppTheme(nextTheme, { persist: true });
     });
 
     // Registro de peso
@@ -9406,11 +9471,11 @@
       });
     }
 
-    // Tema claro / oscuro
+    // Tema claro / oscuro (por defecto claro, sincronizado en la nube entre web y app)
     document.getElementById("btnToggleTheme").addEventListener("click", () => {
       const html = document.documentElement;
       const next = html.getAttribute("data-theme") === "dark" ? "light" : "dark";
-      html.setAttribute("data-theme", next);
+      applyAppTheme(next, { persist: true });
     });
 
     // Modal de Instalación en Celular (PWA + Wi-Fi QR)
@@ -11890,6 +11955,8 @@
         localStorage.removeItem("michufit_auth_token");
         localStorage.removeItem("michufit_auth_uid");
         localStorage.removeItem("michufit_cached_user_info");
+        localStorage.removeItem("michufit_theme");
+        applyAppTheme("light", { persist: false });
         closeModal("modalAccount");
         showAuthModal("login");
         try {
