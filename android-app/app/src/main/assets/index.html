@@ -2433,17 +2433,22 @@
               </select>
             </div>
             <div class="field">
-              <label for="profDeficitType">Agresividad del Déficit</label>
+              <label for="profDeficitType">Estrategia Calórica (Déficit / Superávit)</label>
               <select id="profDeficitType">
-                <option value="light">Suave (-300 kcal/día • ~0.27 kg/sem)</option>
-                <option value="recommended">Recomendado (-500 kcal/día • ~0.45 kg/sem)</option>
-                <option value="aggressive">Intenso (-750 kcal/día • ~0.68 kg/sem)</option>
-                <option value="custom">Personalizado (definir kcal de recorte)</option>
+                <option value="light">📉 Déficit Suave (-300 kcal/día • Bajar ~0.27 kg/sem)</option>
+                <option value="recommended">📉 Déficit Recomendado (-500 kcal/día • Bajar ~0.45 kg/sem)</option>
+                <option value="aggressive">📉 Déficit Intenso (-750 kcal/día • Bajar ~0.68 kg/sem)</option>
+                <option value="maintain">⚖️ Mantenimiento / Recomposición (0 kcal • Igualar TDEE)</option>
+                <option value="surplus_lean">💪 Superávit Limpio / Masa Muscular (+300 kcal/día • Subir ~0.27 kg/sem)</option>
+                <option value="surplus_recommended">💪 Superávit Hipertrofia (+450 kcal/día • Subir ~0.41 kg/sem)</option>
+                <option value="surplus_aggressive">💪 Superávit Intenso / Volumen (+650 kcal/día • Subir ~0.60 kg/sem)</option>
+                <option value="custom">⚙️ Déficit Personalizado (-kcal debajo de TDEE)</option>
+                <option value="custom_surplus">⚙️ Superávit Personalizado (+kcal sobre TDEE)</option>
               </select>
             </div>
             <div class="field" id="customDeficitFieldWrap">
-              <label for="profCustomDeficit">Recorte diario (kcal debajo de TDEE)</label>
-              <input type="number" id="profCustomDeficit" min="100" max="1200" step="50" value="500" />
+              <label for="profCustomDeficit" id="profCustomDeficitLabel">Ajuste diario de calorías (kcal)</label>
+              <input type="number" id="profCustomDeficit" min="50" max="1500" step="50" value="500" />
             </div>
             <div class="field">
               <label for="profMacroPreset">Distribución de Macros</label>
@@ -2459,7 +2464,7 @@
             </div>
             <div style="grid-column: 1 / -1; margin-top: 6px;">
               <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;">
-                💾 Guardar y Actualizar Plan de Déficit
+                💾 Guardar y Actualizar Plan Nutricional
               </button>
             </div>
           </form>
@@ -3024,17 +3029,22 @@
           <input type="number" id="cepGoalWeight" step="0.1" min="35" max="250" />
         </div>
         <div class="field">
-          <label for="cepDeficitType">Nivel de Déficit</label>
+          <label for="cepDeficitType">Estrategia Calórica</label>
           <select id="cepDeficitType">
-            <option value="light">Suave (-300 kcal)</option>
-            <option value="recommended">Recomendado (-500 kcal)</option>
-            <option value="aggressive">Intenso (-750 kcal)</option>
-            <option value="custom">Personalizado</option>
+            <option value="light">📉 Déficit Suave (-300 kcal)</option>
+            <option value="recommended">📉 Déficit Recomendado (-500 kcal)</option>
+            <option value="aggressive">📉 Déficit Intenso (-750 kcal)</option>
+            <option value="maintain">⚖️ Mantenimiento (0 kcal)</option>
+            <option value="surplus_lean">💪 Superávit Limpio (+300 kcal)</option>
+            <option value="surplus_recommended">💪 Superávit Hipertrofia (+450 kcal)</option>
+            <option value="surplus_aggressive">💪 Superávit Volumen (+650 kcal)</option>
+            <option value="custom">⚙️ Déficit Personalizado (-kcal)</option>
+            <option value="custom_surplus">⚙️ Superávit Personalizado (+kcal)</option>
           </select>
         </div>
         <div class="field">
-          <label for="cepCustomDeficit">Déficit custom (kcal)</label>
-          <input type="number" id="cepCustomDeficit" step="50" min="100" max="1500" value="500" />
+          <label for="cepCustomDeficit">Ajuste custom (kcal)</label>
+          <input type="number" id="cepCustomDeficit" step="50" min="50" max="1500" value="500" />
         </div>
         <div class="field">
           <label for="cepMacroPreset">Distribución de Macros</label>
@@ -4507,12 +4517,20 @@
       if (prof.deficitType === "light") deficit = 300;
       else if (prof.deficitType === "recommended") deficit = 500;
       else if (prof.deficitType === "aggressive") deficit = 750;
+      else if (prof.deficitType === "maintain") deficit = 0;
+      else if (prof.deficitType === "surplus_lean") deficit = -300;
+      else if (prof.deficitType === "surplus_recommended") deficit = -450;
+      else if (prof.deficitType === "surplus_aggressive") deficit = -650;
+      else if (prof.deficitType === "custom_surplus") deficit = -Math.abs(Number(prof.customDeficit) || 350);
       else if (prof.deficitType === "custom") deficit = Number(prof.customDeficit) || 500;
 
       // Límite mínimo seguro de calorías
       const minSafe = prof.sex === "female" ? 1200 : 1450;
       const targetKcal = Math.max(minSafe, tdee - deficit);
       const effectiveDeficit = tdee - targetKcal;
+      const surplus = effectiveDeficit < 0 ? Math.abs(effectiveDeficit) : 0;
+      const isSurplus = effectiveDeficit < 0;
+      const isMaintain = effectiveDeficit === 0;
 
       // Detectar si el usuario tiene % de Grasa y Masa Magra (LBM) calculada por circunferencias
       const bodyComp = getLatestBodyComposition(prof);
@@ -4539,6 +4557,11 @@
           fatG = Math.round((targetKcal * 0.30) / 9);
           const remKcal = Math.max(200, targetKcal - (proteinG * 4 + fatG * 9));
           carbsG = Math.round(remKcal / 4);
+        } else if (isSurplus) {
+          proteinG = Math.round(w * 1.9);
+          fatG = Math.round((targetKcal * 0.28) / 9);
+          const remKcal = Math.max(240, targetKcal - (proteinG * 4 + fatG * 9));
+          carbsG = Math.round(remKcal / 4);
         } else {
           proteinG = Math.round((targetKcal * 0.30) / 4);
           carbsG = Math.round((targetKcal * 0.40) / 4);
@@ -4558,9 +4581,12 @@
         }
       }
 
-      const kgToLose = Math.max(0, Number((w - (Number(prof.goalWeight) || w)).toFixed(1)));
-      const weeklyLossKg = Number(((effectiveDeficit * 7) / 7700).toFixed(2));
-      const weeksNeeded = weeklyLossKg > 0 && kgToLose > 0 ? Math.ceil(kgToLose / weeklyLossKg) : 0;
+      const goalWNum = Number(prof.goalWeight) || w;
+      const kgToLose = Math.max(0, Number((w - goalWNum).toFixed(1)));
+      const kgToGain = Math.max(0, Number((goalWNum - w).toFixed(1)));
+      const kgDiff = Math.max(kgToLose, kgToGain);
+      const weeklyLossKg = Number(((Math.abs(effectiveDeficit) * 7) / 7700).toFixed(2));
+      const weeksNeeded = weeklyLossKg > 0 && kgDiff > 0 ? Math.ceil(kgDiff / weeklyLossKg) : 0;
 
       const etaDate = new Date();
       etaDate.setDate(etaDate.getDate() + weeksNeeded * 7);
@@ -4569,6 +4595,9 @@
         bmr,
         tdee,
         deficit: effectiveDeficit,
+        surplus,
+        isSurplus,
+        isMaintain,
         targetKcal,
         proteinG,
         carbsG,
@@ -4579,6 +4608,8 @@
         fatKg,
         proteinPerKgLbm,
         kgToLose,
+        kgToGain,
+        kgDiff,
         weeklyLossKg,
         weeksNeeded,
         etaDateStr: etaDate.toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })
@@ -4824,16 +4855,22 @@
         updateRaccoonVisualExpression("normal");
       }
 
+      const strategyLabel = targets.isSurplus
+        ? `superávit de +${targets.surplus} kcal/día`
+        : (targets.isMaintain ? `plan de mantenimiento` : `déficit de -${targets.deficit} kcal/día`);
+
       const sarcasticPool = [
-        `"Llevás ${totals.kcal} kcal y te quedan ${remaining} kcal hoy. Y de proteína vas ${totals.p}g de ${targets.proteinG}g... ¡abrí una lata de atún o metele huevo que el músculo no se mantiene solo! 🐱🐟"`,
-        `"Con tu déficit de -${targets.deficit} kcal/día vas rumbo a los ${appData.profile.goalWeight} kg como un misil. Mientras no ataques la heladera a las 2 AM como gato nocturno, estamos joya 🐱🐾."`,
-        `"¿Sabías que cada 7,700 kcal de déficit acumulado bajás ~1 kg de grasa pura? Hoy ya le venís ganando ${Math.max(0, targets.tdee + totals.exerciseKcal - totals.kcal)} kcal a tu mantenimiento 🐱📉."`,
-        `"A ver esas manos... ¿viniste a registrar una comida sana o a confesar un picoteo clandestino? Mis ojos amarillos lo ven todo 🐱🕵️‍♂️"`
+        `"Llevás ${totals.kcal} kcal y te quedan ${remaining} kcal hoy. Y de proteína vas ${totals.p}g de ${targets.proteinG}g... ¡abrí una lata de atún o metele huevo que el músculo no se construye solo! 🐱🐟"`,
+        `"Con tu ${strategyLabel} vas rumbo a los ${appData.profile.goalWeight} kg como un misil. ${targets.isSurplus ? '¡No te saltees comidas que hay que llenar esos músculos!' : 'Mientras no ataques la heladera a las 2 AM como gato nocturno, estamos joya'} 🐱🐾."`,
+        targets.isSurplus
+          ? `"En etapa de volumen limpio cada gramo de proteína y entrenamiento pesado cuenta. Te faltan ${Math.max(0, remaining)} kcal hoy para completar tu superávit 🐱💪."`
+          : `"¿Sabías que cada 7,700 kcal de déficit acumulado bajás ~1 kg de grasa pura? Hoy ya le venís ganando ${Math.max(0, targets.tdee + totals.exerciseKcal - totals.kcal)} kcal a tu mantenimiento 🐱📉."`,
+        `"A ver esas manos... ¿viniste a registrar una comida nutritiva o un picoteo clandestino? Mis ojos amarillos lo ven todo 🐱🕵️‍♂️"`
       ];
 
       const cutePool = [
-        `"¡Vas genial hoy, ${name}! Llevás ${totals.kcal} kcal consumidas y te quedan ${remaining} kcal para disfrutar tus próximas comidas en déficit 🐱💚."`,
-        `"Acordate de priorizar tus ${targets.proteinG}g de proteína hoy (ya sumaste ${totals.p}g) para sentirte lleno de energía y cuidar tu masa muscular 🐱✨."`,
+        `"¡Vas genial hoy, ${name}! Llevás ${totals.kcal} kcal consumidas y te quedan ${remaining} kcal para disfrutar tus próximas comidas (${strategyLabel}) 🐱💚."`,
+        `"Acordate de priorizar tus ${targets.proteinG}g de proteína hoy (ya sumaste ${totals.p}g) para sentirte lleno de energía y potenciar tu masa muscular 🐱✨."`,
         `"Paso a paso hacia tus ${appData.profile.goalWeight} kg. Cada comida que registrás te da claridad y control sobre tu objetivo 🐱🌟."`,
         `"¡Qué orgullo tu racha de seguimiento! Hidratate bien y disfrutá el proceso, que Michu te acompaña 🐱🌿."`
       ];
@@ -5371,19 +5408,23 @@
       const remaining = effectiveTarget - totals.kcal;
       const realDeficitVsTdee = (targets.tdee + totals.exerciseKcal) - totals.kcal;
 
+      const stratSummaryTxt = targets.isSurplus
+        ? `Superávit objetivo: +${targets.surplus} kcal/día`
+        : (targets.isMaintain ? `Plan de Mantenimiento (0 kcal)` : `Déficit objetivo: -${targets.deficit} kcal/día`);
+
       document.getElementById("raccoonQuickSummary").textContent =
-        `Meta de hoy: ${effectiveTarget.toLocaleString("es-AR")} kcal • Déficit objetivo: -${targets.deficit} kcal/día • Proteína meta: ${targets.proteinG}g`;
+        `Meta de hoy: ${effectiveTarget.toLocaleString("es-AR")} kcal • ${stratSummaryTxt} • Proteína meta: ${targets.proteinG}g`;
 
       const remEl = document.getElementById("kcalRemainingVal");
       const remLabel = document.getElementById("kcalRemainingLabel");
       if (remaining >= 0) {
         remEl.textContent = remaining.toLocaleString("es-AR");
         remEl.style.color = "var(--text)";
-        remLabel.textContent = "kcal restantes";
+        remLabel.textContent = targets.isSurplus ? "kcal para completar volumen" : "kcal restantes";
       } else {
         remEl.textContent = `+${Math.abs(remaining).toLocaleString("es-AR")}`;
-        remEl.style.color = "var(--danger)";
-        remLabel.textContent = "kcal sobre meta";
+        remEl.style.color = targets.isSurplus ? "var(--accent)" : "var(--danger)";
+        remLabel.textContent = targets.isSurplus ? "kcal extra sobre meta" : "kcal sobre meta";
       }
 
       document.getElementById("kcalEatenVal").textContent = `${totals.kcal.toLocaleString("es-AR")} kcal`;
@@ -5397,7 +5438,9 @@
       const offset = circumference - Math.min(1, ratio) * circumference;
       const ring = document.getElementById("kcalRingProgress");
       ring.style.strokeDashoffset = String(Math.round(offset));
-      if (remaining < 0) {
+      if (targets.isSurplus) {
+        ring.style.stroke = ratio >= 0.92 ? "var(--accent)" : "var(--info)";
+      } else if (remaining < 0) {
         ring.style.stroke = "var(--danger)";
       } else if (ratio > 0.88) {
         ring.style.stroke = "var(--warn)";
@@ -5405,11 +5448,26 @@
         ring.style.stroke = "var(--accent)";
       }
 
-      // Banner de déficit real vs TDEE
+      // Banner de balance energético real vs TDEE (Déficit o Superávit)
       const banner = document.getElementById("realDeficitBanner");
       const defText = document.getElementById("realDeficitText");
       const fatEq = document.getElementById("fatBurnEquivalent");
-      if (realDeficitVsTdee >= 0) {
+      if (targets.isSurplus) {
+        if (realDeficitVsTdee <= 0) {
+          const surplusToday = Math.abs(realDeficitVsTdee);
+          banner.style.background = "var(--accent-soft)";
+          banner.style.borderColor = "rgba(34, 197, 94, 0.35)";
+          defText.innerHTML = `💪 <strong>Superávit activo hoy vs. mantenimiento:</strong> +${surplusToday.toLocaleString("es-AR")} kcal (en zona de hipertrofia)`;
+          fatEq.style.color = "var(--accent)";
+          fatEq.textContent = `Energía extra disponible para síntesis de masa muscular`;
+        } else {
+          banner.style.background = "var(--info-soft)";
+          banner.style.borderColor = "rgba(56, 189, 248, 0.35)";
+          defText.innerHTML = `🍽️ <strong>Faltan calorías para entrar en superávit:</strong> -${realDeficitVsTdee.toLocaleString("es-AR")} kcal debajo de tu TDEE`;
+          fatEq.style.color = "var(--info)";
+          fatEq.textContent = `Sumá comidas ricas en proteína y carbos para activar el volumen muscular`;
+        }
+      } else if (realDeficitVsTdee >= 0) {
         const gramsFat = Math.round((realDeficitVsTdee / 7700) * 1000);
         banner.style.background = "var(--accent-soft)";
         banner.style.borderColor = "rgba(34, 197, 94, 0.35)";
@@ -6756,12 +6814,18 @@
       document.getElementById("profGoalWeight").value = p.goalWeight || 75.0;
       document.getElementById("profActivity").value = String(p.activity || 1.375);
       document.getElementById("profDeficitType").value = p.deficitType || "recommended";
-      document.getElementById("profCustomDeficit").value = p.customDeficit || 500;
+      document.getElementById("profCustomDeficit").value = Math.abs(Number(p.customDeficit) || 500);
       document.getElementById("profMacroPreset").value = p.macroPreset || "high_protein";
       document.getElementById("profWaterGoal").value = p.waterGoal || 8;
 
-      document.getElementById("customDeficitFieldWrap").style.display =
-        p.deficitType === "custom" ? "flex" : "none";
+      const isCustomMode = p.deficitType === "custom" || p.deficitType === "custom_surplus";
+      document.getElementById("customDeficitFieldWrap").style.display = isCustomMode ? "flex" : "none";
+      const custLbl = document.getElementById("profCustomDeficitLabel");
+      if (custLbl) {
+        custLbl.textContent = p.deficitType === "custom_surplus"
+          ? "Superávit diario (+kcal sobre TDEE)"
+          : "Recorte diario (-kcal debajo de TDEE)";
+      }
 
       const t = computeNutritionTargets(p);
       const bmi = (p.weight / Math.pow(p.height / 100, 2)).toFixed(1);
@@ -6779,14 +6843,14 @@
             <small style="color:var(--text-muted);font-size:0.73rem;display:block;">Con tu actividad física actual</small>
           </div>
           <div class="stat-box" style="border-color:var(--accent);background:var(--accent-soft);">
-            <span class="label" style="color:var(--accent);">🎯 Tu Meta Diaria en Déficit</span>
+            <span class="label" style="color:var(--accent);">${t.isSurplus ? "💪 Tu Meta en Superávit" : (t.isMaintain ? "⚖️ Tu Meta Mantenimiento" : "🎯 Tu Meta Diaria en Déficit")}</span>
             <span class="val" style="color:var(--accent);">${t.targetKcal.toLocaleString("es-AR")} kcal/día</span>
-            <small style="color:var(--text-muted);font-size:0.73rem;display:block;">Recorte de -${t.deficit} kcal/día</small>
+            <small style="color:var(--text-muted);font-size:0.73rem;display:block;">${t.isSurplus ? `Superávit de +${t.surplus} kcal/día` : (t.isMaintain ? `Balance neutro (0 kcal)` : `Recorte de -${t.deficit} kcal/día`)}</small>
           </div>
           <div class="stat-box">
-            <span class="label">🔥 Pérdida de Grasa Estimada</span>
-            <span class="val">~${t.weeklyLossKg} kg / semana</span>
-            <small style="color:var(--text-muted);font-size:0.73rem;display:block;">-${(t.deficit * 7).toLocaleString("es-AR")} kcal por semana</small>
+            <span class="label">${t.isSurplus ? "💪 Ganancia Muscular Estimada" : "🔥 Pérdida de Grasa Estimada"}</span>
+            <span class="val">${t.isSurplus ? "+" : ""}~${t.weeklyLossKg} kg / semana</span>
+            <small style="color:var(--text-muted);font-size:0.73rem;display:block;">${t.isSurplus ? `+${(t.surplus * 7).toLocaleString("es-AR")} kcal por semana` : `-${(t.deficit * 7).toLocaleString("es-AR")} kcal por semana`}</small>
           </div>
         </div>
 
@@ -6819,9 +6883,11 @@
         <div style="background:var(--info-soft);border:1px solid rgba(56,189,248,0.35);border-radius:12px;padding:14px;font-size:0.86rem;">
           <strong>🏁 Proyección de Michu hacia tu Peso Objetivo (${p.goalWeight} kg):</strong>
           <p style="margin-top:6px;">
-            ${t.kgToLose > 0
-              ? `Te faltan <strong>${t.kgToLose} kg</strong>. Manteniendo un déficit promedio de <strong>-${t.deficit} kcal/día</strong>, alcanzarías tu meta en unas <strong>${t.weeksNeeded} semanas</strong> (aprox. el <strong>${t.etaDateStr}</strong>). IMC actual: <strong>${bmi}</strong>.`
-              : `¡Ya estás en tu peso objetivo (${p.weight} kg)! Podés mantenerte cerca de tus ${t.tdee} kcal de mantenimiento.`
+            ${t.kgToGain > 0
+              ? `Querés ganar <strong>+${t.kgToGain} kg</strong> (de ${p.weight} kg a ${p.goalWeight} kg). Manteniendo un superávit promedio de <strong>+${t.surplus || 350} kcal/día</strong> y entrenamiento de fuerza, alcanzarías tu meta en unas <strong>${t.weeksNeeded} semanas</strong> (aprox. el <strong>${t.etaDateStr}</strong>). IMC actual: <strong>${bmi}</strong>.`
+              : (t.kgToLose > 0
+                ? `Te faltan bajar <strong>${t.kgToLose} kg</strong>. Manteniendo un déficit promedio de <strong>-${t.deficit} kcal/día</strong>, alcanzarías tu meta en unas <strong>${t.weeksNeeded} semanas</strong> (aprox. el <strong>${t.etaDateStr}</strong>). IMC actual: <strong>${bmi}</strong>.`
+                : `¡Ya estás en tu peso objetivo (${p.weight} kg)! Podés mantenerte cerca de tus ${t.tdee} kcal de mantenimiento para recomponer masa muscular.`)
             }
           </p>
         </div>
@@ -8802,8 +8868,15 @@
 
     // Calculadora de perfil y TDEE
     document.getElementById("profDeficitType").addEventListener("change", (e) => {
+      const val = e.target.value;
       document.getElementById("customDeficitFieldWrap").style.display =
-        e.target.value === "custom" ? "flex" : "none";
+        (val === "custom" || val === "custom_surplus") ? "flex" : "none";
+      const custLbl = document.getElementById("profCustomDeficitLabel");
+      if (custLbl) {
+        custLbl.textContent = val === "custom_surplus"
+          ? "Superávit diario (+kcal sobre TDEE)"
+          : "Recorte diario (-kcal debajo de TDEE)";
+      }
     });
 
     document.getElementById("profileCalcForm").addEventListener("submit", (e) => {
@@ -10482,16 +10555,19 @@
         if (scr.id === "main_goal") {
           setHeaderBubble("¿Cuál es tu meta principal?");
           const opts = [
-            { val: "lose", icon: "📉", title: "Bajar de peso" },
-            { val: "maintain", icon: "⚖️", title: "Mantener el peso" },
-            { val: "gain", icon: "💪", title: "Subir de peso" }
+            { val: "lose", icon: "📉", title: "Bajar de peso y quemar grasa", sub: "Déficit calórico inteligente cuidando tu músculo" },
+            { val: "gain", icon: "💪", title: "Subir de peso y ganar masa muscular", sub: "Superávit calórico limpio para hipertrofia y fuerza" },
+            { val: "maintain", icon: "⚖️", title: "Mantener el peso y recomponer", sub: "Calorías de mantenimiento mejorando tu composición" }
           ];
           stage.innerHTML = `
             <div class="bp-choice-list">
               ${opts.map(o => `
                 <div class="bp-choice-card ${bpState.mainGoal === o.val ? 'selected' : ''}" data-goal="${o.val}">
                   <span class="bp-choice-icon">${o.icon}</span>
-                  <span class="bp-choice-title">${o.title}</span>
+                  <div>
+                    <span class="bp-choice-title">${o.title}</span>
+                    <span class="bp-choice-sub">${o.sub}</span>
+                  </div>
                   <span class="bp-choice-radio">✓</span>
                 </div>
               `).join("")}
@@ -10499,7 +10575,23 @@
           `;
           stage.querySelectorAll("[data-goal]").forEach(c => {
             c.addEventListener("click", () => {
-              bpState.mainGoal = c.getAttribute("data-goal");
+              const g = c.getAttribute("data-goal");
+              bpState.mainGoal = g;
+              if (g === "gain") {
+                bpState.weeklyRateKg = 0.3;
+                bpState.dietType = "high_protein";
+                if (bpState.goalWeightInt <= bpState.weightInt) {
+                  bpState.goalWeightInt = Math.min(180, bpState.weightInt + 5);
+                }
+              } else if (g === "lose") {
+                bpState.weeklyRateKg = 0.5;
+                if (bpState.goalWeightInt >= bpState.weightInt) {
+                  bpState.goalWeightInt = Math.max(45, bpState.weightInt - 5);
+                }
+              } else {
+                bpState.goalWeightInt = bpState.weightInt;
+                bpState.goalWeightDec = bpState.weightDec;
+              }
               stage.querySelectorAll("[data-goal]").forEach(x => x.classList.toggle("selected", x === c));
             });
           });
@@ -10510,11 +10602,11 @@
         if (scr.id === "extra_goals") {
           setHeaderBubble("¿Alguna meta adicional?");
           const items = [
-            { icon: "🫚", label: "Mejorar la salud intestinal" },
+            { icon: "🏋️", label: "Ganar fuerza e hipertrofia muscular" },
             { icon: "👟", label: "Mejorar mi rendimiento deportivo" },
-            { icon: "🥦", label: "Construir una relación saludable con la comida" },
             { icon: "⚡", label: "Aumentar mi energía diaria" },
-            { icon: "🧠", label: "Reducir el estrés" },
+            { icon: "🥦", label: "Construir una relación saludable con la comida" },
+            { icon: "🫚", label: "Mejorar la salud intestinal" },
             { icon: "🙌", label: "Sentirme mejor conmigo mismo(a)" }
           ];
           stage.innerHTML = `
@@ -10859,16 +10951,26 @@
                   <span style="background:${cat.bg};color:${cat.color};font-size:0.75rem;font-weight:800;padding:2px 9px;border-radius:6px;">${cat.label}</span>
                 </div>
                 <span style="font-size:0.79rem;color:var(--text-muted);">
-                  Esto nos ayuda a adaptar un plan adecuado para ti que apoye tu salud a largo plazo.
+                  Esto nos ayuda a adaptar un plan adecuado para ti que apoye tu salud y composición corporal.
                 </span>
               </div>
             `;
             attachBpWheelEvents("bpWInt", () => bpState.weightInt, (v) => {
               bpState.weightInt = v;
-              if (bpState.goalWeightInt >= v) bpState.goalWeightInt = Math.max(45, v - 4);
+              if (bpState.mainGoal === "gain") {
+                if (bpState.goalWeightInt <= v) bpState.goalWeightInt = Math.min(185, v + 5);
+              } else if (bpState.mainGoal === "maintain") {
+                bpState.goalWeightInt = v;
+              } else {
+                if (bpState.goalWeightInt >= v) bpState.goalWeightInt = Math.max(45, v - 4);
+              }
               renderWeight();
             }, 38, 190);
-            attachBpWheelEvents("bpWDec", () => bpState.weightDec, (v) => { bpState.weightDec = v; renderWeight(); }, 0, 9);
+            attachBpWheelEvents("bpWDec", () => bpState.weightDec, (v) => {
+              bpState.weightDec = v;
+              if (bpState.mainGoal === "maintain") bpState.goalWeightDec = v;
+              renderWeight();
+            }, 0, 9);
           };
           renderWeight();
           return;
@@ -10881,6 +10983,11 @@
           const cat = getBpBmiCategory(bmi);
           const pctPos = Math.max(4, Math.min(96, ((bmi - 15) / (40 - 15)) * 100));
           const needleDeg = -90 + (pctPos / 100) * 180;
+          const diagMsg = bpState.mainGoal === "gain"
+            ? "¡Excelente punto de partida! Michu configurará un superávit calórico controlado y alto en proteínas para subir de peso construyendo masa muscular."
+            : (bpState.mainGoal === "maintain"
+              ? "Michu ajustará tus calorías a mantenimiento con alta proteína para recomponer masa muscular."
+              : "Michu ajustará tus calorías y proteínas diarias según tu composición actual.");
           stage.innerHTML = `
             <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:4px;">
               ${bpMascotSvg("stars", 78)}
@@ -10922,94 +11029,198 @@
               </div>
               <div style="background:${cat.bg};border-radius:12px;padding:10px 13px;margin-top:10px;font-size:0.79rem;color:var(--text);">
                 <strong style="color:${cat.color};display:block;margin-bottom:2px;">💡 Categoría actual: ${cat.label}</strong>
-                Michu ajustará tus calorías y proteínas diarias según tu composición actual.
+                ${diagMsg}
               </div>
             </div>
           `;
           return;
         }
 
-        // 22. GOAL WEIGHT WHEEL (01:53)
+        // 22. GOAL WEIGHT WHEEL + SELECTOR RÁPIDO BAJAR / SUBIR / MANTENER (01:53)
         if (scr.id === "goal_weight") {
-          setHeaderBubble("¿Cuál es tu peso ideal?", false);
-          typewriteBpBubble(speechEl, "¿Cuál es tu peso ideal?");
+          const initQ = bpState.mainGoal === "gain"
+            ? "¿A qué peso querés llegar ganando masa muscular?"
+            : "¿Cuál es tu peso objetivo?";
+          setHeaderBubble(initQ, false);
+          typewriteBpBubble(speechEl, initQ);
+
           const renderGoalW = () => {
             const curW = getBpWeight();
             const goalW = getBpGoalWeight();
-            const diffPct = Math.max(1, Math.round((Math.abs(curW - goalW) / Math.max(1, curW)) * 100));
+            const rawDiff = Number((goalW - curW).toFixed(1));
+            const absDiff = Math.abs(rawDiff).toFixed(1).replace(".", ",");
+            const diffPct = Math.max(1, Math.round((Math.abs(rawDiff) / Math.max(1, curW)) * 100));
+
+            // Sincronizar automáticamente mainGoal si el usuario elige un peso mayor o menor al actual
+            if (rawDiff > 0.2) {
+              if (bpState.mainGoal !== "gain") {
+                bpState.mainGoal = "gain";
+                if (bpState.weeklyRateKg > 0.5) bpState.weeklyRateKg = 0.3;
+              }
+            } else if (rawDiff < -0.2) {
+              if (bpState.mainGoal !== "lose") {
+                bpState.mainGoal = "lose";
+                if (bpState.weeklyRateKg < 0.3) bpState.weeklyRateKg = 0.5;
+              }
+            } else {
+              bpState.mainGoal = "maintain";
+            }
+
+            const isGain = bpState.mainGoal === "gain";
+            const isMaint = bpState.mainGoal === "maintain";
+
             stage.innerHTML = `
+              <!-- Píldoras rápidas de estrategia para cambiar entre Bajar, Ganar Músculo o Mantener -->
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;">
+                <button type="button" class="bp-allergy-pill ${bpState.mainGoal === 'lose' ? 'selected' : ''}" data-qmode="lose" style="padding:7px 6px;font-size:0.75rem;">
+                  📉 Bajar peso
+                </button>
+                <button type="button" class="bp-allergy-pill ${bpState.mainGoal === 'gain' ? 'selected' : ''}" data-qmode="gain" style="padding:7px 6px;font-size:0.75rem;">
+                  💪 Subir / Músculo
+                </button>
+                <button type="button" class="bp-allergy-pill ${bpState.mainGoal === 'maintain' ? 'selected' : ''}" data-qmode="maintain" style="padding:7px 6px;font-size:0.75rem;">
+                  ⚖️ Mantener
+                </button>
+              </div>
               <div style="display:flex;justify-content:center;align-items:center;gap:6px;">
-                ${buildBpWheelHtml("bpGWInt", bpState.goalWeightInt, 38, 180, "")}
+                ${buildBpWheelHtml("bpGWInt", bpState.goalWeightInt, 38, 185, "")}
                 <span style="font-size:2.4rem;font-weight:900;">.</span>
                 ${buildBpWheelHtml("bpGWDec", bpState.goalWeightDec, 0, 9, "kg")}
               </div>
-              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:12px 15px;margin-top:6px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                  <strong style="color:#22c55e;font-size:0.95rem;">Cambio proyectado: ${diffPct} %</strong>
-                  <span style="background:rgba(34,197,94,0.16);color:#22c55e;font-size:0.75rem;font-weight:800;padding:2px 9px;border-radius:6px;">Realista</span>
+              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:12px 15px;margin-top:4px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+                  <strong style="color:${isGain ? '#38bdf8' : '#22c55e'};font-size:0.94rem;">
+                    ${isGain ? `💪 Ganancia proyectada: +${absDiff} kg (+${diffPct}%)` : (isMaint ? `⚖️ Mantener tus ${curW} kg actuales` : `📉 Reducción proyectada: -${absDiff} kg (-${diffPct}%)`)}
+                  </strong>
+                  <span style="background:${isGain ? 'rgba(56,189,248,0.16)' : 'rgba(34,197,94,0.16)'};color:${isGain ? '#38bdf8' : '#22c55e'};font-size:0.74rem;font-weight:800;padding:2px 9px;border-radius:6px;">
+                    ${isGain ? "Superávit Muscular" : (isMaint ? "Recomposición" : "Déficit Realista")}
+                  </span>
                 </div>
-                <span style="font-size:0.79rem;color:var(--text-muted);">
-                  Una meta segura y alcanzable con beneficios notables para tu salud y composición corporal.
+                <span style="font-size:0.78rem;color:var(--text-muted);">
+                  ${isGain
+                    ? "Configuraremos un superávit calórico limpio con proteína alta para que subas masa muscular magra y fuerza."
+                    : (isMaint
+                      ? "Mantendremos tus calorías en equilibrio priorizando proteínas para mejorar tu composición corporal."
+                      : "Una meta segura y alcanzable con beneficios notables para tu salud y definición corporal.")}
                 </span>
               </div>
             `;
-            attachBpWheelEvents("bpGWInt", () => bpState.goalWeightInt, (v) => { bpState.goalWeightInt = v; renderGoalW(); }, 38, 180);
+
+            stage.querySelectorAll("[data-qmode]").forEach(btn => {
+              btn.addEventListener("click", () => {
+                const m = btn.getAttribute("data-qmode");
+                bpState.mainGoal = m;
+                if (m === "gain") {
+                  bpState.weeklyRateKg = 0.3;
+                  bpState.dietType = "high_protein";
+                  if (bpState.goalWeightInt <= bpState.weightInt) {
+                    bpState.goalWeightInt = Math.min(185, bpState.weightInt + 5);
+                  }
+                } else if (m === "lose") {
+                  bpState.weeklyRateKg = 0.5;
+                  if (bpState.goalWeightInt >= bpState.weightInt) {
+                    bpState.goalWeightInt = Math.max(45, bpState.weightInt - 5);
+                  }
+                } else {
+                  bpState.goalWeightInt = bpState.weightInt;
+                  bpState.goalWeightDec = bpState.weightDec;
+                }
+                renderGoalW();
+              });
+            });
+
+            attachBpWheelEvents("bpGWInt", () => bpState.goalWeightInt, (v) => { bpState.goalWeightInt = v; renderGoalW(); }, 38, 185);
             attachBpWheelEvents("bpGWDec", () => bpState.goalWeightDec, (v) => { bpState.goalWeightDec = v; renderGoalW(); }, 0, 9);
           };
           renderGoalW();
           return;
         }
 
-        // 23. GOAL SPEED SLIDER + ANILLO METABÓLICO DINÁMICO (01:55)
+        // 23. GOAL SPEED SLIDER + ANILLO METABÓLICO DINÁMICO (DÉFICIT O SUPERÁVIT MUSCULAR) (01:55)
         if (scr.id === "goal_speed") {
-          setHeaderBubble("¿Qué tan rápido quieres alcanzar tu meta?", false);
-          typewriteBpBubble(speechEl, "¿Qué tan rápido quieres alcanzar tu meta?");
+          const isGain = bpState.mainGoal === "gain" || getBpGoalWeight() > getBpWeight() + 0.2;
+          const isMaint = !isGain && (bpState.mainGoal === "maintain" || Math.abs(getBpGoalWeight() - getBpWeight()) <= 0.2);
+          const qSpeed = isGain
+            ? "¿A qué ritmo querés ganar peso y masa muscular?"
+            : (isMaint ? "Tu estrategia de Recomposición Corporal" : "¿Qué tan rápido quieres alcanzar tu meta?");
+          setHeaderBubble(qSpeed, false);
+          typewriteBpBubble(speechEl, qSpeed);
+
+          if (isGain && (bpState.weeklyRateKg > 0.7 || bpState.weeklyRateKg < 0.1)) {
+            bpState.weeklyRateKg = 0.3;
+          }
+
           const renderSpeed = () => {
-            const r = Number(bpState.weeklyRateKg) || 0.5;
-            const badgeTxt = r <= 0.35 ? "Suave y flexible" : (r <= 0.65 ? "Recomendado" : "Intenso");
-            const badgeColor = r <= 0.35 ? "#38bdf8" : (r <= 0.65 ? "#22c55e" : "#f59e0b");
-            const dailyDef = Math.round(r * 1000);
-            const ringPct = Math.min(1, r / 1.0);
+            if (isMaint) {
+              stage.innerHTML = `
+                <div style="text-align:center;padding:12px 6px;">
+                  <div style="font-size:2.6rem;margin-bottom:6px;">⚖️💪</div>
+                  <h3 style="font-size:1.25rem;font-weight:900;color:#22c55e;margin-bottom:6px;">Balance Neutro (0 kcal) + Alta Proteína</h3>
+                  <p style="font-size:0.84rem;color:var(--text-muted);max-width:320px;margin:0 auto;">
+                    Comerás exactamente tus calorías de mantenimiento (TDEE) con <strong>2.0g de proteína por kg</strong> para ganar tono muscular y oxidar grasa manteniendo tus <strong>${getBpWeight()} kg</strong>.
+                  </p>
+                </div>
+              `;
+              return;
+            }
+
+            const r = Number(bpState.weeklyRateKg) || (isGain ? 0.3 : 0.5);
+            const badgeTxt = isGain
+              ? (r <= 0.25 ? "Volumen Limpio (Lean Bulk)" : (r <= 0.45 ? "Hipertrofia Recomendada" : "Superávit Intenso (Bulking)"))
+              : (r <= 0.35 ? "Suave y flexible" : (r <= 0.65 ? "Recomendado" : "Intenso"));
+            const badgeColor = isGain
+              ? (r <= 0.25 ? "#22c55e" : (r <= 0.45 ? "#38bdf8" : "#f59e0b"))
+              : (r <= 0.35 ? "#38bdf8" : (r <= 0.65 ? "#22c55e" : "#f59e0b"));
+            const dailyKcalAdj = isGain ? Math.round(r * 1100) : Math.round(r * 1000);
+            const maxR = isGain ? 0.7 : 1.0;
+            const minR = isGain ? 0.1 : 0.2;
+            const stepR = isGain ? 0.05 : 0.1;
+            const ringPct = Math.min(1, r / maxR);
             const circ = 2 * Math.PI * 36;
+
             stage.innerHTML = `
               <div style="text-align:center;padding:4px;">
                 <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:6px;">
-                  <svg viewBox="0 0 88 88" width="84" height="84">
+                  <svg viewBox="0 0 88 88" width="86" height="86">
                     <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8"/>
                     <circle cx="44" cy="44" r="36" fill="none" stroke="${badgeColor}" stroke-width="8"
                       stroke-dasharray="${(ringPct * circ).toFixed(1)} ${circ.toFixed(1)}"
                       stroke-linecap="round" transform="rotate(-90 44 44)"/>
-                    <text x="44" y="42" text-anchor="middle" font-size="13" font-weight="900" fill="${badgeColor}">-${dailyDef}</text>
-                    <text x="44" y="55" text-anchor="middle" font-size="8.5" font-weight="800" fill="#94a3b8">kcal/día</text>
+                    <text x="44" y="42" text-anchor="middle" font-size="13" font-weight="900" fill="${badgeColor}">${isGain ? '+' : '-'}${dailyKcalAdj}</text>
+                    <text x="44" y="55" text-anchor="middle" font-size="8" font-weight="800" fill="#94a3b8">${isGain ? 'SUPERÁVIT' : 'kcal/día'}</text>
                   </svg>
                   <div style="text-align:left;">
-                    <div style="font-size:0.78rem;color:var(--text-muted);">Ritmo semanal</div>
-                    <div style="font-size:2.55rem;font-weight:900;line-height:1.05;">
-                      ${r.toFixed(1).replace(".", ",")} <small style="font-size:1.15rem;color:var(--text-muted);">kg/sem</small>
+                    <div style="font-size:0.78rem;color:var(--text-muted);">${isGain ? "Ganancia muscular semanal" : "Ritmo semanal"}</div>
+                    <div style="font-size:2.45rem;font-weight:900;line-height:1.05;">
+                      ${isGain ? "+" : ""}${r.toFixed(2).replace(".00", ",0").replace(/(\.\d)0$/, "$1").replace(".", ",")} <small style="font-size:1.1rem;color:var(--text-muted);">kg/sem</small>
                     </div>
-                    <span style="display:inline-block;margin-top:5px;background:${badgeColor};color:#052e14;font-size:0.74rem;font-weight:900;padding:2px 10px;border-radius:8px;">
+                    <span style="display:inline-block;margin-top:5px;background:${badgeColor};color:#052e14;font-size:0.73rem;font-weight:900;padding:2px 10px;border-radius:8px;">
                       ${badgeTxt}
                     </span>
                   </div>
                 </div>
-                <input type="range" id="bpRateRange" min="0.2" max="1.0" step="0.1" value="${r}" style="width:100%;accent-color:${badgeColor};cursor:pointer;margin-top:6px;" />
-                <div style="display:flex;justify-content:space-between;font-size:0.76rem;color:var(--text-muted);margin-top:3px;">
-                  <span>🐢 Lento (0,2 kg)</span><span>⚡ Óptimo (0,5 kg)</span><span>🔥 Rápido (1,0 kg)</span>
+                <input type="range" id="bpRateRange" min="${minR}" max="${maxR}" step="${stepR}" value="${r}" style="width:100%;accent-color:${badgeColor};cursor:pointer;margin-top:6px;" />
+                <div style="display:flex;justify-content:space-between;font-size:0.74rem;color:var(--text-muted);margin-top:3px;">
+                  ${isGain
+                    ? `<span>🌱 Limpio (+0,15 kg)</span><span>💪 Hipertrofia (+0,35 kg)</span><span>🔥 Bulking (+0,7 kg)</span>`
+                    : `<span>🐢 Lento (0,2 kg)</span><span>⚡ Óptimo (0,5 kg)</span><span>🔥 Rápido (1,0 kg)</span>`}
                 </div>
               </div>
               <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:12px 15px;margin-top:4px;">
-                <strong style="color:#22c55e;font-size:0.88rem;display:block;margin-bottom:2px;">
-                  ✅ Meta estimada: ${getBpEtaDateStr()}
+                <strong style="color:${badgeColor};font-size:0.88rem;display:block;margin-bottom:2px;">
+                  ✅ Meta estimada (${getBpGoalWeight()} kg): ${getBpEtaDateStr()}
                 </strong>
                 <span style="font-size:0.77rem;color:var(--text-muted);">
-                  Michu ajustará tu déficit diario (-${dailyDef} kcal) cuidando tu masa muscular con proteína alta.
+                  ${isGain
+                    ? `Michu sumará un superávit de <strong>+${dailyKcalAdj} kcal/día</strong> sobre tu mantenimiento (TDEE) con proteína alta para construir músculo limpio.`
+                    : `Michu ajustará tu déficit diario (-${dailyKcalAdj} kcal) cuidando tu masa muscular con proteína alta.`}
                 </span>
               </div>
             `;
             const rng = document.getElementById("bpRateRange");
             if (rng) {
               rng.addEventListener("input", () => {
-                bpState.weeklyRateKg = Number(rng.value) || 0.5;
+                bpState.weeklyRateKg = Number(rng.value) || (isGain ? 0.3 : 0.5);
                 renderSpeed();
               });
             }
@@ -11023,11 +11234,19 @@
           mascotHeader.style.display = "none";
           nextBtn.innerHTML = `Obtener mi plan personal`;
           const uName = (bpState.userName || "Campeón").trim().split(/\s+/)[0];
-          const diffKg = Math.abs(getBpWeight() - getBpGoalWeight()).toFixed(1).replace(".", ",");
+          const curW = getBpWeight();
+          const goalW = getBpGoalWeight();
+          const isGain = bpState.mainGoal === "gain" || goalW > curW + 0.2;
+          const isMaint = !isGain && (bpState.mainGoal === "maintain" || Math.abs(goalW - curW) <= 0.2);
+          const diffKg = Math.abs(curW - goalW).toFixed(1).replace(".", ",");
           stage.innerHTML = `
             <div style="text-align:center;padding:18px 6px;">
               <div class="bp-center-bubble">
-                ${uName}, perder <span style="color:#22c55e;">${diffKg} kg</span> ¡es una meta realista!
+                ${isGain
+                  ? `${uName}, ganar <span style="color:#38bdf8;">+${diffKg} kg</span> de masa muscular ¡es una meta excelente y realista! 💪`
+                  : (isMaint
+                    ? `${uName}, mantener tus <span style="color:#22c55e;">${curW} kg</span> recomponiendo músculo ¡es un gran objetivo! ⚖️`
+                    : `${uName}, bajar <span style="color:#22c55e;">${diffKg} kg</span> ¡es una meta realista!`)}
               </div>
               <div style="display:flex;justify-content:center;margin-top:18px;">
                 ${bpMascotSvg("stars", 160)}
@@ -11138,7 +11357,12 @@
           const curW = getBpWeight();
           const goalW = getBpGoalWeight();
           const etaStr = getBpEtaDateStr();
-          const customDef = Math.max(250, Math.min(900, Math.round((Number(bpState.weeklyRateKg) || 0.5) * 1000)));
+          const isGain = bpState.mainGoal === "gain" || goalW > curW + 0.2;
+          const isMaint = !isGain && (bpState.mainGoal === "maintain" || Math.abs(goalW - curW) <= 0.2);
+          const customKcalAdj = isGain
+            ? Math.max(150, Math.min(850, Math.round((Number(bpState.weeklyRateKg) || 0.3) * 1100)))
+            : (isMaint ? 0 : Math.max(250, Math.min(900, Math.round((Number(bpState.weeklyRateKg) || 0.5) * 1000))));
+          const defTypeVal = isGain ? "custom_surplus" : (isMaint ? "maintain" : "custom");
           const macroPreset = ["balanced", "high_protein", "low_carb"].includes(bpState.dietType) ? bpState.dietType : "high_protein";
           const calc = computeNutritionTargets({
             name: bpState.userName || "Campeón",
@@ -11148,44 +11372,65 @@
             weight: curW,
             goalWeight: goalW,
             activity: bpState.activity,
-            deficitType: "custom",
-            customDeficit: customDef,
+            deficitType: defTypeVal,
+            customDeficit: customKcalAdj,
             macroPreset
           });
 
+          const curveColor = isGain ? "#38bdf8" : "#22c55e";
+          const curvePathArea = isGain
+            ? "M 24 80 C 110 78, 150 26, 230 26 L 296 26 L 296 100 L 24 100 Z"
+            : (isMaint
+              ? "M 24 54 L 296 54 L 296 100 L 24 100 Z"
+              : "M 24 24 C 110 26, 150 80, 230 80 L 296 80 L 296 100 L 24 100 Z");
+          const curvePathLine = isGain
+            ? "M 24 80 C 110 78, 150 26, 230 26 L 296 26"
+            : (isMaint
+              ? "M 24 54 L 296 54"
+              : "M 24 24 C 110 26, 150 80, 230 80 L 296 80");
+          const startY = isGain ? 80 : (isMaint ? 54 : 24);
+          const endY = isGain ? 26 : (isMaint ? 54 : 80);
+          const badgeY = isGain ? 4 : (isMaint ? 26 : 52);
+
           stage.innerHTML = `
             <div style="text-align:center;margin-bottom:4px;">
-              <span style="font-size:0.76rem;color:#22c55e;font-weight:800;">✨ TU PLAN CON MICHU ESTÁ LISTO</span>
+              <span style="font-size:0.76rem;color:${curveColor};font-weight:800;">
+                ${isGain ? "💪 TU PLAN DE HIPERTROFIA Y SUPERÁVIT ESTÁ LISTO" : "✨ TU PLAN CON MICHU ESTÁ LISTO"}
+              </span>
               <h2 style="font-size:1.34rem;font-weight:900;line-height:1.2;margin-top:2px;">
-                Alcanzar <span style="color:#22c55e;">${goalW} kg</span> para el ${etaStr}
+                ${isGain
+                  ? `Subir a <span style="color:#38bdf8;">${goalW} kg</span> para el ${etaStr}`
+                  : (isMaint
+                    ? `Mantener y recomponer en <span style="color:#22c55e;">${goalW} kg</span>`
+                    : `Alcanzar <span style="color:#22c55e;">${goalW} kg</span> para el ${etaStr}`)}
               </h2>
             </div>
 
             <!-- Curva SVG Animada de Progreso Proyectado -->
             <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:11px 13px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
-                <strong style="font-size:0.84rem;">Progreso proyectado</strong>
+                <strong style="font-size:0.84rem;">${isGain ? "Curva de ganancia muscular" : "Progreso proyectado"}</strong>
                 <span class="chip" style="background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:0.72rem;">
-                  🎯 ${calc.targetKcal} kcal • 🥩 ${calc.proteinG}g P • 🍚 ${calc.carbsG}g C • 🥑 ${calc.fatG}g G
+                  🎯 ${calc.targetKcal} kcal (${isGain ? `+${calc.surplus} superávit` : (isMaint ? `mantenimiento` : `-${calc.deficit} déficit`)}) • 🥩 ${calc.proteinG}g P • 🍚 ${calc.carbsG}g C • 🥑 ${calc.fatG}g G
                 </span>
               </div>
               <svg viewBox="0 0 320 106" style="width:100%;height:auto;overflow:visible;">
                 <defs>
                   <linearGradient id="bpCurveGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#22c55e" stop-opacity="0.32"/>
-                    <stop offset="100%" stop-color="#22c55e" stop-opacity="0.0"/>
+                    <stop offset="0%" stop-color="${curveColor}" stop-opacity="0.32"/>
+                    <stop offset="100%" stop-color="${curveColor}" stop-opacity="0.0"/>
                   </linearGradient>
                 </defs>
-                <path d="M 24 24 C 110 26, 150 80, 230 80 L 296 80 L 296 100 L 24 100 Z" fill="url(#bpCurveGrad)"/>
-                <path d="M 24 24 C 110 26, 150 80, 230 80 L 296 80" fill="none" stroke="#22c55e" stroke-width="4" stroke-linecap="round"
+                <path d="${curvePathArea}" fill="url(#bpCurveGrad)"/>
+                <path d="${curvePathLine}" fill="none" stroke="${curveColor}" stroke-width="4" stroke-linecap="round"
                   style="stroke-dasharray:400;stroke-dashoffset:400;animation:bpDrawCurve 1.2s ease forwards;"/>
-                <circle cx="24" cy="24" r="5.5" fill="var(--bg)" stroke="#94a3b8" stroke-width="3"/>
-                <text x="24" y="13" font-size="11" font-weight="900" fill="var(--text)">${curW} kg</text>
-                <rect x="202" y="52" width="54" height="20" rx="6" fill="#22c55e"/>
-                <text x="229" y="66" font-size="10.5" font-weight="900" fill="#052e14" text-anchor="middle">${goalW} kg</text>
-                <circle cx="230" cy="80" r="5.5" fill="#22c55e" stroke="#fff" stroke-width="2.2"/>
+                <circle cx="24" cy="${startY}" r="5.5" fill="var(--bg)" stroke="#94a3b8" stroke-width="3"/>
+                <text x="24" y="${startY - 10}" font-size="11" font-weight="900" fill="var(--text)">${curW} kg</text>
+                <rect x="202" y="${badgeY}" width="54" height="20" rx="6" fill="${curveColor}"/>
+                <text x="229" y="${badgeY + 14}" font-size="10.5" font-weight="900" fill="#052e14" text-anchor="middle">${goalW} kg</text>
+                <circle cx="230" cy="${endY}" r="5.5" fill="${curveColor}" stroke="#fff" stroke-width="2.2"/>
                 <text x="24" y="102" font-size="9.5" fill="var(--text-muted)">Hoy</text>
-                <text x="230" y="102" font-size="9.5" fill="#22c55e" font-weight="800" text-anchor="middle">${etaStr}</text>
+                <text x="230" y="102" font-size="9.5" fill="${curveColor}" font-weight="800" text-anchor="middle">${isMaint ? "Constante" : etaStr}</text>
               </svg>
             </div>
 
@@ -11241,7 +11486,12 @@
         showAuthAlert("");
         const curW = getBpWeight();
         const goalW = getBpGoalWeight();
-        const customDef = Math.max(250, Math.min(900, Math.round((Number(bpState.weeklyRateKg) || 0.5) * 1000)));
+        const isGain = bpState.mainGoal === "gain" || goalW > curW + 0.2;
+        const isMaint = !isGain && (bpState.mainGoal === "maintain" || Math.abs(goalW - curW) <= 0.2);
+        const customKcalAdj = isGain
+          ? Math.max(150, Math.min(850, Math.round((Number(bpState.weeklyRateKg) || 0.3) * 1100)))
+          : (isMaint ? 0 : Math.max(250, Math.min(900, Math.round((Number(bpState.weeklyRateKg) || 0.5) * 1000))));
+        const defTypeVal = isGain ? "custom_surplus" : (isMaint ? "maintain" : "custom");
         const winHrs = Math.max(4, (bpState.eatingEndHour - bpState.eatingStartHour + 24) % 24 || 10);
         const fastTarget = Math.max(12, Math.min(20, 24 - winHrs));
         const macroPreset = ["balanced", "high_protein", "low_carb"].includes(bpState.dietType) ? bpState.dietType : "high_protein";
@@ -11259,8 +11509,8 @@
             weight: curW,
             goalWeight: goalW,
             activity: Number(bpState.activity) || 1.375,
-            deficitType: "custom",
-            customDeficit: customDef,
+            deficitType: defTypeVal,
+            customDeficit: customKcalAdj,
             macroPreset,
             moodMode: bpState.moodMode || "sarcastic",
             talkStyle: bpState.talkStyle || "direct",
