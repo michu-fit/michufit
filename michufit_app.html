@@ -11,6 +11,11 @@
   <link rel="icon" type="image/svg+xml" href="./icon.svg" />
   <link rel="apple-touch-icon" href="./icon.svg" />
   <title>Michu Fit 🐱 | Calculadora de Déficit y Seguimiento Calórico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <style>
     :root {
@@ -56,12 +61,17 @@
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
       min-height: 100vh;
       padding-bottom: 50px;
+    }
+
+    h1, h2, h3, .card-title, .ring-kcal-left, .bp-center-bubble, .bp-wheel-row.dist-0 {
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      letter-spacing: 0.01em;
     }
 
     .app-shell {
@@ -152,65 +162,139 @@
       justify-content: center;
       gap: 7px;
       padding: 9px 15px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
+      border-radius: 14px;
+      border: 2px solid var(--border);
       background: var(--bg-card);
       color: var(--text);
       font-size: 0.86rem;
-      font-weight: 600;
+      font-weight: 800;
       cursor: pointer;
-      transition: all 0.16s ease;
+      transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background 0.14s ease;
       text-decoration: none;
+      box-shadow: 0 4px 0 var(--border);
+      position: relative;
     }
 
     .btn:hover {
       background: var(--bg-card-hover);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 var(--border);
+    }
+
+    .btn:active {
+      transform: translateY(3px) !important;
+      box-shadow: 0 1px 0 var(--border) !important;
     }
 
     .btn-primary {
-      background: var(--accent);
-      color: #06210f;
-      border-color: transparent;
-      font-weight: 700;
+      background: linear-gradient(180deg, #2ce56b 0%, #22c55e 100%);
+      color: #052912;
+      border: 2px solid #15803d;
+      font-weight: 900;
+      box-shadow: 0 4px 0 #15803d, inset 0 2px 0 rgba(255, 255, 255, 0.42);
     }
 
     .btn-primary:hover {
-      background: var(--accent-hover);
-      color: #fff;
+      background: linear-gradient(180deg, #34f074 0%, #16a34a 100%);
+      color: #04210e;
+      box-shadow: 0 6px 0 #15803d, inset 0 2px 0 rgba(255, 255, 255, 0.48);
+    }
+
+    .btn-primary:active {
+      box-shadow: 0 1px 0 #15803d !important;
     }
 
     .btn-purple {
-      background: linear-gradient(135deg, #9333ea, #6366f1);
+      background: linear-gradient(180deg, #a855f7 0%, #7e22ce 100%);
       color: #fff;
-      border-color: transparent;
-      font-weight: 700;
+      border: 2px solid #581c87;
+      font-weight: 900;
+      box-shadow: 0 4px 0 #581c87, inset 0 2px 0 rgba(255, 255, 255, 0.32);
     }
 
     .btn-purple:hover {
-      filter: brightness(1.1);
+      filter: brightness(1.07);
+      box-shadow: 0 6px 0 #581c87, inset 0 2px 0 rgba(255, 255, 255, 0.36);
+    }
+
+    .btn-purple:active {
+      box-shadow: 0 1px 0 #581c87 !important;
     }
 
     .btn-sm {
-      padding: 6px 10px;
+      padding: 6px 11px;
       font-size: 0.78rem;
-      border-radius: 9px;
+      border-radius: 11px;
     }
 
-    /* Raccoon Hero Section */
+    /* Raccoon Hero Section — Escenario Ilustrado de Dibujo Animado */
     .raccoon-stage {
       display: grid;
-      grid-template-columns: 220px 1fr;
+      grid-template-columns: 225px 1fr;
       gap: 20px;
       background: linear-gradient(135deg, var(--bg-elev) 0%, var(--bg-card) 100%);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-      margin-bottom: 18px;
+      border: 2.5px solid var(--border);
+      border-radius: 24px;
+      padding: 22px;
+      box-shadow: 0 7px 0 var(--border), var(--shadow);
+      margin-bottom: 20px;
       align-items: center;
       position: relative;
       overflow: hidden;
+      isolation: isolate;
+    }
+
+    .cartoon-scene-bg {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      overflow: hidden;
+      border-radius: 22px;
+      opacity: 0.92;
+      transition: background 0.6s ease;
+    }
+
+    html[data-theme="light"] .cartoon-scene-bg[data-scene="morning"] {
+      background: linear-gradient(180deg, #fef3c7 0%, #e0f2fe 58%, #dcfce7 100%);
+    }
+    html[data-theme="light"] .cartoon-scene-bg[data-scene="afternoon"] {
+      background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 62%, #d1fae5 100%);
+    }
+    html[data-theme="light"] .cartoon-scene-bg[data-scene="night"] {
+      background: linear-gradient(180deg, #1e1b4b 0%, #312e81 62%, #1e293b 100%);
+    }
+    html[data-theme="light"] .raccoon-stage[data-scene-mode="night"] {
+      color: #f8fafc;
+    }
+    html[data-theme="light"] .raccoon-stage[data-scene-mode="night"] .speech-bubble {
+      color: #131b26;
+    }
+
+    html[data-theme="dark"] .cartoon-scene-bg[data-scene="morning"] {
+      background: linear-gradient(180deg, rgba(251, 191, 36, 0.16) 0%, rgba(14, 165, 233, 0.12) 60%, rgba(34, 197, 94, 0.14) 100%);
+    }
+    html[data-theme="dark"] .cartoon-scene-bg[data-scene="afternoon"] {
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.18) 0%, rgba(15, 23, 42, 0.35) 65%, rgba(34, 197, 94, 0.15) 100%);
+    }
+    html[data-theme="dark"] .cartoon-scene-bg[data-scene="night"] {
+      background: linear-gradient(180deg, #090d16 0%, #1e1b4b 65%, #111827 100%);
+    }
+
+    @keyframes cartoonCloudDrift {
+      0% { transform: translateX(-18px); }
+      50% { transform: translateX(18px); }
+      100% { transform: translateX(-18px); }
+    }
+
+    @keyframes cartoonStarTwinkle {
+      0%, 100% { opacity: 0.25; transform: scale(0.85); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    @keyframes cartoonSunSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     @media (max-width: 720px) {
@@ -366,15 +450,44 @@
     }
 
     .speech-bubble {
-      background: var(--bg);
-      border: 1.5px solid var(--border);
-      border-radius: 16px;
-      padding: 15px 18px;
-      font-size: 1rem;
-      font-weight: 600;
+      background: var(--bg-elev);
+      border: 2.5px solid var(--accent);
+      border-radius: 22px;
+      padding: 16px 20px;
+      font-size: 1.02rem;
+      font-weight: 800;
       line-height: 1.45;
       position: relative;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      box-shadow: 0 6px 0 rgba(34, 197, 94, 0.28), 0 10px 24px rgba(0, 0, 0, 0.12);
+      transform-origin: left center;
+      animation: cartoonBubblePop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .speech-bubble::before {
+      content: "";
+      position: absolute;
+      left: -11px;
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+      width: 18px;
+      height: 18px;
+      background: var(--bg-elev);
+      border-left: 2.5px solid var(--accent);
+      border-bottom: 2.5px solid var(--accent);
+    }
+
+    @media (max-width: 720px) {
+      .speech-bubble::before {
+        left: 50%;
+        top: -11px;
+        transform: translateX(-50%) rotate(135deg);
+      }
+    }
+
+    @keyframes cartoonBubblePop {
+      0% { transform: scale(0.88); opacity: 0.5; }
+      70% { transform: scale(1.03); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
     .speech-meta {
@@ -398,19 +511,25 @@
     .tab-btn {
       flex: 1 1 150px;
       padding: 11px 14px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
+      border-radius: 16px;
+      border: 2px solid var(--border);
       background: var(--bg-elev);
       color: var(--text-muted);
-      font-weight: 700;
+      font-weight: 800;
       font-size: 0.88rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      transition: all 0.16s ease;
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease, background 0.15s ease;
       text-align: center;
+      box-shadow: 0 4px 0 var(--border);
+    }
+
+    .tab-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 var(--border);
     }
 
     @media (max-width: 768px) {
@@ -441,6 +560,7 @@
       background: var(--accent-soft);
       color: var(--accent);
       border-color: var(--accent);
+      box-shadow: 0 4px 0 rgba(34, 197, 94, 0.45);
     }
 
     .tab-panel {
@@ -467,10 +587,10 @@
 
     .card {
       background: var(--bg-elev);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border: 2px solid var(--border);
+      border-radius: 22px;
       padding: 20px;
-      box-shadow: var(--shadow);
+      box-shadow: 0 6px 0 var(--border), var(--shadow);
     }
 
     .card-header {
@@ -635,30 +755,37 @@
     }
 
     .cup-btn {
-      width: 44px;
-      height: 48px;
-      border-radius: 11px;
-      border: 1.5px solid var(--border);
+      width: 46px;
+      height: 50px;
+      border-radius: 14px;
+      border: 2px solid var(--border);
       background: var(--bg-card);
       cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 1.15rem;
-      transition: all 0.15s ease;
+      font-size: 1.2rem;
+      transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.16s ease, background 0.16s ease;
+      box-shadow: 0 4px 0 var(--border);
+    }
+
+    .cup-btn:active {
+      transform: translateY(3px) !important;
+      box-shadow: 0 1px 0 var(--border) !important;
     }
 
     .cup-btn.filled {
-      background: var(--info-soft);
-      border-color: var(--info);
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.28) 0%, rgba(14, 165, 233, 0.42) 100%);
+      border-color: #0284c7;
       transform: translateY(-2px);
+      box-shadow: 0 5px 0 #0284c7;
     }
 
     .cup-btn span {
-      font-size: 0.62rem;
+      font-size: 0.64rem;
       color: var(--text-muted);
-      font-weight: 700;
+      font-weight: 800;
     }
 
     /* Meals Section */
@@ -670,12 +797,13 @@
 
     .meal-card {
       background: var(--bg-elev);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border: 2px solid var(--border);
+      border-radius: 22px;
       padding: 16px;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      box-shadow: 0 6px 0 var(--border), var(--shadow);
     }
 
     .meal-card-head {
@@ -1977,7 +2105,8 @@
     <div id="supervisionBannerWrap"></div>
 
     <!-- MICHU THE GREY TABBY CAT MASCOT HERO -->
-    <section class="raccoon-stage" aria-label="Michu el Gato">
+    <section class="raccoon-stage" id="michuHeroStage" aria-label="Michu el Gato">
+      <div class="cartoon-scene-bg" id="michuCartoonSceneBg" data-scene="morning" aria-hidden="true"></div>
       <div class="raccoon-avatar-wrap" id="raccoonAvatarWrap" title="1 clic: Zarpazo | Doble clic: Panza arriba | Mantener: Modo ataque">
         <svg class="raccoon-svg" id="michuSvg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustración de Michu el Gato Gris Atigrado">
           <defs>
@@ -13712,6 +13841,249 @@
         renderSuggestedMenuModal();
         openModal("modalSuggestedMenu");
       };
+    })();
+
+    // =========================================================================
+    // MOTOR VISUAL CARTOON 3D (ESCENOGRAFÍA DÍA/NOCHE + GSAP SQUASH & STRETCH + CONFETTI)
+    // =========================================================================
+    (function setupCartoonCinemaEngine() {
+      let forcedSceneMode = null; // null = automático por hora | "morning" | "afternoon" | "night"
+
+      function getCurrentSceneMode() {
+        if (forcedSceneMode) return forcedSceneMode;
+        const hr = new Date().getHours();
+        if (hr >= 6 && hr < 12) return "morning";
+        if (hr >= 12 && hr < 20) return "afternoon";
+        return "night";
+      }
+
+      function renderCartoonSceneBackdrop() {
+        const bgEl = document.getElementById("michuCartoonSceneBg");
+        const stageEl = document.getElementById("michuHeroStage");
+        if (!bgEl || !stageEl) return;
+        const mode = getCurrentSceneMode();
+        bgEl.setAttribute("data-scene", mode);
+        stageEl.setAttribute("data-scene-mode", mode);
+
+        if (mode === "morning") {
+          bgEl.innerHTML = `
+            <svg viewBox="0 0 800 260" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;">
+              <!-- Sol matutino con rayos giratorios -->
+              <g transform="translate(115, 58)">
+                <g style="animation: cartoonSunSpin 28s linear infinite;">
+                  <circle cx="0" cy="0" r="42" fill="rgba(251, 191, 36, 0.25)" stroke="rgba(251, 191, 36, 0.55)" stroke-width="4" stroke-dasharray="10 12"/>
+                </g>
+                <circle cx="0" cy="0" r="26" fill="#fbbf24" />
+                <circle cx="-6" cy="-6" r="6" fill="#fef08a" opacity="0.8" />
+              </g>
+              <!-- Nubes esponjosas animadas -->
+              <g style="animation: cartoonCloudDrift 9s ease-in-out infinite;" opacity="0.85">
+                <path d="M260 55 Q272 36 292 44 Q308 28 330 42 Q348 42 348 58 Q348 70 332 70 L262 70 Q246 70 260 55 Z" fill="#ffffff"/>
+              </g>
+              <g style="animation: cartoonCloudDrift 12s ease-in-out infinite reverse;" opacity="0.72">
+                <path d="M580 42 Q592 25 612 32 Q626 18 646 31 Q662 31 662 46 Q662 56 648 56 L582 56 Q568 56 580 42 Z" fill="#ffffff"/>
+              </g>
+              <!-- Colinas verdes estilo dibujo animado -->
+              <path d="M0 225 Q180 175 410 218 T800 205 L800 260 L0 260 Z" fill="rgba(74, 222, 128, 0.28)"/>
+              <path d="M0 240 Q260 198 540 232 T800 222 L800 260 L0 260 Z" fill="rgba(34, 197, 94, 0.34)"/>
+            </svg>
+          `;
+        } else if (mode === "afternoon") {
+          bgEl.innerHTML = `
+            <svg viewBox="0 0 800 260" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;">
+              <g transform="translate(690, 52)">
+                <g style="animation: cartoonSunSpin 24s linear infinite;">
+                  <circle cx="0" cy="0" r="38" fill="rgba(250, 204, 21, 0.24)" stroke="rgba(250, 204, 21, 0.55)" stroke-width="3.5" stroke-dasharray="9 11"/>
+                </g>
+                <circle cx="0" cy="0" r="24" fill="#facc15" />
+              </g>
+              <g style="animation: cartoonCloudDrift 10s ease-in-out infinite;" opacity="0.88">
+                <path d="M180 48 Q194 28 216 36 Q234 20 256 35 Q274 35 274 52 Q274 64 256 64 L182 64 Q166 64 180 48 Z" fill="#ffffff"/>
+              </g>
+              <g style="animation: cartoonCloudDrift 13s ease-in-out infinite reverse;" opacity="0.78">
+                <path d="M470 62 Q482 45 502 52 Q516 38 536 51 Q552 51 552 66 Q552 76 538 76 L472 76 Q458 76 470 62 Z" fill="#ffffff"/>
+              </g>
+              <path d="M0 228 Q220 182 470 220 T800 208 L800 260 L0 260 Z" fill="rgba(34, 197, 94, 0.25)"/>
+              <path d="M0 242 Q310 204 590 235 T800 226 L800 260 L0 260 Z" fill="rgba(22, 163, 74, 0.32)"/>
+            </svg>
+          `;
+        } else {
+          bgEl.innerHTML = `
+            <svg viewBox="0 0 800 260" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;">
+              <!-- Luna creciente brillante -->
+              <g transform="translate(685, 54)">
+                <circle cx="0" cy="0" r="24" fill="#fef08a" />
+                <circle cx="9" cy="-6" r="20" fill="#1e1b4b" />
+              </g>
+              <!-- Estrellas titilando -->
+              <circle cx="120" cy="42" r="2.6" fill="#fef08a" style="animation: cartoonStarTwinkle 2.4s infinite;" />
+              <circle cx="240" cy="68" r="2" fill="#ffffff" style="animation: cartoonStarTwinkle 3.1s infinite 0.7s;" />
+              <circle cx="390" cy="36" r="2.8" fill="#fef08a" style="animation: cartoonStarTwinkle 2.8s infinite 1.2s;" />
+              <circle cx="530" cy="58" r="2.2" fill="#ffffff" style="animation: cartoonStarTwinkle 3.5s infinite 0.4s;" />
+              <circle cx="80" cy="95" r="1.8" fill="#bae6fd" style="animation: cartoonStarTwinkle 2.9s infinite 1.6s;" />
+              <!-- Colinas nocturnas -->
+              <path d="M0 228 Q210 184 460 222 T800 210 L800 260 L0 260 Z" fill="rgba(30, 41, 59, 0.55)"/>
+              <path d="M0 242 Q290 206 580 236 T800 226 L800 260 L0 260 Z" fill="rgba(15, 23, 42, 0.7)"/>
+            </svg>
+          `;
+        }
+      }
+
+      renderCartoonSceneBackdrop();
+
+      // Botón rápido en el rincón de Michu para cambiar la escena (Mañana / Tarde / Noche)
+      const headerRow = document.querySelector(".raccoon-header-row");
+      if (headerRow && !document.getElementById("btnCycleCartoonScene")) {
+        const sceneBtn = document.createElement("button");
+        sceneBtn.type = "button";
+        sceneBtn.id = "btnCycleCartoonScene";
+        sceneBtn.className = "btn btn-sm";
+        sceneBtn.style.fontSize = "0.74rem";
+        sceneBtn.style.padding = "4px 10px";
+        const updateSceneBtnLabel = () => {
+          const m = getCurrentSceneMode();
+          sceneBtn.innerHTML = m === "morning" ? "🌅 Escena: Mañana" : (m === "afternoon" ? "☀️ Escena: Tarde" : "🌙 Escena: Noche");
+        };
+        updateSceneBtnLabel();
+        sceneBtn.addEventListener("click", () => {
+          const order = ["morning", "afternoon", "night"];
+          const cur = getCurrentSceneMode();
+          forcedSceneMode = order[(order.indexOf(cur) + 1) % order.length];
+          renderCartoonSceneBackdrop();
+          updateSceneBtnLabel();
+          triggerMichuCartoonJump();
+        });
+        headerRow.appendChild(sceneBtn);
+      }
+
+      // Salto elástico Squash & Stretch estilo Disney/Pixar con GSAP
+      function triggerMichuCartoonJump() {
+        const svg = document.getElementById("michuSvg");
+        const bubble = document.getElementById("raccoonSpeechText");
+        if (window.gsap && svg) {
+          window.gsap.killTweensOf(svg);
+          const tl = window.gsap.timeline();
+          tl.to(svg, { scaleX: 1.15, scaleY: 0.84, y: 7, duration: 0.11, ease: "power2.out" })
+            .to(svg, { scaleX: 0.91, scaleY: 1.13, y: -18, rotation: -3, duration: 0.2, ease: "power2.out" })
+            .to(svg, { scaleX: 1.07, scaleY: 0.93, y: 3, rotation: 2, duration: 0.14, ease: "power2.in" })
+            .to(svg, { scaleX: 1, scaleY: 1, y: 0, rotation: 0, duration: 0.42, ease: "elastic.out(1.2, 0.4)" });
+        }
+        if (window.gsap && bubble) {
+          window.gsap.fromTo(
+            bubble,
+            { scale: 0.92, y: 4 },
+            { scale: 1, y: 0, duration: 0.45, ease: "elastic.out(1.1, 0.45)" }
+          );
+        }
+      }
+      window.triggerMichuCartoonJump = triggerMichuCartoonJump;
+
+      // Confeti de celebración tipo videojuego
+      function fireCartoonConfetti(intensity = "normal") {
+        if (typeof window.confetti !== "function") return;
+        try {
+          window.confetti({
+            particleCount: intensity === "big" ? 75 : 32,
+            spread: intensity === "big" ? 80 : 55,
+            origin: { y: 0.72 },
+            colors: ["#22c55e", "#facc15", "#38bdf8", "#a855f7", "#fb7185"]
+          });
+        } catch (_) {}
+      }
+      window.fireCartoonConfetti = fireCartoonConfetti;
+
+      // Loop autónomo de vida de Michu (parpadeo natural, respiración suave y cola en movimiento)
+      function initMichuAutonomousLife() {
+        if (!window.gsap) {
+          setTimeout(initMichuAutonomousLife, 400);
+          return;
+        }
+        const body = document.getElementById("raccoonBody");
+        const belly = document.getElementById("raccoonBelly");
+        const tail = document.getElementById("raccoonTail");
+        const eyes = document.getElementById("raccoonEyes");
+
+        if (body && belly) {
+          window.gsap.to([body, belly], {
+            scaleX: 1.035,
+            scaleY: 0.975,
+            transformOrigin: "50% 80%",
+            duration: 1.6,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut"
+          });
+        }
+        if (tail) {
+          window.gsap.to(tail, {
+            rotation: 11,
+            transformOrigin: "132px 150px",
+            duration: 1.35,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut"
+          });
+        }
+
+        function scheduleNextBlink() {
+          const delayMs = 2400 + Math.random() * 2800;
+          setTimeout(() => {
+            if (eyes && window.gsap) {
+              window.gsap.to(eyes, {
+                scaleY: 0.08,
+                transformOrigin: "100px 82px",
+                duration: 0.075,
+                yoyo: true,
+                repeat: 1,
+                ease: "power1.inOut"
+              });
+            }
+            scheduleNextBlink();
+          }, delayMs);
+        }
+        scheduleNextBlink();
+      }
+      initMichuAutonomousLife();
+
+      // Seguimiento de mirada de Michu al cursor / toque en toda la pantalla
+      function handleGlobalPointerLook(clientX, clientY) {
+        const svg = document.getElementById("michuSvg");
+        const pL = document.getElementById("pupilLeft");
+        const pR = document.getElementById("pupilRight");
+        if (!svg || !pL || !pR) return;
+        const rect = svg.getBoundingClientRect();
+        if (!rect.width) return;
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height * 0.42;
+        const dx = Math.max(-1, Math.min(1, (clientX - cx) / 240));
+        const dy = Math.max(-1, Math.min(1, (clientY - cy) / 240));
+        pL.setAttribute("cx", (76 + dx * 3.4).toFixed(2));
+        pL.setAttribute("cy", (82 + dy * 2.2).toFixed(2));
+        pR.setAttribute("cx", (124 + dx * 3.4).toFixed(2));
+        pR.setAttribute("cy", (82 + dy * 2.2).toFixed(2));
+      }
+
+      window.addEventListener("mousemove", (e) => {
+        handleGlobalPointerLook(e.clientX, e.clientY);
+      }, { passive: true });
+
+      window.addEventListener("touchmove", (e) => {
+        if (e.touches && e.touches[0]) {
+          handleGlobalPointerLook(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: true });
+
+      // Conectar reacciones animadas y confeti al tildar comidas, sumar agua o cambiar frases
+      document.addEventListener("click", (e) => {
+        const target = e.target.closest("[data-toggle-planned], .cup-btn, #btnHeroRandomQuip, #btnConfirmAddFood");
+        if (!target) return;
+        triggerMichuCartoonJump();
+        if (target.hasAttribute("data-toggle-planned") || target.id === "btnConfirmAddFood") {
+          fireCartoonConfetti("normal");
+        } else if (target.classList.contains("cup-btn") && !target.classList.contains("filled")) {
+          fireCartoonConfetti("normal");
+        }
+      });
     })();
 
     // Inicializar aplicación
