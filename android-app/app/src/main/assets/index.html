@@ -9804,12 +9804,13 @@
                 </div>
               </div>
               <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button type="button" class="btn btn-sm btn-primary" data-approve-uid="${u.id}" data-approve-role="patient">
-                  ✅ Aprobar Paciente
-                </button>
+                ${u.role === "nutritionist" ? `
                 <button type="button" class="btn btn-sm btn-purple" data-approve-uid="${u.id}" data-approve-role="nutritionist">
                   🩺 Aprobar como Nutri
-                </button>
+                </button>` : `
+                <button type="button" class="btn btn-sm btn-primary" data-approve-uid="${u.id}" data-approve-role="patient">
+                  ✅ Aprobar Paciente
+                </button>`}
                 <button type="button" class="btn btn-sm btn-danger" data-delete-uid="${u.id}">
                   ✕ Rechazar
                 </button>
