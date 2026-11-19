@@ -3630,7 +3630,7 @@
           window._pendingCloudLearnedFoods = sysFoodRow.user_doc.learnedFoods;
         }
       }
-      return (rows || [])
+      const mapped = (rows || [])
         .filter(r => r.id !== "sys-food-catalog" && r.status !== "system_catalog" && r.role !== "system")
         .map(r => {
           const doc = r.user_doc || {};
@@ -3642,6 +3642,47 @@
           doc.status = r.status || doc.status || "pending";
           return doc;
         });
+
+      // Deduplicar solicitudes pendientes duplicadas con el mismo email/usuario
+      const byIdentity = new Map();
+      const resultUsers = [];
+      const dupPendingIdsToDelete = [];
+
+      for (const u of mapped) {
+        const identKey = (u.email || u.username || "").trim().toLowerCase();
+        if (!identKey) {
+          resultUsers.push(u);
+          continue;
+        }
+        if (!byIdentity.has(identKey)) {
+          byIdentity.set(identKey, u);
+          resultUsers.push(u);
+        } else {
+          const existing = byIdentity.get(identKey);
+          if (existing.status !== "approved" && u.status === "approved") {
+            if (existing.status === "pending" && existing.id && existing.id !== u.id) {
+              dupPendingIdsToDelete.push(existing.id);
+            }
+            const idx = resultUsers.indexOf(existing);
+            if (idx !== -1) resultUsers[idx] = u;
+            byIdentity.set(identKey, u);
+          } else if (u.status === "pending") {
+            if (u.id && u.id !== existing.id) {
+              dupPendingIdsToDelete.push(u.id);
+            }
+          } else {
+            resultUsers.push(u);
+          }
+        }
+      }
+
+      if (dupPendingIdsToDelete.length > 0) {
+        dupPendingIdsToDelete.forEach(dupId => {
+          sbDeleteUser(dupId).catch(() => {});
+        });
+      }
+
+      return resultUsers;
     }
 
     async function sbFetchUsersByIds(idsList) {
@@ -4054,78 +4095,98 @@
 
         // 4. POST /api/auth/register
         if (method === "POST" && path.endsWith("/api/auth/register")) {
-          const name = (body.name || "").trim();
-          const email = (body.email || "").trim().toLowerCase();
-          const username = (body.username || (email ? email.split("@")[0] : "")).trim().toLowerCase();
-          const pwd = (body.password || "").trim();
-          const reqRole = body.roleRequested || "patient";
-          const inviteCode = (body.inviteCode || "").trim().toUpperCase();
-          const profInit = body.profile || {};
-
-          if (!name || !email || pwd.length < 4) {
-            return sbJsonResponse({ ok: false, error: "Completá nombre, email y una contraseña de al menos 4 caracteres." }, 400);
+          if (window._sbRegisterInFlight) {
+            return sbJsonResponse({ ok: false, error: "Procesando tu solicitud, aguardá un instante..." }, 429);
           }
+          window._sbRegisterInFlight = true;
+          try {
+            const name = (body.name || "").trim();
+            const email = (body.email || "").trim().toLowerCase();
+            const username = (body.username || (email ? email.split("@")[0] : "")).trim().toLowerCase();
+            const pwd = (body.password || "").trim();
+            const reqRole = body.roleRequested || "patient";
+            const inviteCode = (body.inviteCode || "").trim().toUpperCase();
+            const profInit = body.profile || {};
 
-          const users = await sbFetchAllUsers();
-          const exists = users.some(u =>
-            (u.email || "").toLowerCase() === email ||
-            (username && (u.username || "").toLowerCase() === username)
-          );
-          if (exists) {
-            return sbJsonResponse({ ok: false, error: "Ya existe una cuenta registrada con ese email o usuario." }, 409);
-          }
+            if (!name || !email || pwd.length < 4) {
+              return sbJsonResponse({ ok: false, error: "Completá nombre, email y una contraseña de al menos 4 caracteres." }, 400);
+            }
 
-          const nutriUser = inviteCode
-            ? users.find(u => ["nutritionist", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === inviteCode)
-            : null;
+            const pwdHash = sbHashPassword(pwd);
+            const users = await sbFetchAllUsers();
+            const existingUser = users.find(u =>
+              (u.email || "").toLowerCase() === email ||
+              (username && (u.username || "").toLowerCase() === username)
+            );
+            if (existingUser) {
+              if (existingUser.status === "pending" && existingUser.passwordHash === pwdHash) {
+                const token = `sb_tok__${existingUser.id}__${Date.now()}`;
+                localStorage.setItem("michufit_auth_uid", existingUser.id);
+                return sbJsonResponse({
+                  ok: true,
+                  token,
+                  user: sbSanitizeUser(users, existingUser),
+                  pendingApproval: true
+                });
+              }
+              return sbJsonResponse({ ok: false, error: "Ya existe una cuenta registrada con ese email o usuario." }, 409);
+            }
 
-          const newId = "u-" + Date.now();
-          const roleToAssign = reqRole === "nutritionist" ? "nutritionist" : "patient";
-          let genCode = "";
-          if (roleToAssign === "nutritionist") {
-            const cleanPrefix = name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PRO";
-            genCode = `NUTRI-${cleanPrefix}`;
-          }
+            const nutriUser = inviteCode
+              ? users.find(u => ["nutritionist", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === inviteCode)
+              : null;
 
-          const now = new Date();
-          const createdStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+            const cleanIdentSlug = (email || username).replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "").slice(0, 48);
+            const newId = cleanIdentSlug ? `u-${cleanIdentSlug}` : ("u-" + Date.now());
+            const roleToAssign = reqRole === "nutritionist" ? "nutritionist" : "patient";
+            let genCode = "";
+            if (roleToAssign === "nutritionist") {
+              const cleanPrefix = name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PRO";
+              genCode = `NUTRI-${cleanPrefix}`;
+            }
 
-          const newUser = {
-            id: newId,
-            username,
-            email,
-            name,
-            passwordHash: sbHashPassword(pwd),
-            role: roleToAssign,
-            status: "pending",
-            inviteCode: genCode,
-            nutritionistId: nutriUser ? nutriUser.id : null,
-            coachNote: "",
-            coachNoteUpdatedAt: "",
-            coachName: nutriUser ? nutriUser.name : "",
-            createdAt: createdStr,
-            trackerData: sbCreateEmptyTrackerData(
+            const now = new Date();
+            const createdStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+            const newUser = {
+              id: newId,
+              username,
+              email,
               name,
-              profInit.sex,
-              profInit.age,
-              profInit.weight,
-              profInit.goalWeight,
-              profInit.height,
-              profInit
-            )
-          };
+              passwordHash: pwdHash,
+              role: roleToAssign,
+              status: "pending",
+              inviteCode: genCode,
+              nutritionistId: nutriUser ? nutriUser.id : null,
+              coachNote: "",
+              coachNoteUpdatedAt: "",
+              coachName: nutriUser ? nutriUser.name : "",
+              createdAt: createdStr,
+              trackerData: sbCreateEmptyTrackerData(
+                name,
+                profInit.sex,
+                profInit.age,
+                profInit.weight,
+                profInit.goalWeight,
+                profInit.height,
+                profInit
+              )
+            };
 
-          await sbUpsertUser(newUser);
-          users.push(newUser);
-          const token = `sb_tok__${newId}__${Date.now()}`;
-          localStorage.setItem("michufit_auth_uid", newId);
+            await sbUpsertUser(newUser);
+            users.push(newUser);
+            const token = `sb_tok__${newId}__${Date.now()}`;
+            localStorage.setItem("michufit_auth_uid", newId);
 
-          return sbJsonResponse({
-            ok: true,
-            token,
-            user: sbSanitizeUser(users, newUser),
-            pendingApproval: true
-          });
+            return sbJsonResponse({
+              ok: true,
+              token,
+              user: sbSanitizeUser(users, newUser),
+              pendingApproval: true
+            });
+          } finally {
+            window._sbRegisterInFlight = false;
+          }
         }
 
         // 5. POST /api/auth/logout
@@ -11502,7 +11563,10 @@
         }
       }
 
+      let bpRegSubmitting = false;
+
       async function submitBpRegistration() {
+        if (bpRegSubmitting) return;
         const name = (bpState.userName || "").trim() || "Campeón";
         const email = (bpState.email || "").trim();
         const password = (bpState.password || "").trim();
@@ -11517,6 +11581,15 @@
           return;
         }
         showAuthAlert("");
+        bpRegSubmitting = true;
+        const nextBtn = document.getElementById("bpWizNextBtn");
+        const prevBtnText = nextBtn ? nextBtn.innerHTML : "🚀 Comprometerme y Crear mi Cuenta";
+        if (nextBtn) {
+          nextBtn.disabled = true;
+          nextBtn.style.opacity = "0.65";
+          nextBtn.innerHTML = "⏳ Enviando solicitud...";
+        }
+
         const curW = getBpWeight();
         const goalW = getBpGoalWeight();
         const isGain = bpState.mainGoal === "gain" || goalW > curW + 0.2;
@@ -11573,6 +11646,13 @@
           showAuthModal("pending");
         } catch (err) {
           showAuthAlert("No se pudo conectar con el servidor.");
+        } finally {
+          bpRegSubmitting = false;
+          if (nextBtn) {
+            nextBtn.disabled = false;
+            nextBtn.style.opacity = "1";
+            nextBtn.innerHTML = prevBtnText;
+          }
         }
       }
 
