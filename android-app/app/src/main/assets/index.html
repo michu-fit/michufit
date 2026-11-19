@@ -5267,27 +5267,18 @@
 
     function getBackupStorageKey() {
       const uid = inspectedUserId || (currentUserInfo && currentUserInfo.id) || localStorage.getItem("michufit_auth_uid") || "default";
-      return uid === "u-owner" || uid === "default" ? "michufit_backup_v1" : `michufit_backup_${uid}`;
+      return `michufit_backup_${uid}`;
     }
 
     function getConsolidatedLocalBackup() {
       const primaryKey = getBackupStorageKey();
-      const candidateKeys = Array.from(new Set([primaryKey, "michufit_backup_v1", "michufit_backup_u-owner", "pachofit_backup_v1"]));
-      let combined = null;
-      for (const k of candidateKeys) {
-        const raw = localStorage.getItem(k);
-        if (!raw) continue;
-        try {
-          const parsed = JSON.parse(raw);
-          if (!parsed || typeof parsed !== "object") continue;
-          if (!combined) {
-            combined = parsed;
-          } else {
-            combined = mergeLocalAndServerData(combined, parsed).merged;
-          }
-        } catch (_) {}
-      }
-      return combined;
+      const raw = localStorage.getItem(primaryKey);
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") return parsed;
+      } catch (_) {}
+      return null;
     }
 
     async function loadFromServer() {
@@ -5301,7 +5292,10 @@
         } catch (_) {}
       }
       renderLocalQrSvg(document.getElementById("mobileLanUrlText").textContent);
-      const localBackup = getConsolidatedLocalBackup();
+      localStorage.removeItem("michufit_backup_v1");
+      localStorage.removeItem("pachofit_backup_v1");
+      const isInspectingOther = Boolean(inspectedUserId && (!currentUserInfo || inspectedUserId !== currentUserInfo.id));
+      const localBackup = isInspectingOther ? null : getConsolidatedLocalBackup();
       if (localBackup) {
         appData = localBackup;
       }
@@ -5385,11 +5379,8 @@
       const jsonStr = JSON.stringify(appData);
       const primaryKey = getBackupStorageKey();
       localStorage.setItem(primaryKey, jsonStr);
-      if (primaryKey !== "michufit_backup_v1") {
-        localStorage.setItem("michufit_backup_v1", jsonStr);
-      }
       localStorage.removeItem("pachofit_backup_v1");
-      localStorage.removeItem("michufit_backup_u-owner");
+      localStorage.removeItem("michufit_backup_v1");
       localStorage.setItem("michufit_pending_push", "1");
       updateSyncBadge("⏳ Guardando en la nube...", true);
       try {
