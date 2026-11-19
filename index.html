@@ -7092,6 +7092,135 @@
       const targetY = yBar(targets.targetKcal).toFixed(1);
       const tdeeY = yBar(targets.tdee).toFixed(1);
 
+      if (window._selectedCalBarDate && !chartDays.some(d => d.date === window._selectedCalBarDate)) {
+        window._selectedCalBarDate = null;
+      }
+
+      function buildSelectedBarDetailHtml(dateKey) {
+        if (!dateKey) {
+          return `<div style="text-align:center;font-size:0.76rem;color:var(--text-muted);margin-top:6px;">👆 Tocá cualquier barra para ver el resumen de comidas, macros (P/C/G) y ejercicio de ese día</div>`;
+        }
+        const dayRec = (appData.days && appData.days[dateKey]) || { meals: [], exercises: [], exerciseKcal: 0 };
+        const tot = getDayTotals(dateKey);
+        const eatenMeals = (dayRec.meals || []).filter(m => isMealConsumed(m));
+        const exList = Array.isArray(dayRec.exercises) ? dayRec.exercises : [];
+
+        const pG = Math.round(tot.p || 0);
+        const cG = Math.round(tot.c || 0);
+        const fG = Math.round(tot.f || 0);
+        const pKcal = Math.round((tot.p || 0) * 4);
+        const cKcal = Math.round((tot.c || 0) * 4);
+        const fKcal = Math.round((tot.f || 0) * 9);
+        const macroKcalSum = Math.max(1, pKcal + cKcal + fKcal);
+        const pPct = pKcal + cKcal + fKcal > 0 ? Math.round((pKcal / macroKcalSum) * 100) : 0;
+        const cPct = pKcal + cKcal + fKcal > 0 ? Math.round((cKcal / macroKcalSum) * 100) : 0;
+        const fPct = pKcal + cKcal + fKcal > 0 ? Math.max(0, 100 - pPct - cPct) : 0;
+
+        const knownKeys = new Set(MEAL_SECTIONS.map(s => s.key));
+        const sectionsHtml = MEAL_SECTIONS.map(sec => {
+          const secMeals = eatenMeals.filter(m => (m.mealType || "snack") === sec.key || (!knownKeys.has(m.mealType) && sec.key === "snack"));
+          if (secMeals.length === 0) return "";
+          const sKcal = Math.round(secMeals.reduce((a, m) => a + (Number(m.kcal) || 0), 0));
+          const sP = Math.round(secMeals.reduce((a, m) => a + (Number(m.p) || 0), 0));
+          const sC = Math.round(secMeals.reduce((a, m) => a + (Number(m.c) || 0), 0));
+          const sF = Math.round(secMeals.reduce((a, m) => a + (Number(m.f) || 0), 0));
+          const namesSummary = secMeals.map(m => `${m.emoji ? m.emoji + " " : ""}${m.name} <span style="color:var(--text-muted);">(${Math.round(Number(m.kcal) || 0)} kcal)</span>`).join(" • ");
+          return `
+            <div style="padding:8px 10px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                <strong style="font-size:0.83rem;color:var(--text);">${sec.title}</strong>
+                <div style="display:flex;align-items:center;gap:8px;font-size:0.76rem;">
+                  <span style="color:var(--text-muted);">${sP}g P • ${sC}g C • ${sF}g G</span>
+                  <strong style="color:var(--accent);font-size:0.83rem;">${sKcal} kcal</strong>
+                </div>
+              </div>
+              <div style="font-size:0.78rem;color:var(--text);line-height:1.38;">
+                ${namesSummary}
+              </div>
+            </div>
+          `;
+        }).filter(Boolean).join("");
+
+        const exItemsHtml = exList.length > 0
+          ? exList.map(x => `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:8px;background:var(--bg);border:1px solid rgba(168,85,247,0.35);font-size:0.77rem;">🏃 ${x.name || "Actividad"} <strong style="color:var(--purple);">-${Math.round(Number(x.kcal) || 0)} kcal</strong></span>`).join("")
+          : (tot.exerciseKcal > 0
+              ? `<span style="font-size:0.78rem;color:var(--purple);font-weight:700;">🏃 Actividad física registrada: -${tot.exerciseKcal} kcal</span>`
+              : `<span style="font-size:0.77rem;color:var(--text-muted);">Sin ejercicios registrados este día.</span>`);
+
+        const [yy, mm, dd] = dateKey.split("-");
+        const niceDate = `${dd}/${mm}/${yy}`;
+        const netDayKcal = tot.kcal - (tot.exerciseKcal || 0);
+
+        return `
+          <div style="margin-top:10px;padding:12px 13px;border-radius:12px;background:var(--bg-elev);border:1.5px solid var(--accent);display:flex;flex-direction:column;gap:10px;animation:fadeIn 0.18s ease;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <div>
+                <strong style="font-size:0.9rem;color:var(--text);">📅 Resumen del ${niceDate}</strong>
+                <div style="font-size:0.76rem;color:var(--text-muted);margin-top:1px;">
+                  Ingerido: <strong style="color:var(--text);">${tot.kcal} kcal</strong> • Ejercicio: <strong style="color:var(--purple);">-${tot.exerciseKcal} kcal</strong> • Neto: <strong style="color:var(--accent);">${netDayKcal} kcal</strong>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <button type="button" class="btn btn-sm" id="btnJumpToBarDate" data-jump-date="${dateKey}" style="padding:4px 9px;font-size:0.74rem;">
+                  📖 Ver en Diario
+                </button>
+                <button type="button" class="btn btn-sm" id="btnCloseBarDetail" title="Cerrar detalle" style="padding:4px 8px;font-size:0.74rem;">
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <!-- Desglose de Calorías por Macros (Proteína, Carbos, Grasa) -->
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 10px;">
+              <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.03em;">
+                ⚖️ Desglose de Calorías por Macronutrientes
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;">
+                <div style="background:var(--bg-card);border:1px solid rgba(56,189,248,0.35);border-radius:8px;padding:6px 4px;">
+                  <div style="font-size:0.72rem;color:#38bdf8;font-weight:700;">🥩 Proteínas</div>
+                  <div style="font-size:0.88rem;font-weight:800;color:var(--text);">${pG} g</div>
+                  <div style="font-size:0.72rem;color:var(--text-muted);">${pKcal} kcal (${pPct}%)</div>
+                </div>
+                <div style="background:var(--bg-card);border:1px solid rgba(245,158,11,0.35);border-radius:8px;padding:6px 4px;">
+                  <div style="font-size:0.72rem;color:#f59e0b;font-weight:700;">🍞 Carbos</div>
+                  <div style="font-size:0.88rem;font-weight:800;color:var(--text);">${cG} g</div>
+                  <div style="font-size:0.72rem;color:var(--text-muted);">${cKcal} kcal (${cPct}%)</div>
+                </div>
+                <div style="background:var(--bg-card);border:1px solid rgba(168,85,247,0.35);border-radius:8px;padding:6px 4px;">
+                  <div style="font-size:0.72rem;color:#a855f7;font-weight:700;">🥑 Grasas</div>
+                  <div style="font-size:0.88rem;font-weight:800;color:var(--text);">${fG} g</div>
+                  <div style="font-size:0.72rem;color:var(--text-muted);">${fKcal} kcal (${fPct}%)</div>
+                </div>
+              </div>
+              <div style="display:flex;height:6px;border-radius:999px;overflow:hidden;background:var(--bg-card);margin-top:7px;">
+                <div style="width:${pPct}%;background:#38bdf8;" title="Proteínas ${pPct}%"></div>
+                <div style="width:${cPct}%;background:#f59e0b;" title="Carbohidratos ${cPct}%"></div>
+                <div style="width:${fPct}%;background:#a855f7;" title="Grasas ${fPct}%"></div>
+              </div>
+            </div>
+
+            <!-- Comidas agrupadas por momento (Desayuno, Almuerzo, Merienda, Cena, Snacks) -->
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.03em;">
+                🍽️ Comidas del día (por momento)
+              </div>
+              ${sectionsHtml || `<div style="font-size:0.79rem;color:var(--text-muted);padding:6px 2px;">⏳ Día de ayuno registrado (0 kcal ingeridas).</div>`}
+            </div>
+
+            <!-- Ejercicio del día -->
+            <div style="display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--border);padding-top:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.03em;">🏃 Ejercicio y Pasos del día</span>
+                <strong style="font-size:0.82rem;color:var(--purple);">-${tot.exerciseKcal} kcal</strong>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                ${exItemsHtml}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
       document.getElementById("WeeklyCalorieChartContainer").innerHTML = chartDays.length === 0
         ? `<p style="color:var(--text-muted);font-size:0.85rem;padding:12px;">Sin días con comidas o ayunos registrados en este período.</p>`
         : `
@@ -7110,18 +7239,53 @@
             const x = bPadL + idx * slotW + (slotW - barW) / 2;
             const y = yBar(d.kcal);
             const h = Math.max(4, bPadT + bPlotH - y);
+            const isSel = window._selectedCalBarDate === d.date;
             const color = d.kcal === 0 && d.isFasting
               ? "#a855f7"
               : (d.kcal <= targets.targetKcal + d.exercise ? "#22c55e" : (d.kcal <= targets.tdee + d.exercise ? "#f59e0b" : "#ef4444"));
             const barLabel = d.kcal === 0 && d.isFasting ? "0 (Ayuno)" : String(d.kcal);
             return `
-              <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="5" fill="${color}" />
-              <text x="${(x + barW / 2).toFixed(1)}" y="${Math.max(12, y - 5).toFixed(1)}" fill="var(--text)" font-size="9.5" font-weight="700" text-anchor="middle">${barLabel}</text>
-              <text x="${(x + barW / 2).toFixed(1)}" y="${bh - 10}" fill="var(--text-muted)" font-size="9.5" text-anchor="middle">${d.label}</text>
+              <g class="cal-bar-interactive" data-bar-date="${d.date}" style="cursor:pointer;">
+                <rect x="${(bPadL + idx * slotW).toFixed(1)}" y="${bPadT}" width="${slotW.toFixed(1)}" height="${bh - bPadT}" fill="transparent" />
+                <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="5" fill="${color}" ${isSel ? `stroke="#ffffff" stroke-width="2.2"` : ""} />
+                <text x="${(x + barW / 2).toFixed(1)}" y="${Math.max(12, y - 5).toFixed(1)}" fill="${isSel ? "#ffffff" : "var(--text)"}" font-size="${isSel ? "10.5" : "9.5"}" font-weight="800" text-anchor="middle">${barLabel}</text>
+                <text x="${(x + barW / 2).toFixed(1)}" y="${bh - 10}" fill="${isSel ? "var(--accent)" : "var(--text-muted)"}" font-size="9.5" font-weight="${isSel ? "800" : "500"}" text-anchor="middle">${d.label}</text>
+              </g>
             `;
           }).join("")}
         </svg>
+        <div id="calBarDayDetailContainer">${buildSelectedBarDetailHtml(window._selectedCalBarDate)}</div>
       `;
+
+      document.querySelectorAll("#WeeklyCalorieChartContainer .cal-bar-interactive").forEach(g => {
+        g.addEventListener("click", () => {
+          const clickedDate = g.getAttribute("data-bar-date");
+          window._selectedCalBarDate = (window._selectedCalBarDate === clickedDate) ? null : clickedDate;
+          renderProgressCharts();
+        });
+      });
+
+      const btnCloseBar = document.getElementById("btnCloseBarDetail");
+      if (btnCloseBar) {
+        btnCloseBar.addEventListener("click", () => {
+          window._selectedCalBarDate = null;
+          renderProgressCharts();
+        });
+      }
+
+      const btnJumpBar = document.getElementById("btnJumpToBarDate");
+      if (btnJumpBar) {
+        btnJumpBar.addEventListener("click", () => {
+          const targetD = btnJumpBar.getAttribute("data-jump-date");
+          if (targetD) {
+            selectedDate = targetD;
+            const dp = document.getElementById("diaryDatePicker");
+            if (dp) dp.value = targetD;
+            renderAll();
+            switchTab("tab-diary");
+          }
+        });
+      }
 
       // Resumen de déficit acumulado tomando únicamente los días con carga (> 0 kcal) o con ayuno registrado (vs. TDEE)
       const totalElapsedDays = allDaysSinceStart.length;
