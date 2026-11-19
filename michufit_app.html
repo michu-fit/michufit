@@ -1944,6 +1944,9 @@
         <button type="button" class="btn btn-sm tab-btn" data-tab="tab-calculator" style="flex:0 0 auto;">
           ⚖️ Calculadora TDEE & Metas
         </button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="flex:0 0 auto;">
+          🥗 Menú Sugerido y Hábitos
+        </button>
         <div style="display:flex;flex-direction:column;gap:5px;padding:6px 4px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
           <span style="font-size:0.74rem;font-weight:700;color:var(--text-muted);">🎭 Personalidad de Michu:</span>
           <div class="mood-switch" role="group" aria-label="Personalidad de Michu" style="display:grid;grid-template-columns:1fr 1fr;width:100%;">
@@ -2147,6 +2150,9 @@
             <button type="button" class="btn btn-sm btn-primary" id="btnHeroAddFood" onclick="window.openFoodModal && window.openFoodModal()">
               ➕ Registrar comida
             </button>
+            <button type="button" class="btn btn-sm" id="btnHeroSuggestedMenu" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="border-color:var(--accent);color:var(--accent);font-weight:800;">
+              🥗 Menú Sugerido
+            </button>
             <button type="button" class="btn btn-sm btn-purple" id="btnHeroScanAI">
               📸 Escáner IA
             </button>
@@ -2193,6 +2199,9 @@
               <input type="date" id="currentDateInput" aria-label="Fecha seleccionada" />
               <button type="button" class="btn btn-sm" id="btnNextDay" title="Día siguiente">▶</button>
               <button type="button" class="btn btn-sm" id="btnToday">Hoy</button>
+              <button type="button" class="btn btn-sm btn-primary" id="btnOpenSuggestedMenuDiary" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" title="Ver menú semanal personalizado según tus gustos y objetivo">
+                🥗 Menú Sugerido
+              </button>
               <button type="button" class="btn btn-sm btn-purple" id="btnOpenExcelPlanDiary" onclick="window.openExcelPlanModal && window.openExcelPlanModal()" title="Precargar comidas del mes mediante Excel">
                 📅 Plan Excel
               </button>
@@ -3533,6 +3542,22 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MENÚ SUGERIDO PERSONALIZADO + WIZARD DE HÁBITOS ALIMENTARIOS -->
+  <div class="custom-modal-overlay" id="modalSuggestedMenu" role="dialog" aria-modal="true">
+    <div class="modal-inner" style="max-width:740px;">
+      <div class="card-header" style="align-items:center;margin-bottom:10px;">
+        <div>
+          <div class="card-title">🥗 Menú Sugerido y Plan Nutricional Personalizado</div>
+          <small id="sugMenuSubtitle" style="color:var(--text-muted);font-size:0.76rem;">
+            Adaptado a tus calorías, macros, objetivo y gustos habituales
+          </small>
+        </div>
+        <button type="button" class="btn btn-sm" data-close-modal="modalSuggestedMenu">✕</button>
+      </div>
+      <div id="suggestedMenuRootContainer" style="display:flex;flex-direction:column;gap:12px;"></div>
     </div>
   </div>
   <script>
@@ -5247,6 +5272,13 @@
         if (lThemeTs > sThemeTs && localData.profile.theme) {
           merged.profile.theme = localData.profile.theme;
           merged.profile.themeUpdatedAt = lThemeTs;
+          hadLocalChanges = true;
+        }
+        const lMenuTs = Number(localData.profile.menuPrefsUpdatedAt) || 0;
+        const sMenuTs = Number(merged.profile.menuPrefsUpdatedAt) || 0;
+        if (lMenuTs > sMenuTs && localData.profile.menuPrefs) {
+          merged.profile.menuPrefs = JSON.parse(JSON.stringify(localData.profile.menuPrefs));
+          merged.profile.menuPrefsUpdatedAt = lMenuTs;
           hadLocalChanges = true;
         }
       }
@@ -12769,6 +12801,917 @@
           console.warn("Error leyendo syncSteps de URL:", err);
         }
       }, 1800);
+    })();
+
+    // =========================================================================
+    // MOTOR DE MENÚ SUGERIDO INTELIGENTE + WIZARD DE HÁBITOS Y GUSTOS
+    // =========================================================================
+    (function setupSuggestedMenuEngine() {
+      const BREAKFAST_OPTIONS = [
+        { id: "eggs", label: "🥚 Huevos" },
+        { id: "milk", label: "🥛 Leche / Café con leche" },
+        { id: "yogurt", label: "🥣 Yogur" },
+        { id: "bread", label: "🍞 Pan integral / Tostadas" },
+        { id: "cheese", label: "🧀 Queso (untable / cremoso)" },
+        { id: "jam", label: "🍓 Mermelada / Miel" },
+        { id: "oats", label: "🌾 Avena / Granola" },
+        { id: "avocado", label: "🥑 Palta" },
+        { id: "fruit", label: "🍌 Frutas (banana, manzana, frutillas)" },
+        { id: "nuts", label: "🥜 Pasta de maní / Frutos secos" },
+        { id: "whey", label: "💪 Proteína Whey (Scoop)" },
+        { id: "ricecakes", label: "🫓 Galletas de arroz / Chipá" }
+      ];
+
+      const PROTEIN_FREQ_ITEMS = [
+        { id: "beef", label: "🥩 Carne vacuna (bife, lomo, picaña, milanesa al horno)", defaultWk: 3 },
+        { id: "chicken", label: "🍗 Pollo / Suprema a la plancha o al horno", defaultWk: 4 },
+        { id: "fish", label: "🐟 Pescado / Atún (merluza, salmón, atún al natural)", defaultWk: 2 },
+        { id: "pork", label: "🐖 Cerdo magro (carré, solomillo)", defaultWk: 1 },
+        { id: "eggs_meal", label: "🥚 Omelette / Revuelto / Tarta proteica", defaultWk: 2 },
+        { id: "legumes", label: "🫘 Legumbres (lentejas, garbanzos, porotos)", defaultWk: 2 }
+      ];
+
+      const CARB_OPTIONS = [
+        { id: "rice", label: "🍚 Arroz (blanco / integral)" },
+        { id: "potato", label: "🥔 Papa / Batata (horno o puré)" },
+        { id: "pasta", label: "🍝 Pastas / Fideos" },
+        { id: "wraps", label: "🫓 Rapiditas / Fajitas" },
+        { id: "squash", label: "🎃 Calabaza / Choclo" },
+        { id: "quinoa", label: "🥣 Quinoa / Lentejas" }
+      ];
+
+      const VEG_OPTIONS = [
+        { id: "tomato_lettuce", label: "🍅 Tomate y Lechuga" },
+        { id: "broccoli", label: "🥦 Brócoli / Coliflor" },
+        { id: "carrot", label: "🥕 Zanahoria y Huevo" },
+        { id: "wok_veg", label: "🥒 Morrón, Zucchini y Cebolla (Salteado)" },
+        { id: "greens", label: "🥬 Espinaca / Rúcula / Acelga" }
+      ];
+
+      const SNACK_OPTIONS = [
+        { id: "snack_fruit", label: "🍎 Fruta fresca (manzana, banana, mandarina)" },
+        { id: "snack_yogurt", label: "🥣 Yogur con fruta o semillas" },
+        { id: "snack_savory", label: "🧀 Rollitos de jamón y queso / Huevo duro" },
+        { id: "snack_nuts", label: "🥜 Puñado de frutos secos (almendras/nueces)" },
+        { id: "snack_gelatin", label: "🍮 Gelatina light / Postre proteico" },
+        { id: "snack_whey", label: "🥤 Batido de Proteína Whey" }
+      ];
+
+      const DAY_NAMES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+      const DAY_SHORT = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+      let sugMenuState = {
+        mode: "menu", // "menu" | "wizard" | "shopping"
+        wizStep: 0,
+        activeDayIdx: (new Date().getDay() + 6) % 7,
+        variantOffsets: {} // key: `${dayIdx}_${slotKey}` -> number
+      };
+
+      function getDefaultMenuPrefs() {
+        const p = (appData && appData.profile) || {};
+        const allergies = Array.isArray(p.allergies) ? p.allergies : [];
+        const noGluten = allergies.includes("gluten");
+        const noLactose = allergies.includes("lactose");
+        const noNuts = allergies.includes("nuts");
+        const noSeafood = allergies.includes("seafood");
+        const noEgg = allergies.includes("egg");
+
+        return {
+          configured: false,
+          breakfastLikes: [
+            !noEgg ? "eggs" : null,
+            !noLactose ? "milk" : null,
+            !noLactose ? "yogurt" : null,
+            !noGluten ? "bread" : "ricecakes",
+            !noLactose ? "cheese" : "avocado",
+            "jam",
+            "oats",
+            "fruit"
+          ].filter(Boolean),
+          proteinFreq: {
+            beef: 3,
+            chicken: 4,
+            fish: noSeafood ? 0 : 2,
+            pork: 1,
+            eggs_meal: noEgg ? 0 : 2,
+            legumes: 2
+          },
+          carbLikes: ["rice", "potato", !noGluten ? "pasta" : "squash", "quinoa"],
+          vegLikes: ["tomato_lettuce", "carrot", "wok_veg", "greens"],
+          snackLikes: [
+            "snack_fruit",
+            !noLactose ? "snack_yogurt" : null,
+            "snack_savory",
+            !noNuts ? "snack_nuts" : "snack_gelatin"
+          ].filter(Boolean),
+          mealsPerDay: Number(p.mealsPerDay) || 4
+        };
+      }
+
+      function ensureMenuPrefs() {
+        appData.profile = appData.profile || {};
+        const def = getDefaultMenuPrefs();
+        if (!appData.profile.menuPrefs || typeof appData.profile.menuPrefs !== "object") {
+          appData.profile.menuPrefs = def;
+        } else {
+          const mp = appData.profile.menuPrefs;
+          if (!Array.isArray(mp.breakfastLikes) || mp.breakfastLikes.length === 0) mp.breakfastLikes = def.breakfastLikes;
+          if (!mp.proteinFreq || typeof mp.proteinFreq !== "object") mp.proteinFreq = def.proteinFreq;
+          if (!Array.isArray(mp.carbLikes) || mp.carbLikes.length === 0) mp.carbLikes = def.carbLikes;
+          if (!Array.isArray(mp.vegLikes) || mp.vegLikes.length === 0) mp.vegLikes = def.vegLikes;
+          if (!Array.isArray(mp.snackLikes) || mp.snackLikes.length === 0) mp.snackLikes = def.snackLikes;
+          if (!mp.mealsPerDay) mp.mealsPerDay = Number(appData.profile.mealsPerDay) || 4;
+        }
+        return appData.profile.menuPrefs;
+      }
+
+      function buildBreakfastTemplates(prefs, isSurplus, isLowCarb) {
+        const b = new Set(prefs.breakfastLikes || []);
+        const templates = [];
+
+        if (b.has("eggs") && (b.has("bread") || b.has("ricecakes"))) {
+          const breadStr = b.has("bread") ? "2 tostadas de pan integral" : "3 galletas de arroz";
+          const cheeseStr = b.has("cheese") ? " + 30g queso untable/cremoso" : (b.has("avocado") ? " + ½ palta pisada" : "");
+          const drinkStr = b.has("milk") ? "Café con leche (200ml) + " : "Infusión + ";
+          templates.push({
+            title: `${drinkStr}${breadStr}${cheeseStr} + 2 huevos revueltos`,
+            emoji: "🍳",
+            baseKcal: 430, baseP: 26, baseC: 32, baseF: 21,
+            tip: isSurplus
+              ? "Proteína de alto valor biológico + hidratos complejos para arrancar en anabolismo."
+              : "Combinación de huevos y fibra que frena la grelina (hormona del hambre) toda la mañana.",
+            shop: { "Huevos": { qty: 2, unit: "u" }, "Pan integral / Tostadas": { qty: 60, unit: "g" }, "Queso untable / cremoso": { qty: 30, unit: "g" }, "Leche descremada/proteica": { qty: 200, unit: "ml" } }
+          });
+        }
+
+        if (b.has("bread") && b.has("cheese") && b.has("jam")) {
+          const eggExtra = b.has("eggs") ? " + 2 huevos duros/revueltos" : (b.has("whey") ? " + ½ scoop Whey" : "");
+          templates.push({
+            title: `${b.has("milk") ? "Café con leche + " : ""}2 tostadas integrales con 35g queso untable y 2 cdas mermelada${eggExtra}`,
+            emoji: "🍓",
+            baseKcal: 410, baseP: 23, baseC: 44, baseF: 14,
+            tip: "Clásico desayuno argentino optimizado en proteína para sostener energía sin picos de glucosa.",
+            shop: { "Pan integral / Tostadas": { qty: 60, unit: "g" }, "Queso untable / cremoso": { qty: 35, unit: "g" }, "Mermelada sin azúcar": { qty: 30, unit: "g" }, "Leche descremada/proteica": { qty: 200, unit: "ml" }, "Huevos": { qty: b.has("eggs") ? 2 : 0, unit: "u" } }
+          });
+        }
+
+        if (b.has("yogurt") || b.has("oats") || b.has("fruit")) {
+          const oatPart = b.has("oats") ? " + 45g avena/granola" : "";
+          const fruitPart = b.has("fruit") ? " + 100g frutillas o 1 banana" : "";
+          const wheyPart = b.has("whey") ? " + 1 scoop proteína Whey" : (b.has("nuts") ? " + 15g pasta de maní/frutos secos" : "");
+          templates.push({
+            title: `Bowl de 200g yogur griego/proteico${oatPart}${fruitPart}${wheyPart}`,
+            emoji: "🥣",
+            baseKcal: 440, baseP: 31, baseC: 48, baseF: 11,
+            tip: "Rico en probióticos, fibra soluble (beta-glucanos) y leucina para proteger masa muscular.",
+            shop: { "Yogur griego / natural": { qty: 200, unit: "g" }, "Avena / Granola": { qty: b.has("oats") ? 45 : 0, unit: "g" }, "Fruta de estación (banana/frutilla)": { qty: 120, unit: "g" } }
+          });
+        }
+
+        if (b.has("oats") && (b.has("milk") || b.has("eggs"))) {
+          templates.push({
+            title: `Panqueque proteico de 50g avena + 2 huevos${b.has("fruit") ? " + 1 banana en rodajas" : ""}${b.has("jam") ? " + 1 cda mermelada" : ""}`,
+            emoji: "🥞",
+            baseKcal: 455, baseP: 25, baseC: 52, baseF: 15,
+            tip: "Ideal para días de entrenamiento: energía sostenida de liberación lenta.",
+            shop: { "Avena / Granola": { qty: 50, unit: "g" }, "Huevos": { qty: 2, unit: "u" }, "Fruta de estación (banana/frutilla)": { qty: 110, unit: "g" } }
+          });
+        }
+
+        if (b.has("avocado") || isLowCarb) {
+          templates.push({
+            title: `Omelette de 2 huevos y 1 clara con 30g queso + ½ palta y ${b.has("bread") ? "1 tostada integral" : "tomatitos cherry"}`,
+            emoji: "🥑",
+            baseKcal: 420, baseP: 28, baseC: 16, baseF: 26,
+            tip: "Grasas monoinsaturadas saludables + alto aporte proteico para máxima saciedad metabólica.",
+            shop: { "Huevos": { qty: 3, unit: "u" }, "Palta": { qty: 75, unit: "g" }, "Queso untable / cremoso": { qty: 30, unit: "g" } }
+          });
+        }
+
+        if (templates.length === 0) {
+          templates.push({
+            title: "Café con leche proteica + 2 tostadas integrales con queso y 2 huevos revueltos",
+            emoji: "🌅",
+            baseKcal: 420, baseP: 26, baseC: 34, baseF: 18,
+            tip: "Desayuno completo equilibrado en los 3 macronutrientes.",
+            shop: { "Huevos": { qty: 2, unit: "u" }, "Pan integral / Tostadas": { qty: 60, unit: "g" }, "Queso untable / cremoso": { qty: 30, unit: "g" }, "Leche descremada/proteica": { qty: 200, unit: "ml" } }
+          });
+        }
+        return templates;
+      }
+
+      function buildMainMealPool(prefs, isSurplus, isLowCarb) {
+        const pf = prefs.proteinFreq || {};
+        const carbs = prefs.carbLikes && prefs.carbLikes.length ? prefs.carbLikes : ["rice", "potato"];
+        const vegs = prefs.vegLikes && prefs.vegLikes.length ? prefs.vegLikes : ["tomato_lettuce"];
+
+        const carbMap = {
+          rice: { name: isSurplus ? "160g arroz cocido" : "100g arroz integral/blanco cocido", kcal: isSurplus ? 208 : 130, p: 3.5, c: isSurplus ? 45 : 28, f: 0.5, shopName: "Arroz (en crudo)", shopG: isSurplus ? 65 : 40 },
+          potato: { name: isSurplus ? "220g papas/batatas al horno" : "150g calabaza y papa rústica al horno", kcal: isSurplus ? 195 : 130, p: 3.5, c: isSurplus ? 44 : 29, f: 0.3, shopName: "Papa / Batata", shopG: isSurplus ? 220 : 150 },
+          pasta: { name: isSurplus ? "160g fideos/pasta al dente" : "110g pasta integral/fideos", kcal: isSurplus ? 235 : 160, p: 7, c: isSurplus ? 46 : 31, f: 1.5, shopName: "Pastas secas", shopG: isSurplus ? 75 : 50 },
+          wraps: { name: "2 rapiditas/fajitas integrales", kcal: 175, p: 5, c: 30, f: 3.5, shopName: "Rapiditas / Fajitas", shopG: 65 },
+          squash: { name: "200g puré de calabaza asada y choclo", kcal: 125, p: 3.5, c: 26, f: 0.8, shopName: "Calabaza y Choclo", shopG: 200 },
+          quinoa: { name: "120g quinoa / lentejas cocidas", kcal: 145, p: 7.5, c: 25, f: 1.8, shopName: "Quinoa / Lentejas", shopG: 55 }
+        };
+
+        const vegMap = {
+          tomato_lettuce: { name: "ensalada fresca de tomate, lechuga y cebolla", kcal: 45, p: 1.5, c: 8, f: 0.3, shopName: "Tomate, Lechuga y Cebolla", shopG: 180 },
+          broccoli: { name: "brócoli y coliflor al vapor con oliva", kcal: 65, p: 4, c: 8, f: 2.5, shopName: "Brócoli / Coliflor", shopG: 180 },
+          carrot: { name: "ensalada de zanahoria rallada y ½ huevo duro", kcal: 85, p: 5, c: 9, f: 3.5, shopName: "Zanahorias", shopG: 140 },
+          wok_veg: { name: "salteado de morrón, zucchini y cebolla", kcal: 60, p: 2, c: 10, f: 1.5, shopName: "Morrón, Zucchini y Cebolla", shopG: 180 },
+          greens: { name: "colchón de espinaca, rúcula y cherrys", kcal: 40, p: 2.5, c: 6, f: 0.5, shopName: "Espinaca y Rúcula", shopG: 150 }
+        };
+
+        const protCatalog = {
+          beef: [
+            { name: "180g bife de lomo/cuadril magro a la plancha", emoji: "🥩", kcal: 315, p: 46, c: 0, f: 13, shopName: "Carne vacuna magra (lomo/cuadril/bife)", shopG: 180 },
+            { name: "170g milanesa de carne al horno sin fritura", emoji: "🥩", kcal: 340, p: 38, c: 16, f: 13, shopName: "Carne vacuna magra (lomo/cuadril/bife)", shopG: 170 },
+            { name: "160g medallones caseros de carne magra", emoji: "🍔", kcal: 295, p: 41, c: 0, f: 14, shopName: "Carne vacuna magra (lomo/cuadril/bife)", shopG: 160 }
+          ],
+          chicken: [
+            { name: "200g pechuga de pollo grillada al limón", emoji: "🍗", kcal: 310, p: 56, c: 0, f: 7, shopName: "Pechuga de Pollo", shopG: 200 },
+            { name: "190g suprema de pollo al horno con hierbas", emoji: "🍗", kcal: 325, p: 50, c: 8, f: 9, shopName: "Pechuga de Pollo", shopG: 190 },
+            { name: "180g tiras de pollo salteadas al wok", emoji: "🍲", kcal: 290, p: 49, c: 2, f: 7, shopName: "Pechuga de Pollo", shopG: 180 }
+          ],
+          fish: [
+            { name: "1 lata grande de lomitos de atún al natural (150g escurrido)", emoji: "🐟", kcal: 185, p: 40, c: 0, f: 2, shopName: "Pescado / Atún al natural", shopG: 150 },
+            { name: "200g filet de merluza/pescado al horno con finas hierbas", emoji: "🐟", kcal: 240, p: 42, c: 0, f: 7, shopName: "Pescado / Atún al natural", shopG: 200 }
+          ],
+          pork: [
+            { name: "180g carré / solomillo de cerdo magro al horno", emoji: "🍖", kcal: 295, p: 44, c: 0, f: 12, shopName: "Cerdo magro (carré/solomillo)", shopG: 180 }
+          ],
+          eggs_meal: [
+            { name: "Omelette relleno de 3 huevos, 1 clara y 40g queso port salut", emoji: "🍳", kcal: 335, p: 31, c: 2, f: 22, shopName: "Huevos", shopG: 3, isEggUnit: true }
+          ],
+          legumes: [
+            { name: "Guiso/Ensalada tibia de 180g lentejas/garbanzos cocidos + 2 huevos", emoji: "🫘", kcal: 365, p: 29, c: 34, f: 11, shopName: "Legumbres (lentejas/garbanzos)", shopG: 90 }
+          ]
+        };
+
+        // Armar lista de 14 comidas principales (7 almuerzos + 7 cenas) respetando frecuencias semanales
+        const slots14 = [];
+        for (const item of PROTEIN_FREQ_ITEMS) {
+          const count = Math.max(0, Number(pf[item.id] ?? item.defaultWk));
+          for (let i = 0; i < count; i++) {
+            slots14.push(item.id);
+          }
+        }
+        if (slots14.length === 0) {
+          slots14.push("chicken", "beef", "chicken", "fish", "beef", "eggs_meal", "legumes");
+        }
+
+        const meals14 = [];
+        for (let i = 0; i < 14; i++) {
+          const protKey = slots14[i % slots14.length];
+          const pVariants = protCatalog[protKey] || protCatalog.chicken;
+          const pChoice = pVariants[i % pVariants.length];
+          const cKey = carbs[i % carbs.length];
+          const vKey = vegs[(i + 1) % vegs.length];
+          const cChoice = carbMap[cKey] || carbMap.rice;
+          const vChoice = vegMap[vKey] || vegMap.tomato_lettuce;
+
+          const isDinner = i % 2 === 1;
+          const includeCarb = !isLowCarb || !isDinner || isSurplus;
+
+          const title = includeCarb
+            ? `${pChoice.name} + ${cChoice.name} + ${vChoice.name}`
+            : `${pChoice.name} + doble porción de ${vChoice.name}`;
+
+          const baseKcal = pChoice.kcal + (includeCarb ? cChoice.kcal : 40) + vChoice.kcal;
+          const baseP = pChoice.p + (includeCarb ? cChoice.p : 2) + vChoice.p;
+          const baseC = pChoice.c + (includeCarb ? cChoice.c : 8) + vChoice.c;
+          const baseF = pChoice.f + (includeCarb ? cChoice.f : 2) + vChoice.f;
+
+          const shop = {};
+          shop[pChoice.shopName] = { qty: pChoice.shopG, unit: pChoice.isEggUnit ? "u" : "g" };
+          if (includeCarb) {
+            shop[cChoice.shopName] = { qty: cChoice.shopG, unit: "g" };
+          }
+          shop[vChoice.shopName] = { qty: vChoice.shopG, unit: "g" };
+
+          meals14.push({
+            title,
+            emoji: pChoice.emoji,
+            baseKcal,
+            baseP,
+            baseC,
+            baseF,
+            tip: isDinner
+              ? (isSurplus ? "Cena proteica + carbohidratos de reposición de glucógeno nocturno." : "Cena alta en proteína magra y fibra vegetal para maximizar oxidación nocturna.")
+              : "Almuerzo completo: proteína estructural + micronutrientes + energía limpia para la tarde.",
+            shop
+          });
+        }
+        return meals14;
+      }
+
+      function buildSnackPool(prefs) {
+        const s = new Set(prefs.snackLikes || []);
+        const pool = [];
+        if (s.has("snack_fruit")) {
+          pool.push({
+            title: "1 fruta mediana (manzana / banana / 2 mandarinas) + 10 almendras",
+            emoji: "🍎",
+            baseKcal: 165, baseP: 3.5, baseC: 24, baseF: 6,
+            tip: "Fibra pectina + micronutrientes para cortar la ansiedad entre comidas.",
+            shop: { "Fruta de estación (banana/manzana/mandarina)": { qty: 150, unit: "g" }, "Frutos secos / Pasta de maní": { qty: 12, unit: "g" } }
+          });
+        }
+        if (s.has("snack_yogurt")) {
+          pool.push({
+            title: "1 pote de yogur descremado/griego (160g) + 50g frutillas o arándanos",
+            emoji: "🥣",
+            baseKcal: 145, baseP: 14, baseC: 15, baseF: 3,
+            tip: "Colación proteica de baja densidad calórica.",
+            shop: { "Yogur griego / natural": { qty: 160, unit: "g" }, "Fruta de estación (banana/frutilla)": { qty: 50, unit: "g" } }
+          });
+        }
+        if (s.has("snack_savory")) {
+          pool.push({
+            title: "2 rollitos de jamón cocido magro y queso + 1 huevo duro",
+            emoji: "🧀",
+            baseKcal: 190, baseP: 21, baseC: 2, baseF: 11,
+            tip: "Colación salada keto-friendly con 21g de proteína neta.",
+            shop: { "Jamón cocido magro y Queso": { qty: 60, unit: "g" }, "Huevos": { qty: 1, unit: "u" } }
+          });
+        }
+        if (s.has("snack_nuts")) {
+          pool.push({
+            title: "Puñado mediano de mix de frutos secos (25g nueces y almendras)",
+            emoji: "🥜",
+            baseKcal: 155, baseP: 5, baseC: 5, baseF: 13.5,
+            tip: "Omega-3 y grasas saludables que ralentizan el vaciamiento gástrico.",
+            shop: { "Frutos secos / Pasta de maní": { qty: 25, unit: "g" } }
+          });
+        }
+        if (s.has("snack_gelatin")) {
+          pool.push({
+            title: "1 bol de gelatina light con trocitos de fruta + 100g yogur proteico",
+            emoji: "🍮",
+            baseKcal: 110, baseP: 11, baseC: 12, baseF: 1.5,
+            tip: "Máximo volumen con mínimas calorías para calmar ganas de algo dulce.",
+            shop: { "Gelatina light": { qty: 1, unit: "porción" }, "Yogur griego / natural": { qty: 100, unit: "g" } }
+          });
+        }
+        if (s.has("snack_whey")) {
+          pool.push({
+            title: "Batido de 1 scoop de Whey Protein con agua o leche descremada",
+            emoji: "🥤",
+            baseKcal: 140, baseP: 25, baseC: 5, baseF: 2,
+            tip: "Aporte directo de aminoácidos esenciales post-entreno.",
+            shop: { "Proteína Whey": { qty: 30, unit: "g" } }
+          });
+        }
+        if (pool.length === 0) {
+          pool.push({
+            title: "1 fruta de estación + 1 yogur natural o 1 huevo duro",
+            emoji: "🍏",
+            baseKcal: 150, baseP: 10, baseC: 19, baseF: 3.5,
+            tip: "Colación equilibrada para llegar sin hambre a la cena.",
+            shop: { "Fruta de estación (banana/manzana/mandarina)": { qty: 140, unit: "g" } }
+          });
+        }
+        return pool;
+      }
+
+      function scaleDishToTarget(dish, targetSlotKcal) {
+        const ratio = Math.max(0.55, Math.min(1.85, targetSlotKcal / Math.max(100, dish.baseKcal)));
+        const kcal = Math.round(dish.baseKcal * ratio);
+        const p = Math.round(dish.baseP * ratio * 10) / 10;
+        const c = Math.round(dish.baseC * ratio * 10) / 10;
+        const f = Math.round(dish.baseF * ratio * 10) / 10;
+        let scaledTitle = dish.title;
+        if (ratio >= 1.25) {
+          scaledTitle += " (Porción Grande / Superávit)";
+        } else if (ratio <= 0.8) {
+          scaledTitle += " (Porción Liviana / Déficit)";
+        }
+        return {
+          ...dish,
+          title: scaledTitle,
+          kcal,
+          p,
+          c,
+          f,
+          scaleRatio: ratio
+        };
+      }
+
+      function generateWeeklyMenuPlan() {
+        const prefs = ensureMenuPrefs();
+        const targets = computeNutritionTargets();
+        const isSurplus = Boolean(targets.isSurplus);
+        const isLowCarb = (appData.profile && appData.profile.macroPreset) === "low_carb";
+        const mealsCount = Number(prefs.mealsPerDay) || 4;
+
+        const bfPool = buildBreakfastTemplates(prefs, isSurplus, isLowCarb);
+        const mainPool = buildMainMealPool(prefs, isSurplus, isLowCarb);
+        const snackPool = buildSnackPool(prefs);
+
+        // Distribución porcentual óptima según cantidad de comidas del usuario
+        let slotShares = [];
+        if (mealsCount === 3) {
+          slotShares = [
+            { key: "breakfast", title: "🌅 Desayuno / 1° Comida", share: 0.28, pool: bfPool },
+            { key: "lunch", title: "☀️ Almuerzo Principal", share: 0.40, pool: mainPool, isMain: true, offsetBase: 0 },
+            { key: "dinner", title: "🌙 Cena de Recuperación", share: 0.32, pool: mainPool, isMain: true, offsetBase: 1 }
+          ];
+        } else if (mealsCount === 5) {
+          slotShares = [
+            { key: "breakfast", title: "🌅 Desayuno", share: 0.22, pool: bfPool },
+            { key: "lunch", title: "☀️ Almuerzo", share: 0.32, pool: mainPool, isMain: true, offsetBase: 0 },
+            { key: "merienda", title: "🧉 Merienda", share: 0.16, pool: bfPool },
+            { key: "dinner", title: "🌙 Cena", share: 0.22, pool: mainPool, isMain: true, offsetBase: 1 },
+            { key: "snack", title: "🍿 Colación / Snack", share: 0.08, pool: snackPool }
+          ];
+        } else {
+          slotShares = [
+            { key: "breakfast", title: "🌅 Desayuno", share: 0.24, pool: bfPool },
+            { key: "lunch", title: "☀️ Almuerzo", share: 0.35, pool: mainPool, isMain: true, offsetBase: 0 },
+            { key: "merienda", title: "🧉 Merienda", share: 0.16, pool: bfPool.concat(snackPool) },
+            { key: "dinner", title: "🌙 Cena", share: 0.25, pool: mainPool, isMain: true, offsetBase: 1 }
+          ];
+        }
+
+        const weekDays = [];
+        const shoppingTotals = {};
+
+        for (let dIdx = 0; dIdx < 7; dIdx++) {
+          const dayMeals = [];
+          for (let sIdx = 0; sIdx < slotShares.length; sIdx++) {
+            const slot = slotShares[sIdx];
+            const varOffset = Number(sugMenuState.variantOffsets[`${dIdx}_${slot.key}`]) || 0;
+            const poolIdx = slot.isMain
+              ? (dIdx * 2 + (slot.offsetBase || 0) + varOffset) % slot.pool.length
+              : (dIdx + sIdx + varOffset) % slot.pool.length;
+            const rawDish = slot.pool[poolIdx];
+            const slotTargetKcal = Math.round(targets.targetKcal * slot.share);
+            const scaled = scaleDishToTarget(rawDish, slotTargetKcal);
+            dayMeals.push({
+              slotKey: slot.key,
+              slotTitle: slot.title,
+              ...scaled
+            });
+
+            if (scaled.shop) {
+              for (const [ingName, info] of Object.entries(scaled.shop)) {
+                if (!info || !info.qty) continue;
+                if (!shoppingTotals[ingName]) {
+                  shoppingTotals[ingName] = { qty: 0, unit: info.unit || "g" };
+                }
+                const addQty = info.unit === "u" || info.unit === "porción"
+                  ? Math.max(1, Math.round(info.qty * scaled.scaleRatio))
+                  : Math.round((info.qty * scaled.scaleRatio) / 5) * 5;
+                shoppingTotals[ingName].qty += addQty;
+              }
+            }
+          }
+          const totKcal = dayMeals.reduce((a, m) => a + m.kcal, 0);
+          const totP = Math.round(dayMeals.reduce((a, m) => a + m.p, 0));
+          const totC = Math.round(dayMeals.reduce((a, m) => a + m.c, 0));
+          const totF = Math.round(dayMeals.reduce((a, m) => a + m.f, 0));
+          weekDays.push({
+            dayIdx: dIdx,
+            dayName: DAY_NAMES[dIdx],
+            dayShort: DAY_SHORT[dIdx],
+            meals: dayMeals,
+            totals: { kcal: totKcal, p: totP, c: totC, f: totF }
+          });
+        }
+
+        return { weekDays, shoppingTotals, targets, prefs };
+      }
+
+      function renderSuggestedMenuModal() {
+        const root = document.getElementById("suggestedMenuRootContainer");
+        if (!root) return;
+        const prefs = ensureMenuPrefs();
+        const plan = generateWeeklyMenuPlan();
+        const t = plan.targets;
+        const goalLabel = t.isSurplus
+          ? `💪 Superávit Muscular (${t.targetKcal} kcal • ${t.proteinG}g P)`
+          : (t.isMaintain ? `⚖️ Mantenimiento (${t.targetKcal} kcal • ${t.proteinG}g P)` : `📉 Déficit Calórico (${t.targetKcal} kcal • ${t.proteinG}g P)`);
+
+        const subEl = document.getElementById("sugMenuSubtitle");
+        if (subEl) {
+          subEl.textContent = `${goalLabel} • ${prefs.mealsPerDay} comidas/día adaptadas a tus hábitos`;
+        }
+
+        // MODO 1: WIZARD INTERACTIVO DE HÁBITOS Y GUSTOS
+        if (sugMenuState.mode === "wizard") {
+          const step = sugMenuState.wizStep;
+          let stepContent = "";
+
+          if (step === 0) {
+            stepContent = `
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px;padding:11px 13px;font-size:0.84rem;">
+                  <strong>🐱 Paso 1 de 4 — 🌅 ¿Qué solés o te gusta incluir en tus Desayunos y Meriendas?</strong>
+                  <div style="font-size:0.76rem;color:var(--text-muted);margin-top:2px;">Elegí todos los ingredientes que te gusten; Michu armará combinaciones exactas para tus calorías.</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;">
+                  ${BREAKFAST_OPTIONS.map(opt => {
+                    const sel = (prefs.breakfastLikes || []).includes(opt.id);
+                    return `<button type="button" class="bp-allergy-pill ${sel ? "selected" : ""}" data-wiz-bf="${opt.id}">${opt.label}</button>`;
+                  }).join("")}
+                </div>
+              </div>
+            `;
+          } else if (step === 1) {
+            stepContent = `
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px;padding:11px 13px;font-size:0.84rem;">
+                  <strong>🐱 Paso 2 de 4 — 🥩 ¿Cuántas veces por semana querés cada proteína en Almuerzos y Cenas?</strong>
+                  <div style="font-size:0.76rem;color:var(--text-muted);margin-top:2px;">Indicá tu frecuencia semanal ideal (0 si no comés ese alimento).</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  ${PROTEIN_FREQ_ITEMS.map(item => {
+                    const val = Number(prefs.proteinFreq[item.id] ?? item.defaultWk);
+                    return `
+                      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;background:var(--bg-card);border:1px solid var(--border);flex-wrap:wrap;">
+                        <span style="font-size:0.83rem;font-weight:700;">${item.label}</span>
+                        <div style="display:inline-flex;gap:5px;">
+                          ${[0, 1, 2, 3, 4, 5].map(n => `
+                            <button type="button" class="btn btn-sm ${val === n ? "btn-primary" : ""}" data-wiz-prot="${item.id}" data-wiz-freq="${n}" style="padding:4px 9px;font-size:0.75rem;">
+                              ${n === 0 ? "No" : (n === 5 ? "5+" : n + "x")}
+                            </button>
+                          `).join("")}
+                        </div>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            `;
+          } else if (step === 2) {
+            stepContent = `
+              <div style="display:flex;flex-direction:column;gap:11px;">
+                <div style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px;padding:11px 13px;font-size:0.84rem;">
+                  <strong>🐱 Paso 3 de 4 — 🍚 Guarniciones, Carbohidratos y Verduras que comés</strong>
+                  <div style="font-size:0.76rem;color:var(--text-muted);margin-top:2px;">Marcá los acompañamientos que te gustan para tus platos principales.</div>
+                </div>
+                <div>
+                  <strong style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:6px;">🍚 Carbohidratos y Bases de energía:</strong>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    ${CARB_OPTIONS.map(opt => {
+                      const sel = (prefs.carbLikes || []).includes(opt.id);
+                      return `<button type="button" class="bp-allergy-pill ${sel ? "selected" : ""}" data-wiz-carb="${opt.id}">${opt.label}</button>`;
+                    }).join("")}
+                  </div>
+                </div>
+                <div>
+                  <strong style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:6px;">🥗 Verduras y Ensaladas habituales:</strong>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    ${VEG_OPTIONS.map(opt => {
+                      const sel = (prefs.vegLikes || []).includes(opt.id);
+                      return `<button type="button" class="bp-allergy-pill ${sel ? "selected" : ""}" data-wiz-veg="${opt.id}">${opt.label}</button>`;
+                    }).join("")}
+                  </div>
+                </div>
+              </div>
+            `;
+          } else {
+            stepContent = `
+              <div style="display:flex;flex-direction:column;gap:11px;">
+                <div style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px;padding:11px 13px;font-size:0.84rem;">
+                  <strong>🐱 Paso 4 de 4 — 🍎 Colaciones y Cantidad de Comidas al Día</strong>
+                  <div style="font-size:0.76rem;color:var(--text-muted);margin-top:2px;">Elegí qué te gusta tener a mano entre comidas y en cuántos bloques querés dividir tu día.</div>
+                </div>
+                <div>
+                  <strong style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:6px;">🍎 Colaciones / Snacks favoritos:</strong>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    ${SNACK_OPTIONS.map(opt => {
+                      const sel = (prefs.snackLikes || []).includes(opt.id);
+                      return `<button type="button" class="bp-allergy-pill ${sel ? "selected" : ""}" data-wiz-snack="${opt.id}">${opt.label}</button>`;
+                    }).join("")}
+                  </div>
+                </div>
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:11px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <strong style="font-size:0.83rem;">🍽️ Comidas por día:</strong>
+                  <div style="display:inline-flex;gap:6px;">
+                    ${[3, 4, 5].map(cnt => `
+                      <button type="button" class="btn btn-sm ${Number(prefs.mealsPerDay) === cnt ? "btn-primary" : ""}" data-wiz-mealscnt="${cnt}">
+                        ${cnt} comidas/día
+                      </button>
+                    `).join("")}
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+
+          root.innerHTML = `
+            ${stepContent}
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:10px;border-top:1px solid var(--border);">
+              <button type="button" class="btn btn-sm" id="btnSugWizBack">
+                ${step === 0 ? "⬅️ Volver al Menú" : "◀ Anterior"}
+              </button>
+              <span style="font-size:0.76rem;color:var(--text-muted);font-weight:700;">Paso ${step + 1} de 4</span>
+              <button type="button" class="btn btn-sm btn-primary" id="btnSugWizNext">
+                ${step < 3 ? "Siguiente ▶" : "✨ Generar mi Menú Personalizado"}
+              </button>
+            </div>
+          `;
+
+          root.querySelectorAll("[data-wiz-bf]").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const id = btn.getAttribute("data-wiz-bf");
+              const arr = prefs.breakfastLikes || [];
+              prefs.breakfastLikes = arr.includes(id) ? (arr.length > 1 ? arr.filter(x => x !== id) : arr) : [...arr, id];
+              renderSuggestedMenuModal();
+            });
+          });
+
+          root.querySelectorAll("[data-wiz-prot]").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const id = btn.getAttribute("data-wiz-prot");
+              const freq = Number(btn.getAttribute("data-wiz-freq"));
+              prefs.proteinFreq[id] = freq;
+              renderSuggestedMenuModal();
+            });
+          });
+
+          root.querySelectorAll("[data-wiz-carb]").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const id = btn.getAttribute("data-wiz-carb");
+              const arr = prefs.carbLikes || [];
+              prefs.carbLikes = arr.includes(id) ? (arr.length > 1 ? arr.filter(x => x !== id) : arr) : [...arr, id];
+              renderSuggestedMenuModal();
+            });
+          });
+
+          root.querySelectorAll("[data-wiz-veg]").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const id = btn.getAttribute("data-wiz-veg");
+              const arr = prefs.vegLikes || [];
+              prefs.vegLikes = arr.includes(id) ? (arr.length > 1 ? arr.filter(x => x !== id) : arr) : [...arr, id];
+              renderSuggestedMenuModal();
+            });
+          });
+
+          root.querySelectorAll("[data-wiz-snack]").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const id = btn.getAttribute("data-wiz-snack");
+              const arr = prefs.snackLikes || [];
+              prefs.snackLikes = arr.includes(id) ? (arr.length > 1 ? arr.filter(x => x !== id) : arr) : [...arr, id];
+              renderSuggestedMenuModal();
+            });
+          });
+
+          root.querySelectorAll("[data-wiz-mealscnt]").forEach(btn => {
+            btn.addEventListener("click", () => {
+              prefs.mealsPerDay = Number(btn.getAttribute("data-wiz-mealscnt")) || 4;
+              appData.profile.mealsPerDay = prefs.mealsPerDay;
+              renderSuggestedMenuModal();
+            });
+          });
+
+          document.getElementById("btnSugWizBack")?.addEventListener("click", () => {
+            if (sugMenuState.wizStep > 0) {
+              sugMenuState.wizStep--;
+            } else {
+              sugMenuState.mode = "menu";
+            }
+            renderSuggestedMenuModal();
+          });
+
+          document.getElementById("btnSugWizNext")?.addEventListener("click", () => {
+            if (sugMenuState.wizStep < 3) {
+              sugMenuState.wizStep++;
+              renderSuggestedMenuModal();
+            } else {
+              prefs.configured = true;
+              appData.profile.menuPrefsUpdatedAt = Date.now();
+              saveToServer();
+              sugMenuState.mode = "menu";
+              renderSuggestedMenuModal();
+            }
+          });
+          return;
+        }
+
+        // MODO 2: LISTA DE COMPRAS SEMANAL
+        if (sugMenuState.mode === "shopping") {
+          const shopEntries = Object.entries(plan.shoppingTotals);
+          root.innerHTML = `
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                <div>
+                  <strong style="font-size:0.92rem;">🛒 Lista de Compras Semanal (7 días)</strong>
+                  <div style="font-size:0.76rem;color:var(--text-muted);">Cantidades totales calculadas según las porciones exactas de tu meta (${t.targetKcal} kcal/día)</div>
+                </div>
+                <button type="button" class="btn btn-sm" id="btnBackToSugMenu">⬅️ Volver al Menú</button>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">
+                ${shopEntries.map(([name, inf]) => {
+                  const qtyStr = inf.unit === "g" && inf.qty >= 1000
+                    ? `${(inf.qty / 1000).toFixed(2)} kg`
+                    : (inf.unit === "ml" && inf.qty >= 1000 ? `${(inf.qty / 1000).toFixed(1)} L` : `${inf.qty} ${inf.unit}`);
+                  return `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:9px;background:var(--bg);border:1px solid var(--border);font-size:0.81rem;">
+                      <span>${name}</span>
+                      <strong style="color:var(--accent);">${qtyStr}</strong>
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+            </div>
+          `;
+          document.getElementById("btnBackToSugMenu")?.addEventListener("click", () => {
+            sugMenuState.mode = "menu";
+            renderSuggestedMenuModal();
+          });
+          return;
+        }
+
+        // MODO 3: VISTA PRINCIPAL DEL MENÚ SEMANAL PERSONALIZADO
+        const activeDay = plan.weekDays[sugMenuState.activeDayIdx] || plan.weekDays[0];
+
+        root.innerHTML = `
+          <!-- Barra superior: Resumen de Objetivo + Botón para Refinar Hábitos (Wizard) + Lista de Compras -->
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
+            <div style="font-size:0.8rem;">
+              <strong>${goalLabel}</strong>
+              <div style="color:var(--text-muted);font-size:0.74rem;">
+                Meta diaria: ${t.proteinG}g Proteína • ${t.carbsG}g Carbos • ${t.fatG}g Grasas
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-sm btn-purple" id="btnOpenHabitsWizard">
+                🧙‍♂️ Personalizar mis Gustos y Hábitos
+              </button>
+              <button type="button" class="btn btn-sm" id="btnOpenShoppingList">
+                🛒 Lista de Compras
+              </button>
+            </div>
+          </div>
+
+          <!-- Selector de día de la semana (Lun a Dom) -->
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;">
+            ${plan.weekDays.map((wd, idx) => `
+              <button type="button" class="btn btn-sm ${idx === sugMenuState.activeDayIdx ? "btn-primary" : ""}" data-sug-day="${idx}" style="padding:7px 2px;justify-content:center;flex-direction:column;gap:1px;">
+                <span style="font-size:0.77rem;font-weight:800;">${wd.dayShort}</span>
+                <span style="font-size:0.65rem;opacity:0.85;">${wd.totals.kcal}</span>
+              </button>
+            `).join("")}
+          </div>
+
+          <!-- Platos del día seleccionado -->
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;padding:0 2px;">
+              <strong style="font-size:0.9rem;">📅 Menú de referencia — ${activeDay.dayName}</strong>
+              <span style="font-size:0.77rem;color:var(--text-muted);">
+                Total día: <strong style="color:var(--accent);">${activeDay.totals.kcal} kcal</strong> (${activeDay.totals.p}g P • ${activeDay.totals.c}g C • ${activeDay.totals.f}g G)
+              </span>
+            </div>
+
+            ${activeDay.meals.map(m => `
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <strong style="font-size:0.84rem;color:var(--accent);">${m.slotTitle}</strong>
+                  <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;">
+                    <span style="padding:2px 7px;border-radius:999px;background:var(--bg);border:1px solid var(--border);font-weight:700;">
+                      ${m.kcal} kcal • ${m.p}g P • ${m.c}g C • ${m.f}g G
+                    </span>
+                    <button type="button" class="btn btn-sm" data-swap-slot="${m.slotKey}" title="Cambiar por otra opción acorde a tus gustos" style="padding:3px 8px;font-size:0.72rem;">
+                      🔄 Otra opción
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary" data-add-sug-meal="${m.slotKey}" title="Agregar este plato al Diario de hoy" style="padding:3px 8px;font-size:0.72rem;">
+                      ➕ Cargar hoy
+                    </button>
+                  </div>
+                </div>
+                <div style="font-size:0.86rem;font-weight:700;color:var(--text);line-height:1.35;">
+                  ${m.emoji} ${m.title}
+                </div>
+                <div style="font-size:0.74rem;color:var(--text-muted);">
+                  💡 ${m.tip}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+
+          <!-- Botonera inferior para aplicar el día o toda la semana al Diario -->
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--border);">
+            <button type="button" class="btn btn-sm" id="btnApplyDayAsPlanned">
+              📋 Precargar este ${activeDay.dayName} en hoy (${selectedDate || todayStr()})
+            </button>
+            <button type="button" class="btn btn-sm btn-primary" id="btnApplyWeekAsPlanned">
+              📅 Precargar los 7 días en mi Diario (como Planificado)
+            </button>
+          </div>
+        `;
+
+        document.getElementById("btnOpenHabitsWizard")?.addEventListener("click", () => {
+          sugMenuState.mode = "wizard";
+          sugMenuState.wizStep = 0;
+          renderSuggestedMenuModal();
+        });
+
+        document.getElementById("btnOpenShoppingList")?.addEventListener("click", () => {
+          sugMenuState.mode = "shopping";
+          renderSuggestedMenuModal();
+        });
+
+        root.querySelectorAll("[data-sug-day]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            sugMenuState.activeDayIdx = Number(btn.getAttribute("data-sug-day")) || 0;
+            renderSuggestedMenuModal();
+          });
+        });
+
+        root.querySelectorAll("[data-swap-slot]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const sk = btn.getAttribute("data-swap-slot");
+            const k = `${sugMenuState.activeDayIdx}_${sk}`;
+            sugMenuState.variantOffsets[k] = (Number(sugMenuState.variantOffsets[k]) || 0) + 1;
+            renderSuggestedMenuModal();
+          });
+        });
+
+        root.querySelectorAll("[data-add-sug-meal]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const sk = btn.getAttribute("data-add-sug-meal");
+            const mealObj = activeDay.meals.find(x => x.slotKey === sk);
+            if (!mealObj) return;
+            addFoodItemToCurrentDay({
+              mealType: mealObj.slotKey,
+              name: mealObj.title,
+              kcal: mealObj.kcal,
+              p: mealObj.p,
+              c: mealObj.c,
+              f: mealObj.f,
+              emoji: mealObj.emoji || "🍽️"
+            });
+            btn.textContent = "✅ Cargado";
+            setTimeout(() => { btn.textContent = "➕ Cargar hoy"; }, 1400);
+          });
+        });
+
+        document.getElementById("btnApplyDayAsPlanned")?.addEventListener("click", () => {
+          const targetKey = selectedDate || todayStr();
+          const dayRec = ensureDayRecord(targetKey);
+          const eaten = (dayRec.meals || []).filter(m => isMealConsumed(m));
+          const plannedNew = activeDay.meals.map((m, i) => ({
+            id: `plan-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+            mealType: m.slotKey,
+            name: m.title,
+            kcal: m.kcal,
+            p: m.p,
+            c: m.c,
+            f: m.f,
+            emoji: m.emoji || "🍽️",
+            planned: true,
+            checked: false,
+            updatedAt: Date.now()
+          }));
+          dayRec.meals = [...eaten, ...plannedNew];
+          saveToServer();
+          renderAll();
+          closeModal("modalSuggestedMenu");
+          setRaccoonSpeech(`"🥗 ¡Listo! Te dejé precargado el menú del ${activeDay.dayName} en tu Diario (${targetKey}) como 📋 Planificado. Tocá el tilde a medida que comas 🐱✨."`);
+        });
+
+        document.getElementById("btnApplyWeekAsPlanned")?.addEventListener("click", () => {
+          const baseDateStr = selectedDate || todayStr();
+          const cursor = new Date(baseDateStr + "T12:00:00");
+          for (let offset = 0; offset < 7; offset++) {
+            const dStr = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
+            const wdIdx = (cursor.getDay() + 6) % 7;
+            const wdPlan = plan.weekDays[wdIdx] || plan.weekDays[0];
+            const dayRec = ensureDayRecord(dStr);
+            const eaten = (dayRec.meals || []).filter(m => isMealConsumed(m));
+            const plannedNew = wdPlan.meals.map((m, i) => ({
+              id: `plan-${Date.now()}-${offset}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+              mealType: m.slotKey,
+              name: m.title,
+              kcal: m.kcal,
+              p: m.p,
+              c: m.c,
+              f: m.f,
+              emoji: m.emoji || "🍽️",
+              planned: true,
+              checked: false,
+              updatedAt: Date.now()
+            }));
+            dayRec.meals = [...eaten, ...plannedNew];
+            cursor.setDate(cursor.getDate() + 1);
+          }
+          saveToServer();
+          renderAll();
+          closeModal("modalSuggestedMenu");
+          setRaccoonSpeech(`"📅 ¡Menú personalizado de 7 días precargado en tu Diario! Cada día tiene tus platos ajustados a tus ${t.targetKcal} kcal y gustos 🐱💪."`);
+        });
+      }
+
+      window.openSuggestedMenuModal = function (startInWizard = false) {
+        const prefs = ensureMenuPrefs();
+        sugMenuState.mode = (startInWizard || !prefs.configured) ? "wizard" : "menu";
+        sugMenuState.wizStep = 0;
+        sugMenuState.activeDayIdx = (new Date().getDay() + 6) % 7;
+        renderSuggestedMenuModal();
+        openModal("modalSuggestedMenu");
+      };
     })();
 
     // Inicializar aplicación
