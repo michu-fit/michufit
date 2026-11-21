@@ -4167,7 +4167,8 @@
         coachNote: u.coachNote || "",
         coachNoteUpdatedAt: u.coachNoteUpdatedAt || "",
         coachName: nutri ? nutri.name : (u.coachName || ""),
-        createdAt: u.createdAt || ""
+        createdAt: u.createdAt || "",
+        reto21Enabled: Boolean(u.reto21Enabled || u.role === "superadmin" || u.id === "u-owner")
       };
     }
 
@@ -4614,6 +4615,19 @@
               return sbJsonResponse({ ok: false, error: "La nueva contraseña debe tener al menos 4 caracteres." }, 400);
             }
             target.passwordHash = sbHashPassword(np);
+          } else if (action === "toggle_reto21") {
+            target.reto21Enabled = target.id === "u-owner" ? true : Boolean(body.enabled);
+          } else if (action === "toggle_reto21_all") {
+            const enableAll = Boolean(body.enabled);
+            for (const usr of users) {
+              if (usr.id === "u-owner" || usr.role === "superadmin") {
+                usr.reto21Enabled = true;
+              } else {
+                usr.reto21Enabled = enableAll;
+                await sbUpsertUser(usr);
+              }
+            }
+            return sbJsonResponse({ ok: true, user: sbSummarizeUserForPanel(users, target) });
           }
 
           await sbUpsertUser(target);
@@ -10175,11 +10189,11 @@
         updateMobileInstallButtonVisibility();
       }
 
-      const isExclusiveAdminAngel = Boolean(
-        currentUserInfo && (currentUserInfo.role === "superadmin" || currentUserInfo.id === "u-owner")
+      const canAccessReto21 = Boolean(
+        currentUserInfo && (currentUserInfo.role === "superadmin" || currentUserInfo.id === "u-owner" || currentUserInfo.reto21Enabled)
       );
       document.querySelectorAll(".admin-reto21-only").forEach(el => {
-        el.style.display = isExclusiveAdminAngel ? "inline-flex" : "none";
+        el.style.display = canAccessReto21 ? "inline-flex" : "none";
       });
 
       if (currentUserInfo) {
@@ -10521,6 +10535,10 @@
                   ${nutriOptionsHtml}
                 </select>
 
+                <button type="button" class="btn btn-sm ${u.reto21Enabled ? "btn-primary" : ""}" data-toggle-reto21-uid="${u.id}" data-reto21-val="${u.reto21Enabled ? "1" : "0"}" title="Habilitar o deshabilitar el botón Reto 21 Días para este usuario" style="padding:4px 9px;font-size:0.75rem;">
+                  🔥 Reto 21 Días: ${u.reto21Enabled ? "🟢 Habilitado" : "⚪ Oculto"}
+                </button>
+
                 <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
                   ${u.status !== "approved" ? `
                     <button type="button" class="btn btn-sm btn-primary" data-quick-approve="${u.id}">✅ Aprobar</button>
@@ -10564,6 +10582,14 @@
       listContainer.querySelectorAll("[data-nutri-select-uid]").forEach(sel => {
         sel.addEventListener("change", () => {
           adminUpdateUser(sel.getAttribute("data-nutri-select-uid"), "assign_nutri", { nutritionistId: sel.value || null });
+        });
+      });
+
+      listContainer.querySelectorAll("[data-toggle-reto21-uid]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const uid = btn.getAttribute("data-toggle-reto21-uid");
+          const curVal = btn.getAttribute("data-reto21-val") === "1";
+          adminUpdateUser(uid, "toggle_reto21", { enabled: !curVal });
         });
       });
 
@@ -15555,10 +15581,10 @@
       }
 
       window.openReto21Modal = function () {
-        const isExclusiveAdminAngel = Boolean(
-          currentUserInfo && (currentUserInfo.role === "superadmin" || currentUserInfo.id === "u-owner")
+        const canAccessReto21 = Boolean(
+          currentUserInfo && (currentUserInfo.role === "superadmin" || currentUserInfo.id === "u-owner" || currentUserInfo.reto21Enabled)
         );
-        if (!isExclusiveAdminAngel) return;
+        if (!canAccessReto21) return;
         renderReto21Modal();
         openModal("modalReto21Dias");
       };
