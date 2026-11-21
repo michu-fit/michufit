@@ -14279,46 +14279,91 @@
       // 2) Se detiene, gira para mirarte de frente, saluda con la patita y despliega su globo de diálogo
       // 3) Cierra el globo, gira y se va caminando despacio fuera de la pantalla
       let michuPeekHideTimer = null;
-      let walkCycleTweens = [];
+      let walkRafId = null;
+      let walkStartTime = 0;
+      let walkState = { strideAmp: 1 };
       let mainWalkTl = null;
 
-      function stopWalkCycleLoops() {
-        walkCycleTweens.forEach(tw => {
-          try { tw.kill(); } catch (_) {}
+      function updateSingleLegIK(hipX, hipY, phase, amp, isBackLeg, pathIds, pawId) {
+        // En el ciclo real de caminata felina:
+        // sin(phase) controla el avance horizontal del pie; cos(phase) levanta la pata SOLO cuando avanza en el aire
+        const strideX = Math.sin(phase) * 14.5 * amp;
+        const swingLift = Math.max(0, Math.cos(phase)) * 10.5 * amp;
+        const pawX = hipX + strideX;
+        const pawY = 178.5 - swingLift;
+
+        // Articulación anatómica: las patas traseras flexionan el garrón hacia atrás, las delanteras la rodilla/muñeca hacia adelante
+        const bendDir = isBackLeg ? -1 : 1;
+        const bendAmount = (4.5 + swingLift * 0.55) * bendDir;
+        const kneeX = (hipX + pawX) * 0.5 + bendAmount;
+        const kneeY = (hipY + pawY) * 0.5 - swingLift * 0.25;
+
+        const dStr = `M ${hipX.toFixed(1)} ${hipY.toFixed(1)} Q ${kneeX.toFixed(1)} ${kneeY.toFixed(1)} ${pawX.toFixed(1)} ${pawY.toFixed(1)}`;
+        for (const pid of pathIds) {
+          const el = document.getElementById(pid);
+          if (el) el.setAttribute("d", dStr);
+        }
+        const pawEl = document.getElementById(pawId);
+        if (pawEl) {
+          pawEl.setAttribute("cx", (pawX + 2.2).toFixed(1));
+          pawEl.setAttribute("cy", pawY.toFixed(1));
+          const pawTilt = (-Math.cos(phase) * 14 * amp).toFixed(1);
+          pawEl.setAttribute("transform", `rotate(${pawTilt} ${(pawX + 2.2).toFixed(1)} ${pawY.toFixed(1)})`);
+        }
+      }
+
+      function renderFelineWalkFrame(nowTs) {
+        if (!walkStartTime) walkStartTime = nowTs;
+        const elapsed = (nowTs - walkStartTime) / 1000;
+        const speed = 7.4; // rad/s — paso felino fluido y natural
+        const phase = elapsed * speed;
+        const amp = Math.max(0, Math.min(1, walkState.strideAmp));
+
+        // Secuencia diagonal de 4 tiempos de un gato real:
+        // FR (0), BL (PI * 0.5), FL (PI), BR (PI * 1.5)
+        updateSingleLegIK(64, 138, phase + Math.PI * 0.5, amp, true, ["walkPathBL", "walkPathBLFill"], "walkPawBL");
+        updateSingleLegIK(122, 138, phase + Math.PI, amp, false, ["walkPathFL", "walkPathFLFill"], "walkPawFL");
+        updateSingleLegIK(70, 138, phase + Math.PI * 1.5, amp, true, ["walkPathBR", "walkPathBRFill"], "walkPawBR");
+        updateSingleLegIK(128, 138, phase, amp, false, ["walkPathFR", "walkPathFRFill"], "walkPawFR");
+
+        // Vaivén vertical suave del torso (2 ciclos por cada paso completo) y cabeceo secundario con retraso
+        const torso = document.getElementById("walkTorsoGroup");
+        const head = document.getElementById("walkHead");
+        if (torso) {
+          const bobY = Math.sin(phase * 2) * 2.4 * amp;
+          const tiltDeg = Math.cos(phase) * 1.6 * amp;
+          torso.setAttribute("transform", `translate(0, ${bobY.toFixed(2)}) rotate(${tiltDeg.toFixed(2)} 95 135)`);
+        }
+        if (head) {
+          const headBobY = 12 + Math.sin(phase * 2 - 0.7) * 2.1 * amp;
+          const headNod = Math.sin(phase - 0.5) * 2.2 * amp;
+          head.setAttribute("transform", `translate(36, ${headBobY.toFixed(2)}) rotate(${headNod.toFixed(2)} 102 78)`);
+        }
+
+        // Onda viajera continua en la cola (como animación tradicional 2D)
+        const w1 = Math.sin(phase * 0.85) * 9;
+        const w2 = Math.cos(phase * 0.85 - 0.9) * 12;
+        const tailD = `M 52 130 C 30 ${(122 + w1 * 0.5).toFixed(1)}, 16 ${(98 + w1).toFixed(1)}, ${(26 + w2 * 0.7).toFixed(1)} ${(64 + w2 * 0.4).toFixed(1)}`;
+        ["walkTailPath", "walkTailOutline", "walkTailCore"].forEach(id => {
+          const tEl = document.getElementById(id);
+          if (tEl) tEl.setAttribute("d", tailD);
         });
-        walkCycleTweens = [];
+
+        walkRafId = requestAnimationFrame(renderFelineWalkFrame);
+      }
+
+      function stopWalkCycleLoops() {
+        if (walkRafId) {
+          cancelAnimationFrame(walkRafId);
+          walkRafId = null;
+        }
+        walkStartTime = 0;
       }
 
       function startWalkCycleLoops() {
         stopWalkCycleLoops();
-        if (!window.gsap) return;
-        const legFL = document.getElementById("walkLegFL");
-        const legBR = document.getElementById("walkLegBR");
-        const legFR = document.getElementById("walkLegFR");
-        const legBL = document.getElementById("walkLegBL");
-        const torso = document.getElementById("walkTorsoGroup");
-        const wTail = document.getElementById("walkTail");
-
-        if (legFL && legBR) {
-          walkCycleTweens.push(
-            window.gsap.fromTo([legFL, legBR], { rotation: -24 }, { rotation: 24, duration: 0.28, repeat: -1, yoyo: true, ease: "sine.inOut" })
-          );
-        }
-        if (legFR && legBL) {
-          walkCycleTweens.push(
-            window.gsap.fromTo([legFR, legBL], { rotation: 24 }, { rotation: -24, duration: 0.28, repeat: -1, yoyo: true, ease: "sine.inOut" })
-          );
-        }
-        if (torso) {
-          walkCycleTweens.push(
-            window.gsap.fromTo(torso, { y: 0 }, { y: -4.5, duration: 0.14, repeat: -1, yoyo: true, ease: "sine.inOut" })
-          );
-        }
-        if (wTail) {
-          walkCycleTweens.push(
-            window.gsap.fromTo(wTail, { rotation: -8 }, { rotation: 12, duration: 0.36, repeat: -1, yoyo: true, ease: "sine.inOut" })
-          );
-        }
+        walkState.strideAmp = 1;
+        walkRafId = requestAnimationFrame(renderFelineWalkFrame);
       }
 
       function hideMichuPeekPopup(immediate = false) {
@@ -14407,8 +14452,9 @@
         startWalkCycleLoops();
 
         mainWalkTl = window.gsap.timeline();
-        // Camina despacio entrando a la pantalla
-        mainWalkTl.to(stageEl, { x: 10, duration: 1.65, ease: "power1.out" });
+        // Camina fluido entrando a la pantalla y desacelera el paso suavemente antes de girar
+        mainWalkTl.to(stageEl, { x: 10, duration: 1.85, ease: "power2.out" }, 0);
+        mainWalkTl.to(walkState, { strideAmp: 0, duration: 0.45, ease: "power1.out" }, 1.4);
 
         // Acto 2: Frena, gira con Squash & Stretch para mirarte de frente y saluda
         mainWalkTl.add(() => {
