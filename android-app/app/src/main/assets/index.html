@@ -13519,18 +13519,23 @@
         return pool;
       }
 
+      function scaleTextGrams(rawText, ratio) {
+        if (!rawText || Math.abs(ratio - 1) < 0.06) return rawText;
+        return String(rawText).replace(/(\d+)\s*(g|gr|cc|ml)\b/gi, (match, numStr, unit) => {
+          const val = Number(numStr);
+          if (!val || val < 10) return match;
+          const scaled = Math.max(10, Math.round((val * ratio) / 5) * 5);
+          return `${scaled}${unit.toLowerCase() === "gr" ? "g" : unit}`;
+        });
+      }
+
       function scaleDishToTarget(dish, targetSlotKcal) {
         const ratio = Math.max(0.55, Math.min(1.85, targetSlotKcal / Math.max(100, dish.baseKcal)));
         const kcal = Math.round(dish.baseKcal * ratio);
         const p = Math.round(dish.baseP * ratio * 10) / 10;
         const c = Math.round(dish.baseC * ratio * 10) / 10;
         const f = Math.round(dish.baseF * ratio * 10) / 10;
-        let scaledTitle = dish.title;
-        if (ratio >= 1.25) {
-          scaledTitle += " (Porción Grande / Superávit)";
-        } else if (ratio <= 0.8) {
-          scaledTitle += " (Porción Liviana / Déficit)";
-        }
+        const scaledTitle = scaleTextGrams(dish.title, ratio);
         return {
           ...dish,
           title: scaledTitle,
@@ -13871,23 +13876,51 @@
 
         // MODO 3: VISTA PRINCIPAL DEL MENÚ SEMANAL PERSONALIZADO
         const activeDay = plan.weekDays[sugMenuState.activeDayIdx] || plan.weekDays[0];
+        const curDefType = (appData.profile && appData.profile.deficitType) || "recommended";
+        const curWeight = Number(appData.profile && appData.profile.weight) || 78;
+        const dailyDeltaKcal = t.targetKcal - t.tdee; // negativo = déficit, positivo = superávit
+        const wkChangeKg = (dailyDeltaKcal * 7) / 7700;
+        const days21ChangeKg = (dailyDeltaKcal * 21) / 7700;
+        const estWeight21 = Math.max(40, curWeight + days21ChangeKg).toFixed(1);
+        const projText = Math.abs(dailyDeltaKcal) < 60
+          ? `⚖️ Mantenimiento: mantendrás tu peso actual (~${curWeight} kg) recomponiendo masa magra.`
+          : (dailyDeltaKcal < 0
+              ? `📉 Reducción estimada: <strong>${wkChangeKg.toFixed(2)} kg/semana</strong> • En 21 días: <strong>${days21ChangeKg.toFixed(1)} kg</strong> (de ${curWeight} kg → <strong>~${estWeight21} kg</strong>)`
+              : `💪 Ganancia estimada: <strong>+${wkChangeKg.toFixed(2)} kg/semana</strong> • En 21 días: <strong>+${days21ChangeKg.toFixed(1)} kg</strong> (de ${curWeight} kg → <strong>~${estWeight21} kg</strong>)`);
 
         root.innerHTML = `
-          <!-- Barra superior: Resumen de Objetivo + Botón para Refinar Hábitos (Wizard) + Lista de Compras -->
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
-            <div style="font-size:0.8rem;">
-              <strong>${goalLabel}</strong>
-              <div style="color:var(--text-muted);font-size:0.74rem;">
-                Meta diaria: ${t.proteinG}g Proteína • ${t.carbsG}g Carbos • ${t.fatG}g Grasas
+          <!-- Barra superior: Selector de Intensidad según tu peso/TDEE + Proyección de Peso + Gustos -->
+          <div style="display:flex;flex-direction:column;gap:8px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:14px;padding:11px 13px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+              <div style="font-size:0.82rem;">
+                <strong>${goalLabel}</strong> <span style="font-size:0.74rem;color:var(--text-muted);">(TDEE personal: ${t.tdee} kcal/día)</span>
+                <div style="color:var(--text-muted);font-size:0.74rem;">
+                  Macros calculados para tus ${curWeight} kg: <strong>${t.proteinG}g Proteína • ${t.carbsG}g Carbos • ${t.fatG}g Grasas</strong>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-sm btn-purple" id="btnOpenHabitsWizard">
+                  🧙‍♂️ Gustos y Hábitos
+                </button>
+                <button type="button" class="btn btn-sm" id="btnOpenShoppingList">
+                  🛒 Lista de Compras
+                </button>
               </div>
             </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <button type="button" class="btn btn-sm btn-purple" id="btnOpenHabitsWizard">
-                🧙‍♂️ Personalizar mis Gustos y Hábitos
-              </button>
-              <button type="button" class="btn btn-sm" id="btnOpenShoppingList">
-                🛒 Lista de Compras
-              </button>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-top:7px;border-top:1px solid var(--border);">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <label for="sugMenuIntensitySel" style="font-size:0.75rem;font-weight:800;color:var(--text-muted);">🎯 Intensidad del Plan:</label>
+                <select id="sugMenuIntensitySel" style="padding:5px 9px;border-radius:9px;border:1px solid var(--border);background:var(--bg-elev);color:var(--text);font-size:0.78rem;font-weight:800;">
+                  <option value="aggressive" ${curDefType === "aggressive" || curDefType === "custom" ? "selected" : ""}>🔥 Déficit Extremo / Intenso (-750 kcal/día)</option>
+                  <option value="recommended" ${curDefType === "recommended" ? "selected" : ""}>⚖️ Déficit Moderado (-500 kcal/día)</option>
+                  <option value="light" ${curDefType === "light" ? "selected" : ""}>🌿 Déficit Liviano (-300 kcal/día)</option>
+                  <option value="maintain" ${curDefType === "maintain" ? "selected" : ""}>⚖️ Mantenimiento (0 kcal)</option>
+                  <option value="surplus_recommended" ${curDefType.startsWith("surplus") || curDefType === "custom_surplus" ? "selected" : ""}>💪 Superávit Muscular (+450 kcal/día)</option>
+                </select>
+              </div>
+              <div style="font-size:0.76rem;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:9px;border:1px solid rgba(34,197,94,0.35);">
+                ${projText}
+              </div>
             </div>
           </div>
 
@@ -13950,6 +13983,13 @@
         document.getElementById("btnOpenHabitsWizard")?.addEventListener("click", () => {
           sugMenuState.mode = "wizard";
           sugMenuState.wizStep = 0;
+          renderSuggestedMenuModal();
+        });
+
+        document.getElementById("sugMenuIntensitySel")?.addEventListener("change", (e) => {
+          appData.profile.deficitType = e.target.value;
+          saveToServer();
+          renderAll();
           renderSuggestedMenuModal();
         });
 
@@ -14845,13 +14885,15 @@
             startDate: todayStr(),
             activeDayNum: 1, // 1..21
             dietMode: "trad_4", // "trad_4" | "trad_3" | "keto_4" | "keto_3"
-            portionSize: 2, // 1 | 2
+            intensityMode: "extreme", // "extreme" | "moderate" | "light" | "surplus"
             trainPlace: "gym", // "gym" | "home"
             trainDaysPerWk: 4, // 3 | 4 | 5
             completedDays: {}, // { "1": true, ... }
             mealChoices: {}, // { "day_slot": 0..4 }
             checkedExercises: {} // { "day_exIdx": true }
           };
+        } else if (!appData.profile.reto21State.intensityMode) {
+          appData.profile.reto21State.intensityMode = Number(appData.profile.reto21State.portionSize) === 1 ? "extreme" : "moderate";
         }
         return appData.profile.reto21State;
       }
@@ -14861,10 +14903,85 @@
         saveToServer();
       }
 
+      function computeRetoPersonalizedTargets(st) {
+        const baseTargets = computeNutritionTargets();
+        const tdee = Number(baseTargets.tdee) || 2200;
+        const bmr = Number(baseTargets.bmr) || 1650;
+        const curWeight = Number(appData.profile && appData.profile.weight) || 80;
+        const intensity = st.intensityMode || "extreme";
+
+        let dailyDelta = -750; // kcal vs TDEE
+        let label = "🔥 Déficit Extremo / Reto";
+        if (intensity === "moderate") {
+          dailyDelta = -520;
+          label = "⚖️ Déficit Moderado";
+        } else if (intensity === "light") {
+          dailyDelta = -320;
+          label = "🌿 Déficit Liviano";
+        } else if (intensity === "surplus") {
+          dailyDelta = 400;
+          label = "💪 Superávit Muscular";
+        }
+
+        const minSafeKcal = Math.max(1200, Math.round(bmr * 0.85));
+        const targetKcal = dailyDelta < 0
+          ? Math.max(minSafeKcal, Math.round(tdee + dailyDelta))
+          : Math.round(tdee + dailyDelta);
+        const realDailyFoodDelta = targetKcal - tdee; // negativo = déficit
+
+        // Proteína protegida según peso/masa magra del usuario (nunca baja aunque el déficit sea extremo)
+        const targetProteinG = Math.max(110, Number(baseTargets.proteinG) || Math.round(curWeight * 2.0));
+
+        // Gasto extra por entrenamiento de la rutina + cardio en la semana
+        const trainDays = Number(st.trainDaysPerWk) || 4;
+        const avgExKcalPerDay = Math.round(((trainDays * 345) + (3 * 220)) / 7);
+        const totalDailyDeficitWithEx = realDailyFoodDelta - avgExKcalPerDay;
+
+        const fatChangeWkKg = (realDailyFoodDelta * 7) / 7700;
+        const fatChange21dFoodOnlyKg = (realDailyFoodDelta * 21) / 7700;
+        const fatChange21dWithExKg = (totalDailyDeficitWithEx * 21) / 7700;
+
+        const isKeto = (st.dietMode || "").startsWith("keto");
+        const ketoWaterDropKg = (isKeto && realDailyFoodDelta < 0) ? -1.2 : 0;
+        const totalScaleChange21dKg = (intensity === "surplus")
+          ? ((realDailyFoodDelta * 21) / 7700)
+          : (fatChange21dWithExKg + ketoWaterDropKg);
+
+        const projectedWeight21 = Math.max(40, curWeight + totalScaleChange21dKg);
+
+        return {
+          tdee,
+          bmr,
+          curWeight,
+          intensity,
+          label,
+          targetKcal,
+          targetProteinG,
+          realDailyFoodDelta,
+          fatChangeWkKg,
+          fatChange21dFoodOnlyKg,
+          fatChange21dWithExKg,
+          isKeto,
+          ketoWaterDropKg,
+          totalScaleChange21dKg,
+          projectedWeight21
+        };
+      }
+
+      function scaleRetoRecipeText(rawText, ratio) {
+        if (!rawText || Math.abs(ratio - 1) < 0.06) return rawText;
+        return String(rawText).replace(/(\d+)\s*(g|gr|cc|ml)\b/gi, (match, numStr, unit) => {
+          const val = Number(numStr);
+          if (!val || val < 10) return match;
+          const scaled = Math.max(10, Math.round((val * ratio) / 5) * 5);
+          return `${scaled}${unit.toLowerCase() === "gr" ? "g" : unit}`;
+        });
+      }
+
       function getRetoDaySlots(st, dayNum) {
         const isKeto = st.dietMode.startsWith("keto");
         const is3Meals = st.dietMode.endsWith("_3");
-        const pSize = Number(st.portionSize) === 1 ? 1 : 2;
+        const rt = computeRetoPersonalizedTargets(st);
 
         const bfList = isKeto ? RETO_MEALS_DB.keto.breakfast : RETO_MEALS_DB.trad.breakfast;
         const lnList = RETO_MEALS_DB.trad.lunch;
@@ -14873,25 +14990,23 @@
 
         const rawSlots = [];
         if (st.dietMode === "keto_3") {
-          // Low-Carb/Keto 3 comidas (Sin Desayuno: Almuerzo, Merienda, Cena)
           rawSlots.push(
-            { slotKey: "lunch", slotTitle: "☀️ 1° Comida — Almuerzo Low-Carb", list: lnList },
-            { slotKey: "merienda", slotTitle: "🧉 2° Comida — Merienda Keto", list: mrList },
-            { slotKey: "dinner", slotTitle: "🌙 3° Comida — Cena Keto", list: dnList }
+            { slotKey: "lunch", slotTitle: "☀️ 1° Comida — Almuerzo Low-Carb", share: 0.40, list: lnList },
+            { slotKey: "merienda", slotTitle: "🧉 2° Comida — Merienda Keto", share: 0.25, list: mrList },
+            { slotKey: "dinner", slotTitle: "🌙 3° Comida — Cena Keto", share: 0.35, list: dnList }
           );
         } else if (is3Meals) {
-          // Tradicional 3 comidas (Sin Cena: Desayuno, Almuerzo, Merienda-Cena)
           rawSlots.push(
-            { slotKey: "breakfast", slotTitle: "🌅 1° Comida — Desayuno", list: bfList },
-            { slotKey: "lunch", slotTitle: "☀️ 2° Comida — Almuerzo (Método 1/3)", list: lnList },
-            { slotKey: "merienda", slotTitle: "🧉 3° Comida — Merienda-Cena Tardía", list: mrList }
+            { slotKey: "breakfast", slotTitle: "🌅 1° Comida — Desayuno", share: 0.30, list: bfList },
+            { slotKey: "lunch", slotTitle: "☀️ 2° Comida — Almuerzo (Método 1/3)", share: 0.42, list: lnList },
+            { slotKey: "merienda", slotTitle: "🧉 3° Comida — Merienda-Cena Tardía", share: 0.28, list: mrList }
           );
         } else {
           rawSlots.push(
-            { slotKey: "breakfast", slotTitle: "🌅 Desayuno", list: bfList },
-            { slotKey: "lunch", slotTitle: "☀️ Almuerzo", list: lnList },
-            { slotKey: "merienda", slotTitle: "🧉 Merienda", list: mrList },
-            { slotKey: "dinner", slotTitle: "🌙 Cena", list: dnList }
+            { slotKey: "breakfast", slotTitle: "🌅 Desayuno", share: 0.23, list: bfList },
+            { slotKey: "lunch", slotTitle: "☀️ Almuerzo", share: 0.34, list: lnList },
+            { slotKey: "merienda", slotTitle: "🧉 Merienda", share: 0.17, list: mrList },
+            { slotKey: "dinner", slotTitle: "🌙 Cena", share: 0.26, list: dnList }
           );
         }
 
@@ -14902,17 +15017,31 @@
             ? Number(st.mealChoices[choiceKey]) % s.list.length
             : defaultOptIdx;
           const item = s.list[optIdx];
+
+          // Usar como base la versión grande (p2) y escalar exactamente a las calorías y proteína de este usuario
+          const baseKcal = item.kcal2 || 480;
+          const slotTargetKcal = Math.round(rt.targetKcal * s.share);
+          const kcalRatio = Math.max(0.55, Math.min(1.75, slotTargetKcal / Math.max(120, baseKcal)));
+          const protRatio = Math.max(0.75, Math.min(1.65, (rt.targetProteinG * s.share) / Math.max(15, item.p2_g || 38)));
+
+          const scaledP = Math.round((item.p2_g || 38) * protRatio);
+          const remKcal = Math.max(40, slotTargetKcal - scaledP * 4);
+          const baseCFKcal = Math.max(40, (item.c2_g || 20) * 4 + (item.f2_g || 15) * 9);
+          const cfRatio = remKcal / baseCFKcal;
+          const scaledC = Math.round((item.c2_g || 20) * cfRatio);
+          const scaledF = Math.round((item.f2_g || 15) * cfRatio);
+
           return {
             slotKey: s.slotKey,
             slotTitle: s.slotTitle,
             optIdx,
             optTitle: item.opt,
             emoji: item.emoji,
-            desc: pSize === 1 ? item.p1 : item.p2,
-            kcal: pSize === 1 ? item.kcal1 : item.kcal2,
-            p: pSize === 1 ? item.p1_g : item.p2_g,
-            c: pSize === 1 ? item.c1_g : item.c2_g,
-            f: pSize === 1 ? item.f1_g : item.f2_g,
+            desc: scaleRetoRecipeText(item.p2, kcalRatio),
+            kcal: slotTargetKcal,
+            p: scaledP,
+            c: scaledC,
+            f: scaledF,
             totalOptions: s.list.length
           };
         });
@@ -14946,6 +15075,7 @@
         let bodyHtml = "";
 
         if (retoUiTab === "daily") {
+          const rt = computeRetoPersonalizedTargets(st);
           const daySlots = getRetoDaySlots(st, dayNum);
           const dayTotKcal = Math.round(daySlots.reduce((a, x) => a + (Number(x.kcal) || 0), 0));
           const dayTotP = Math.round(daySlots.reduce((a, x) => a + (Number(x.p) || 0), 0));
@@ -14959,22 +15089,24 @@
           const isDayCompleted = Boolean(st.completedDays && st.completedDays[String(dayNum)]);
 
           bodyHtml = `
-            <!-- Configuración rápida del Reto -->
+            <!-- Configuración rápida del Reto personalizada según Peso/Sexo/TDEE -->
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:10px 12px;">
               <div class="field">
-                <label style="font-size:0.72rem;">🍽️ Modalidad de Dieta</label>
+                <label style="font-size:0.72rem;">🎯 Intensidad (según tu TDEE ${rt.tdee} kcal)</label>
+                <select id="r21IntensitySel" style="padding:6px 8px;font-size:0.78rem;font-weight:800;">
+                  <option value="extreme" ${st.intensityMode === "extreme" ? "selected" : ""}>🔥 Déficit Extremo / Reto (-750 kcal)</option>
+                  <option value="moderate" ${st.intensityMode === "moderate" ? "selected" : ""}>⚖️ Déficit Moderado (-520 kcal)</option>
+                  <option value="light" ${st.intensityMode === "light" ? "selected" : ""}>🌿 Déficit Liviano (-320 kcal)</option>
+                  <option value="surplus" ${st.intensityMode === "surplus" ? "selected" : ""}>💪 Superávit Muscular (+400 kcal)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label style="font-size:0.72rem;">🍽️ Formato de Alimentación</label>
                 <select id="r21DietModeSel" style="padding:6px 8px;font-size:0.78rem;">
                   <option value="trad_4" ${st.dietMode === "trad_4" ? "selected" : ""}>🥗 Tradicional (4 comidas)</option>
                   <option value="trad_3" ${st.dietMode === "trad_3" ? "selected" : ""}>🍽️ Tradicional 3 comidas (Sin Cena)</option>
                   <option value="keto_4" ${st.dietMode === "keto_4" ? "selected" : ""}>🥑 Low-Carb / Keto (4 comidas)</option>
                   <option value="keto_3" ${st.dietMode === "keto_3" ? "selected" : ""}>⚡ Low-Carb / Keto (3 comidas s/Desayuno)</option>
-                </select>
-              </div>
-              <div class="field">
-                <label style="font-size:0.72rem;">⚖️ Tamaño de Porción</label>
-                <select id="r21PortionSel" style="padding:6px 8px;font-size:0.78rem;">
-                  <option value="1" ${Number(st.portionSize) === 1 ? "selected" : ""}>Plan 1 (Déficit / Porción Chica)</option>
-                  <option value="2" ${Number(st.portionSize) === 2 ? "selected" : ""}>Plan 2 (Entreno Fuerte / Porción Grande)</option>
                 </select>
               </div>
               <div class="field">
@@ -14991,6 +15123,25 @@
                   <option value="4" ${Number(st.trainDaysPerWk) === 4 ? "selected" : ""}>4 días/sem (Rotación 1-2-3-1)</option>
                   <option value="5" ${Number(st.trainDaysPerWk) === 5 ? "selected" : ""}>5 días/sem (Rotación 1-2-3-1-2)</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Tarjeta de Proyección de Reducción/Cambio de Peso en los 21 Días -->
+            <div style="background:linear-gradient(135deg, var(--bg-card), rgba(168,85,247,0.09));border:1.5px solid var(--purple);border-radius:14px;padding:10px 13px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div style="font-size:0.8rem;">
+                <strong style="color:var(--purple);font-size:0.86rem;">📉 Proyección Estimada en 21 Días para tus ${rt.curWeight} kg (${rt.label})</strong>
+                <div style="color:var(--text-muted);font-size:0.75rem;margin-top:2px;">
+                  ${rt.intensity === "surplus"
+                    ? `Ganancia muscular proyectada: <strong>+${Math.abs(rt.fatChangeWkKg).toFixed(2)} kg/sem</strong> • En 21 días: <strong>+${Math.abs(rt.totalScaleChange21dKg).toFixed(1)} kg</strong>`
+                    : `Quema por dieta: <strong>${rt.fatChange21dFoodOnlyKg.toFixed(1)} kg</strong> (${rt.fatChangeWkKg.toFixed(2)} kg/sem) • Con entreno (${st.trainDaysPerWk}d/sem): <strong>${rt.fatChange21dWithExKg.toFixed(1)} kg de grasa</strong>${rt.isKeto ? ` + <strong>${rt.ketoWaterDropKg.toFixed(1)} kg</strong> desinflamación Keto` : ""}`
+                  }
+                </div>
+              </div>
+              <div style="text-align:right;background:var(--bg-elev);border:1.5px solid var(--purple);border-radius:11px;padding:6px 11px;">
+                <div style="font-size:0.68rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;">Cambio est. en 21 días</div>
+                <div style="font-size:0.98rem;font-weight:900;color:${rt.totalScaleChange21dKg <= 0 ? "var(--accent)" : "var(--purple)"};">
+                  ${rt.totalScaleChange21dKg > 0 ? "+" : ""}${rt.totalScaleChange21dKg.toFixed(1)} kg <span style="font-size:0.78rem;color:var(--text);">(${rt.curWeight} → ${rt.projectedWeight21.toFixed(1)} kg)</span>
+                </div>
               </div>
             </div>
 
@@ -15274,8 +15425,8 @@
           saveReto21();
           renderReto21Modal();
         });
-        document.getElementById("r21PortionSel")?.addEventListener("change", (e) => {
-          st.portionSize = Number(e.target.value) || 2;
+        document.getElementById("r21IntensitySel")?.addEventListener("change", (e) => {
+          st.intensityMode = e.target.value || "extreme";
           saveReto21();
           renderReto21Modal();
         });
