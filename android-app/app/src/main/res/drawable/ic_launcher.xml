@@ -2,15 +2,69 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Fondo claro suave -->
     <path
-        android:fillColor="#0D9488"
-        android:pathData="M0,0h108v108h-108z" />
+        android:fillColor="#E8F5E9"
+        android:pathData="M0,0h200v200h-200z" />
+    <!-- Círculo central -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M30,42 L34,26 L44,36 L64,36 L74,26 L78,42 C82,50 82,66 74,74 C66,82 42,82 34,74 C26,66 26,50 30,42 Z" />
+        android:strokeColor="#22C55E"
+        android:strokeWidth="4"
+        android:pathData="M100,100m-76,0a76,76 0,1 1,152 0a76,76 0,1 1,-152 0" />
+    <!-- Orejas grises con interior rosado -->
     <path
-        android:fillColor="#0D9488"
-        android:pathData="M43,53a4,4 0,1 1,8 0a4,4 0,1 1,-8 0 M57,53a4,4 0,1 1,8 0a4,4 0,1 1,-8 0 M50,62 L58,62 L54,67 Z" />
+        android:fillColor="#686C73"
+        android:strokeColor="#111318"
+        android:strokeWidth="4"
+        android:pathData="M54,68 C46,44 48,26 58,24 C68,22 82,36 88,50 Z M146,68 C154,44 152,26 142,24 C132,22 118,36 112,50 Z" />
+    <path
+        android:fillColor="#F4979C"
+        android:pathData="M59,62 C54,46 55,33 61,31 C68,30 77,39 82,50 Z M141,62 C146,46 145,33 139,31 C132,30 123,39 118,50 Z" />
+    <!-- Cabeza gris con mejillas -->
+    <path
+        android:fillColor="#686C73"
+        android:strokeColor="#111318"
+        android:strokeWidth="4"
+        android:pathData="M52,60 C66,42 134,42 148,60 C156,70 158,82 154,90 L164,94 L154,101 L162,106 L146,114 C130,128 70,128 54,114 L38,106 L46,101 L36,94 L46,90 C42,82 44,70 52,60 Z" />
+    <!-- Hocico blanco triangular -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M100,84 C86,90 72,104 56,114 C72,126 128,126 144,114 C128,104 114,90 100,84 Z" />
+    <!-- Pechera blanca en V y cuerpo inferior -->
+    <path
+        android:fillColor="#686C73"
+        android:strokeColor="#111318"
+        android:strokeWidth="4"
+        android:pathData="M70,118 L66,162 L134,162 L130,118 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#111318"
+        android:strokeWidth="3.5"
+        android:pathData="M76,118 Q100,126 124,118 C121,140 112,154 100,158 C88,154 79,140 76,118 Z" />
+    <!-- Ojos celestes y pupilas negras con brillo -->
+    <path
+        android:fillColor="#A5C8F0"
+        android:strokeColor="#111318"
+        android:strokeWidth="3.5"
+        android:pathData="M75,81m-15,0a15,15 0,1 1,30 0a15,15 0,1 1,-30 0 M125,81m-15,0a15,15 0,1 1,30 0a15,15 0,1 1,-30 0" />
+    <path
+        android:fillColor="#090D16"
+        android:pathData="M75,81m-11,0a11,11 0,1 1,22 0a11,11 0,1 1,-22 0 M125,81m-11,0a11,11 0,1 1,22 0a11,11 0,1 1,-22 0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M71,76.5m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0 M121,76.5m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    <!-- Naricita rosada y boca -->
+    <path
+        android:fillColor="#F4979C"
+        android:strokeColor="#111318"
+        android:strokeWidth="2.8"
+        android:pathData="M93,90 Q100,87 107,90 Q109,95 100,98 Q91,95 93,90 Z" />
+    <path
+        android:strokeColor="#111318"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M100,98 L100,103 M88,102 Q94,109 100,103 Q106,109 112,102" />
 </vector>
