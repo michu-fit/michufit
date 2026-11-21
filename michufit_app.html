@@ -13,7 +13,7 @@
   <title>Michu Fit 🐱 | Calculadora de Déficit y Seguimiento Calórico</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Fredoka:wght@600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
@@ -2041,7 +2041,109 @@
 
     html[data-auth-state="logged-out"] #modalAuthOverlay {
       display: flex !important;
-      background: var(--bg) !important;
+      background: linear-gradient(180deg, #cbe7fb 0%, #e7f4fd 48%, #ffffff 88%) !important;
+      padding: 0 !important;
+    }
+
+    #modalAuthOverlay[data-auth-mode="splash"] .modal-inner {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      width: 100% !important;
+      max-width: 480px !important;
+      height: 100dvh !important;
+      max-height: 100dvh !important;
+      padding: 0 !important;
+      margin: 0 auto !important;
+      border-radius: 0 !important;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    #modalAuthOverlay[data-auth-mode="login-form"] .modal-inner {
+      background: rgba(255, 255, 255, 0.96) !important;
+      color: #131b26 !important;
+      border: 2px solid #dfe6f0 !important;
+      border-radius: 28px !important;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18) !important;
+      max-width: 420px !important;
+      padding: 24px 22px !important;
+    }
+
+    @keyframes splashFloatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-7px); }
+    }
+
+    @keyframes splashHeartRise {
+      0%, 100% { transform: translateY(0px) scale(1) rotate(-6deg); }
+      50% { transform: translateY(-6px) scale(1.08) rotate(6deg); }
+    }
+
+    .michu-splash-screen {
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px 24px;
+      user-select: none;
+      overflow: hidden;
+      color: #181c20;
+    }
+
+    .michu-splash-headline {
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: clamp(3.15rem, 11.8vw, 4.35rem);
+      line-height: 0.96;
+      letter-spacing: -0.03em;
+      color: #181c20;
+      text-align: center;
+      z-index: 3;
+      margin: auto 0;
+      padding: 10px 0;
+    }
+
+    .michu-splash-start-btn {
+      background: #14171a;
+      color: #ffffff !important;
+      border: none;
+      border-radius: 999px;
+      padding: 16px 58px;
+      font-size: 1.12rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(20, 23, 26, 0.24);
+      transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.16s ease;
+    }
+
+    .michu-splash-start-btn:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 14px 28px rgba(20, 23, 26, 0.3);
+    }
+
+    .michu-splash-start-btn:active {
+      transform: translateY(2px) scale(0.98);
+    }
+
+    .michu-splash-login-link {
+      background: transparent;
+      border: none;
+      color: #181c20 !important;
+      font-size: 1.03rem;
+      font-weight: 800;
+      cursor: pointer;
+      padding: 8px 16px;
+      transition: opacity 0.15s ease;
+    }
+
+    .michu-splash-login-link:hover {
+      opacity: 0.72;
     }
   </style>
   <script>
@@ -3447,17 +3549,196 @@
   </div>
 
   <!-- OVERLAY PANTALLA DE LOGIN / CREACIÓN DE CUENTA / SALA DE ESPERA DE APROBACIÓN -->
-  <div class="custom-modal-overlay" id="modalAuthOverlay" role="dialog" aria-modal="true" style="background:rgba(8, 12, 20, 0.94);backdrop-filter:blur(8px);">
+  <div class="custom-modal-overlay" id="modalAuthOverlay" data-auth-mode="splash" role="dialog" aria-modal="true" style="background:linear-gradient(180deg, #cbe7fb 0%, #e7f4fd 48%, #ffffff 88%);">
     <div class="modal-inner" style="max-width:480px;">
-      <div id="authModalHeaderIntro" style="text-align:center;margin-bottom:14px;">
-        <div style="font-size:2.6rem;line-height:1;">🐱</div>
-        <h2 style="font-size:1.35rem;font-weight:900;margin-top:4px;">Bienvenido a Michu Fit</h2>
-        <p style="font-size:0.82rem;color:var(--text-muted);">Plataforma de Déficit Calórico, Ayuno Intermitente y Seguimiento Nutricional</p>
+
+      <!-- VISTA 0: PORTADA DE BIENVENIDA ESTILO EDITORIAL MICHU FIT -->
+      <div id="authSplashHeroView" class="michu-splash-screen">
+        <!-- Bowl superior izquierdo de granola y arándanos + etiqueta 310 kcal -->
+        <div style="position:absolute;top:-22px;left:16px;z-index:2;animation:splashFloatSlow 4.5s ease-in-out infinite;">
+          <svg width="168" height="168" viewBox="0 0 180 180" style="filter:drop-shadow(0 14px 24px rgba(15,23,42,0.14));">
+            <defs>
+              <radialGradient id="spBowlGrad" cx="50%" cy="45%" r="55%">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="82%" stop-color="#f1f5f9"/>
+                <stop offset="100%" stop-color="#cbd5e1"/>
+              </radialGradient>
+              <radialGradient id="spBerryGrad" cx="35%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#60a5fa"/>
+                <stop offset="55%" stop-color="#2563eb"/>
+                <stop offset="100%" stop-color="#1e3a8a"/>
+              </radialGradient>
+            </defs>
+            <!-- Plato cerámico blanco -->
+            <circle cx="90" cy="86" r="76" fill="url(#spBowlGrad)" stroke="#ffffff" stroke-width="4"/>
+            <circle cx="90" cy="86" r="64" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+            <!-- Base de granola dorada crujiente y avena -->
+            <g>
+              <circle cx="72" cy="68" r="22" fill="#d97706" opacity="0.88"/>
+              <circle cx="105" cy="70" r="24" fill="#b45309" opacity="0.85"/>
+              <circle cx="68" cy="98" r="23" fill="#ca8a04" opacity="0.85"/>
+              <circle cx="104" cy="100" r="22" fill="#d97706" opacity="0.9"/>
+              <circle cx="88" cy="85" r="26" fill="#f59e0b" opacity="0.92"/>
+              <!-- Copos y almendras tostadas -->
+              <ellipse cx="62" cy="64" rx="8" ry="5" transform="rotate(-22 62 64)" fill="#fde68a"/>
+              <ellipse cx="95" cy="58" rx="9" ry="5" transform="rotate(15 95 58)" fill="#fcd34d"/>
+              <ellipse cx="116" cy="84" rx="8" ry="4.5" transform="rotate(38 116 84)" fill="#fde68a"/>
+              <ellipse cx="78" cy="112" rx="9" ry="5" transform="rotate(-14 78 112)" fill="#fcd34d"/>
+              <ellipse cx="86" cy="78" rx="7" ry="4" transform="rotate(28 86 78)" fill="#fef08a"/>
+              <ellipse cx="102" cy="92" rx="8" ry="4.5" transform="rotate(-30 102 92)" fill="#fde68a"/>
+              <circle cx="74" cy="84" r="4" fill="#78350f"/>
+              <circle cx="98" cy="74" r="3.5" fill="#78350f"/>
+              <circle cx="108" cy="104" r="4" fill="#78350f"/>
+              <circle cx="62" cy="92" r="3.5" fill="#92400e"/>
+            </g>
+            <!-- Arándanos frescos 3D -->
+            <g>
+              <circle cx="52" cy="54" r="10.5" fill="url(#spBerryGrad)"/><circle cx="49" cy="51" r="2.5" fill="#93c5fd" opacity="0.8"/>
+              <circle cx="68" cy="40" r="10" fill="url(#spBerryGrad)"/><circle cx="65" cy="37" r="2.2" fill="#93c5fd" opacity="0.8"/>
+              <circle cx="76" cy="74" r="11" fill="url(#spBerryGrad)"/><circle cx="73" cy="71" r="2.6" fill="#93c5fd" opacity="0.8"/>
+              <circle cx="96" cy="96" r="11" fill="url(#spBerryGrad)"/><circle cx="93" cy="93" r="2.6" fill="#93c5fd" opacity="0.8"/>
+              <circle cx="122" cy="78" r="10.5" fill="url(#spBerryGrad)"/><circle cx="119" cy="75" r="2.4" fill="#93c5fd" opacity="0.8"/>
+              <circle cx="88" cy="124" r="10.5" fill="url(#spBerryGrad)"/><circle cx="85" cy="121" r="2.4" fill="#93c5fd" opacity="0.8"/>
+            </g>
+          </svg>
+          <!-- Etiqueta inclinada 310 kcal -->
+          <div style="position:absolute;bottom:4px;right:10px;background:#ffffff;padding:6px 14px;border-radius:999px;font-weight:900;font-size:0.95rem;color:#c28135;box-shadow:0 8px 18px rgba(15,23,42,0.12);transform:rotate(-11deg);">
+            310 kcal
+          </div>
+        </div>
+
+        <!-- Corazones flotantes + Medallón circular de Michu + Nota manuscrita con flecha -->
+        <div style="position:absolute;top:16px;right:16px;z-index:2;display:flex;flex-direction:column;align-items:center;">
+          <!-- 3 Corazones coral flotando -->
+          <div style="position:relative;width:120px;height:82px;pointer-events:none;">
+            <svg width="38" height="38" viewBox="0 0 36 36" style="position:absolute;top:-4px;right:6px;animation:splashHeartRise 3.2s ease-in-out infinite;">
+              <path d="M18 31 C18 31 4 22 4 11.5 C4 6.5 8 3 12.5 3 C15.4 3 17.2 4.6 18 6.4 C18.8 4.6 20.6 3 23.5 3 C28 3 32 6.5 32 11.5 C32 22 18 31 18 31 Z" fill="#ff7eb3" stroke="#fb7185" stroke-width="1"/>
+            </svg>
+            <svg width="30" height="30" viewBox="0 0 36 36" style="position:absolute;top:24px;left:14px;animation:splashHeartRise 2.7s ease-in-out infinite 0.5s;">
+              <path d="M18 31 C18 31 4 22 4 11.5 C4 6.5 8 3 12.5 3 C15.4 3 17.2 4.6 18 6.4 C18.8 4.6 20.6 3 23.5 3 C28 3 32 6.5 32 11.5 C32 22 18 31 18 31 Z" fill="#fb7185"/>
+            </svg>
+            <svg width="22" height="22" viewBox="0 0 36 36" style="position:absolute;bottom:4px;left:42px;animation:splashHeartRise 2.4s ease-in-out infinite 1s;">
+              <path d="M18 31 C18 31 4 22 4 11.5 C4 6.5 8 3 12.5 3 C15.4 3 17.2 4.6 18 6.4 C18.8 4.6 20.6 3 23.5 3 C28 3 32 6.5 32 11.5 C32 22 18 31 18 31 Z" fill="#f43f5e"/>
+            </svg>
+          </div>
+
+          <!-- Medallón circular con Michu el Gato Gris Atigrado en pose tierna -->
+          <div style="width:118px;height:118px;border-radius:50%;background:linear-gradient(145deg, #f28b7d, #e06d5e);border:4.5px solid #ffffff;box-shadow:0 14px 28px rgba(15,23,42,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;animation:splashFloatSlow 4s ease-in-out infinite 0.4s;">
+            <svg viewBox="0 0 140 140" width="114" height="114">
+              <!-- Cola atigrada asomando al costado -->
+              <path d="M104 128 C126 118, 132 92, 118 82 C108 75, 102 90, 106 108 Z" fill="#78808c" stroke="#1e293b" stroke-width="3.2"/>
+              <path d="M111 92 L123 96 M108 104 L121 108" stroke="#262b33" stroke-width="4.5" stroke-linecap="round"/>
+              <!-- Orejas puntiagudas de gato -->
+              <path d="M28 62 L22 18 L58 38 Z" fill="#4b5563" stroke="#1e293b" stroke-width="3.4" stroke-linejoin="round"/>
+              <path d="M32 56 L28 26 L52 40 Z" fill="#dfb98c"/>
+              <path d="M112 62 L118 18 L82 38 Z" fill="#4b5563" stroke="#1e293b" stroke-width="3.4" stroke-linejoin="round"/>
+              <path d="M108 56 L112 26 L88 40 Z" fill="#dfb98c"/>
+              <!-- Cuerpo inferior y pecho blanco/crema -->
+              <ellipse cx="70" cy="122" rx="38" ry="26" fill="#78808c" stroke="#1e293b" stroke-width="3.4"/>
+              <ellipse cx="70" cy="124" rx="23" ry="19" fill="#f1f5f9"/>
+              <!-- Cabeza redonda tierna de Michu -->
+              <ellipse cx="70" cy="74" rx="44" ry="34" fill="#8b929e" stroke="#1e293b" stroke-width="3.4"/>
+              <!-- Mejillas claras y marca M atigrada -->
+              <ellipse cx="48" cy="80" rx="18" ry="14" fill="#cbd5e1" opacity="0.65"/>
+              <ellipse cx="92" cy="80" rx="18" ry="14" fill="#cbd5e1" opacity="0.65"/>
+              <path d="M52 50 L60 40 L70 50 L80 40 L88 50" stroke="#262b33" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              <!-- Vincha verde característica de Michu -->
+              <path d="M30 53 Q70 43 110 53 L108 60 Q70 50 32 60 Z" fill="#22c55e" stroke="#14532d" stroke-width="2.2"/>
+              <!-- Ojos grandes brillantes estilo dibujo animado -->
+              <ellipse cx="51" cy="73" rx="11.5" ry="10.5" fill="#1e293b"/>
+              <ellipse cx="89" cy="73" rx="11.5" ry="10.5" fill="#1e293b"/>
+              <circle cx="51" cy="73" r="8.5" fill="#eab308"/>
+              <circle cx="89" cy="73" r="8.5" fill="#eab308"/>
+              <circle cx="51" cy="73" r="5.5" fill="#0f172a"/>
+              <circle cx="89" cy="73" r="5.5" fill="#0f172a"/>
+              <circle cx="48" cy="69" r="3" fill="#ffffff"/>
+              <circle cx="86" cy="69" r="3" fill="#ffffff"/>
+              <circle cx="54" cy="76" r="1.4" fill="#ffffff"/>
+              <circle cx="92" cy="76" r="1.4" fill="#ffffff"/>
+              <!-- Nariz rosada y sonrisa tierna -->
+              <polygon points="65,81 75,81 70,87" fill="#fb7185" stroke="#1e293b" stroke-width="2"/>
+              <path d="M63 90 Q70 96 77 90" stroke="#1e293b" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+              <!-- Patitas juntas en el pecho haciendo corazoncito -->
+              <ellipse cx="57" cy="110" rx="12" ry="8" transform="rotate(-18 57 110)" fill="#cbd5e1" stroke="#1e293b" stroke-width="3"/>
+              <ellipse cx="83" cy="110" rx="12" ry="8" transform="rotate(18 83 110)" fill="#cbd5e1" stroke="#1e293b" stroke-width="3"/>
+              <path d="M70 116 C70 116 63 111 63 107 C63 104.5 65 103 67.2 103 C68.8 103 69.6 104 70 105 C70.4 104 71.2 103 72.8 103 C75 103 77 104.5 77 107 C77 111 70 116 70 116 Z" fill="#ffffff"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Texto manuscrito "Con un lindo gatito fit" + flecha curva apuntando a Michu -->
+        <div style="position:absolute;top:148px;left:50%;transform:translateX(-58%) rotate(-6deg);z-index:2;text-align:center;pointer-events:none;">
+          <svg width="58" height="26" viewBox="0 0 64 28" style="margin-left:52px;margin-bottom:-6px;">
+            <path d="M4 22 Q30 2 56 14 M48 7 L57 14 L47 19" fill="none" stroke="#5b7892" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div style="font-family:'Caveat', cursive;font-size:1.68rem;font-weight:700;color:#5b7892;line-height:0.98;">
+            Con un lindo<br/>gatito fit
+          </div>
+        </div>
+
+        <!-- Ícono flotante izquierdo: Hidratación (Vasos de agua +) -->
+        <div style="position:absolute;top:37%;left:12px;z-index:2;width:78px;height:78px;border-radius:50%;background:linear-gradient(145deg, #56abff, #2678ff);box-shadow:0 12px 26px rgba(38,120,255,0.28);display:flex;align-items:center;justify-content:center;animation:splashFloatSlow 3.8s ease-in-out infinite 0.2s;">
+          <svg width="54" height="54" viewBox="0 0 54 54">
+            <!-- Vaso lateral semitransparente -->
+            <path d="M6 16 L18 16 L16 40 C16 42 14 43 12 43 L6 43 Z" fill="rgba(255,255,255,0.45)"/>
+            <!-- Vaso central con signo + -->
+            <path d="M23 14 L43 14 L40 41 C40 43 38.5 44 36.5 44 L29.5 44 C27.5 44 26 43 26 41 Z" fill="rgba(255,255,255,0.32)" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/>
+            <path d="M25 22 L41 22 L39.5 40 C39.5 41.5 38 42.5 36.5 42.5 L29.5 42.5 C28 42.5 26.5 41.5 26.5 40 Z" fill="rgba(255,255,255,0.88)"/>
+            <path d="M33 27 L33 35 M29 31 L37 31" stroke="#2563eb" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <!-- Ícono flotante derecho: Anillo de Ayuno Intermitente 16:8 -->
+        <div style="position:absolute;top:45%;right:14px;z-index:2;width:78px;height:78px;border-radius:50%;background:#ffffff;box-shadow:0 12px 28px rgba(15,23,42,0.12);display:flex;align-items:center;justify-content:center;transform:rotate(8deg);animation:splashFloatSlow 4.2s ease-in-out infinite 0.8s;">
+          <svg width="70" height="70" viewBox="0 0 70 70">
+            <circle cx="35" cy="35" r="26" fill="none" stroke="#e2e8f0" stroke-width="7"/>
+            <circle cx="35" cy="35" r="26" fill="none" stroke="#22c55e" stroke-width="7" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="54" transform="rotate(-75 35 35)"/>
+            <text x="35" y="39" text-anchor="middle" font-family="'Fredoka', sans-serif" font-size="13.5" font-weight="700" fill="#64748b">16:8</text>
+          </svg>
+          <div style="position:absolute;bottom:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;font-size:0.7rem;">
+            🍴
+          </div>
+        </div>
+
+        <!-- Esfera desenfocada decorativa inferior izquierda (profundidad de campo) -->
+        <div style="position:absolute;bottom:175px;left:18%;width:74px;height:74px;border-radius:50%;background:radial-gradient(circle, rgba(163,190,140,0.55) 0%, rgba(210,180,140,0.35) 60%, transparent 100%);filter:blur(10px);pointer-events:none;z-index:1;"></div>
+
+        <!-- Espaciador superior para centrar el titular -->
+        <div style="height:175px;flex-shrink:0;"></div>
+
+        <!-- TITULAR GIGANTE CENTRAL -->
+        <h1 class="michu-splash-headline">
+          Alcanza<br/>tus<br/>metas de<br/>peso
+        </h1>
+
+        <!-- BOTONERA INFERIOR: "Empezar" + "Ya tengo una cuenta" -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;z-index:3;padding-top:8px;">
+          <button type="button" class="michu-splash-start-btn" id="btnSplashStartRegister">
+            Empezar
+          </button>
+          <button type="button" class="michu-splash-login-link" id="btnSplashOpenLogin">
+            Ya tengo una cuenta
+          </button>
+          <div style="font-size:0.72rem;color:#94a3b8;text-align:center;line-height:1.35;margin-top:4px;">
+            Al continuar, aceptas nuestros<br/>
+            <strong style="color:#475569;font-weight:700;">Términos de uso</strong> y <strong style="color:#475569;font-weight:700;">Aviso de privacidad</strong>
+          </div>
+        </div>
+      </div>
+
+      <div id="authModalHeaderIntro" style="display:none;text-align:center;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <button type="button" class="btn btn-sm" id="btnBackToSplashFromLogin" style="padding:4px 10px;font-size:0.76rem;">← Volver</button>
+          <span style="font-size:0.75rem;color:#64748b;font-weight:800;">🐱 Michu Fit</span>
+        </div>
+        <div style="font-size:2.3rem;line-height:1;">🐱</div>
+        <h2 style="font-size:1.3rem;font-weight:900;margin-top:4px;color:#181c20;">¡Qué bueno verte de nuevo!</h2>
+        <p style="font-size:0.8rem;color:#64748b;">Ingresá tu usuario o email para continuar con tu plan</p>
       </div>
 
       <!-- Vista 1: Formularios de Login y Registro -->
-      <div id="authFormsView">
-        <div id="authModalSwitchTabs" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;background:var(--bg-card);padding:5px;border-radius:11px;border:1px solid var(--border);">
+      <div id="authFormsView" style="display:none;">
+        <div id="authModalSwitchTabs" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;background:var(--bg-card);padding:5px;border-radius:11px;border:1px solid var(--border);">
           <button type="button" class="btn btn-sm btn-primary" id="btnSwitchAuthLogin" style="justify-content:center;">🔑 Iniciar Sesión</button>
           <button type="button" class="btn btn-sm" id="btnSwitchAuthRegister" style="justify-content:center;">✨ Crear Cuenta</button>
         </div>
@@ -10136,6 +10417,8 @@
 
     function showAuthModal(mode = "login") {
       document.documentElement.setAttribute("data-auth-state", "logged-out");
+      const overlayEl = document.getElementById("modalAuthOverlay");
+      const splashView = document.getElementById("authSplashHeroView");
       const formsView = document.getElementById("authFormsView");
       const pendingView = document.getElementById("authPendingView");
       const loginForm = document.getElementById("authLoginForm");
@@ -10147,31 +10430,58 @@
 
       showAuthAlert("");
       if (mode === "pending") {
-        if (headerIntro) headerIntro.style.display = "block";
-        if (switchTabs) switchTabs.style.display = "grid";
+        if (overlayEl) overlayEl.setAttribute("data-auth-mode", "login-form");
+        if (splashView) splashView.style.display = "none";
+        if (headerIntro) headerIntro.style.display = "none";
+        if (switchTabs) switchTabs.style.display = "none";
         if (formsView) formsView.style.display = "none";
         if (pendingView) pendingView.style.display = "block";
         const summaryTxt = document.getElementById("pendingUserSummaryText");
         if (summaryTxt && currentUserInfo) {
           summaryTxt.innerHTML = `Hola <strong>${currentUserInfo.name}</strong> (${currentUserInfo.email || currentUserInfo.username}), tu solicitud de cuenta fue recibida.<br/><br/>Apenas el administrador (<strong>Angel</strong>) la apruebe en su panel, tocá el botón de abajo para entrar a tu Michu Fit.`;
         }
-      } else {
-        if (formsView) formsView.style.display = "block";
+      } else if (mode === "login-form") {
+        if (overlayEl) overlayEl.setAttribute("data-auth-mode", "login-form");
+        if (splashView) splashView.style.display = "none";
         if (pendingView) pendingView.style.display = "none";
-        const isReg = mode === "register";
-        // Ocultar la cabecera de bienvenida y las pestañas durante el wizard para dar 100% de espacio limpio
-        if (headerIntro) headerIntro.style.display = isReg ? "none" : "block";
-        if (switchTabs) switchTabs.style.display = isReg ? "none" : "grid";
-        if (loginForm) loginForm.style.display = isReg ? "none" : "flex";
-        if (regForm) regForm.style.display = isReg ? "flex" : "none";
-        if (btnLogin) btnLogin.className = isReg ? "btn btn-sm" : "btn btn-sm btn-primary";
-        if (btnReg) btnReg.className = isReg ? "btn btn-sm btn-purple" : "btn btn-sm";
-        if (isReg && typeof window.resetRegWizard === "function") {
+        if (formsView) formsView.style.display = "block";
+        if (headerIntro) headerIntro.style.display = "block";
+        if (switchTabs) switchTabs.style.display = "none";
+        if (loginForm) loginForm.style.display = "flex";
+        if (regForm) regForm.style.display = "none";
+        setTimeout(() => document.getElementById("loginIdentifier")?.focus(), 80);
+      } else if (mode === "register") {
+        if (overlayEl) overlayEl.setAttribute("data-auth-mode", "register");
+        if (splashView) splashView.style.display = "none";
+        if (pendingView) pendingView.style.display = "none";
+        if (formsView) formsView.style.display = "block";
+        if (headerIntro) headerIntro.style.display = "none";
+        if (switchTabs) switchTabs.style.display = "none";
+        if (loginForm) loginForm.style.display = "none";
+        if (regForm) regForm.style.display = "flex";
+        if (typeof window.resetRegWizard === "function") {
           window.resetRegWizard();
         }
+      } else {
+        // Por defecto ("login" o "splash"): Mostrar la portada editorial de Michu Fit
+        if (overlayEl) overlayEl.setAttribute("data-auth-mode", "splash");
+        if (splashView) splashView.style.display = "flex";
+        if (formsView) formsView.style.display = "none";
+        if (pendingView) pendingView.style.display = "none";
+        if (headerIntro) headerIntro.style.display = "none";
       }
       openModal("modalAuthOverlay");
     }
+
+    document.getElementById("btnSplashStartRegister")?.addEventListener("click", () => {
+      showAuthModal("register");
+    });
+    document.getElementById("btnSplashOpenLogin")?.addEventListener("click", () => {
+      showAuthModal("login-form");
+    });
+    document.getElementById("btnBackToSplashFromLogin")?.addEventListener("click", () => {
+      showAuthModal("splash");
+    });
 
     function roleLabelHtml(role) {
       if (role === "superadmin") return "👑 Super-Admin";
