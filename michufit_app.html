@@ -2120,6 +2120,9 @@
         <button type="button" class="btn btn-sm btn-primary" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="flex:0 0 auto;">
           🥗 Menú Sugerido y Hábitos
         </button>
+        <button type="button" class="btn btn-sm btn-purple admin-reto21-only" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;flex:0 0 auto;">
+          🔥 Reto 21 Días (Exclusivo)
+        </button>
         <div style="display:flex;flex-direction:column;gap:5px;padding:6px 4px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
           <span style="font-size:0.74rem;font-weight:700;color:var(--text-muted);">🎭 Personalidad de Michu:</span>
           <div class="mood-switch" role="group" aria-label="Personalidad de Michu" style="display:grid;grid-template-columns:1fr 1fr;width:100%;">
@@ -2327,6 +2330,9 @@
             <button type="button" class="btn btn-sm" id="btnHeroSuggestedMenu" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="border-color:var(--accent);color:var(--accent);font-weight:800;">
               🥗 Menú Sugerido
             </button>
+            <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnHeroReto21" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;font-weight:900;">
+              🔥 Reto 21 Días
+            </button>
             <button type="button" class="btn btn-sm btn-purple" id="btnHeroScanAI">
               📸 Escáner IA
             </button>
@@ -2375,6 +2381,9 @@
               <button type="button" class="btn btn-sm" id="btnToday">Hoy</button>
               <button type="button" class="btn btn-sm btn-primary" id="btnOpenSuggestedMenuDiary" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" title="Ver menú semanal personalizado según tus gustos y objetivo">
                 🥗 Menú Sugerido
+              </button>
+              <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnOpenReto21Diary" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;" title="Programa interactivo Reto 21 Días (Comidas + Entrenamiento Gym/Casa)">
+                🔥 Reto 21 Días
               </button>
               <button type="button" class="btn btn-sm btn-purple" id="btnOpenExcelPlanDiary" onclick="window.openExcelPlanModal && window.openExcelPlanModal()" title="Precargar comidas del mes mediante Excel">
                 📅 Plan Excel
@@ -3732,6 +3741,22 @@
         <button type="button" class="btn btn-sm" data-close-modal="modalSuggestedMenu">✕</button>
       </div>
       <div id="suggestedMenuRootContainer" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL EXCLUSIVO ADMIN: RETO 21 DÍAS (PLAN DÍA POR DÍA + RUTINA GYM/CASA + REEMPLAZOS + SEMÁFORO) -->
+  <div class="custom-modal-overlay" id="modalReto21Dias" role="dialog" aria-modal="true">
+    <div class="modal-inner" style="max-width:820px;">
+      <div class="card-header" style="align-items:center;margin-bottom:10px;">
+        <div>
+          <div class="card-title">🔥 Reto 21 Días — Hoja de Ruta Diaria (Comidas + Gym/Casa)</div>
+          <small id="reto21Subtitle" style="color:var(--text-muted);font-size:0.76rem;">
+            3 semanas sin comidas libres • Qué comer y qué entrenar del Día 1 al Día 21
+          </small>
+        </div>
+        <button type="button" class="btn btn-sm" data-close-modal="modalReto21Dias">✕</button>
+      </div>
+      <div id="reto21RootContainer" style="display:flex;flex-direction:column;gap:12px;"></div>
     </div>
   </div>
   <script>
@@ -5453,6 +5478,13 @@
         if (lMenuTs > sMenuTs && localData.profile.menuPrefs) {
           merged.profile.menuPrefs = JSON.parse(JSON.stringify(localData.profile.menuPrefs));
           merged.profile.menuPrefsUpdatedAt = lMenuTs;
+          hadLocalChanges = true;
+        }
+        const lRetoTs = Number(localData.profile.reto21UpdatedAt) || 0;
+        const sRetoTs = Number(merged.profile.reto21UpdatedAt) || 0;
+        if (lRetoTs > sRetoTs && localData.profile.reto21State) {
+          merged.profile.reto21State = JSON.parse(JSON.stringify(localData.profile.reto21State));
+          merged.profile.reto21UpdatedAt = lRetoTs;
           hadLocalChanges = true;
         }
       }
@@ -10011,6 +10043,13 @@
         updateMobileInstallButtonVisibility();
       }
 
+      const isExclusiveAdminAngel = Boolean(
+        currentUserInfo && (currentUserInfo.role === "superadmin" || currentUserInfo.id === "u-owner")
+      );
+      document.querySelectorAll(".admin-reto21-only").forEach(el => {
+        el.style.display = isExclusiveAdminAngel ? "inline-flex" : "none";
+      });
+
       if (currentUserInfo) {
         const shortRole = currentUserInfo.role === "superadmin" ? "👑 Admin" : (currentUserInfo.role === "nutritionist" ? "🩺 Nutri" : "🐱");
         if (topLabel) topLabel.textContent = `${currentUserInfo.name} (${shortRole})`;
@@ -14129,6 +14168,869 @@
           fireCartoonConfetti("normal");
         }
       });
+    })();
+
+    // =========================================================================
+    // MOTOR EXCLUSIVO SUPERADMIN (ANGEL): RETO 21 DÍAS (COMIDAS + GYM/CASA + GUÍAS)
+    // =========================================================================
+    (function setupReto21DiasEngine() {
+      const RETO_MEALS_DB = {
+        trad: {
+          breakfast: [
+            {
+              opt: "Opción 1 — Yogur con Proteína y Fruta",
+              emoji: "🥣",
+              p1: "Infusión (café/mate/té) con 100cc leche descremada + 1 pote yogur descremado (125g) + 1 scoop proteína + 1 cda coco rallado (5g) + 1 fruta chica",
+              p2: "Infusión con 100cc leche descremada + 1 pote yogur descremado + 1.5 scoop proteína + 1-2 cdas semillas o frutos secos + 1 fruta mediana",
+              kcal1: 345, p1_g: 33, c1_g: 32, f1_g: 8,
+              kcal2: 445, p2_g: 44, c2_g: 38, f2_g: 13
+            },
+            {
+              opt: "Opción 2 — Galletas de Arroz con Palta y Huevo",
+              emoji: "🥑",
+              p1: "Infusión con 100cc leche descremada + 2 galletas de arroz + ¼ palta + 2 huevos y 2 claras revueltos + 2 cdas queso untable light",
+              p2: "Infusión con 100cc leche descremada + 3 galletas de arroz + ¼ palta + 2 huevos y 3 claras (en omelette o revuelto) + 2 cdas queso untable light",
+              kcal1: 380, p1_g: 28, c1_g: 22, f1_g: 19,
+              kcal2: 435, p2_g: 33, c2_g: 29, f2_g: 20
+            },
+            {
+              opt: "Opción 3 — Tostado de Jamón, Queso y Huevo Revuelto",
+              emoji: "🥪",
+              p1: "Infusión + 1 rebanada pan integral (25g) + 3 cdas queso untable light + 2 fetas jamón cocido magro + 1 huevo y 2 claras revueltas (o 5 almendras)",
+              p2: "Infusión + 2 a 3 rebanadas pan integral + 2-3 cdas queso untable light + 2 fetas jamón cocido magro + 2 huevos revueltos",
+              kcal1: 350, p1_g: 29, c1_g: 18, f1_g: 16,
+              kcal2: 460, p2_g: 34, c2_g: 36, f2_g: 19
+            },
+            {
+              opt: "Opción 4 — Protein Bowl Helado",
+              emoji: "🍨",
+              p1: "Licuado punto helado: ½ taza frutos rojos congelados + 1 manzana chica + 1 scoop proteína + ¼ vaso agua/leche + 15g avena (1 cda sopera)",
+              p2: "Licuado punto helado: ½ taza frutos rojos congelados + 1 fruta grande + 1.5 scoop proteína + 20g frutos secos (3-4 nueces) + ¼ vaso leche descremada",
+              kcal1: 330, p1_g: 28, c1_g: 42, f1_g: 5,
+              kcal2: 450, p2_g: 40, c2_g: 41, f2_g: 14
+            },
+            {
+              opt: "Opción 5 — Licuado de Banana Alto en Proteína",
+              emoji: "🍌",
+              p1: "Licuado: 1 scoop proteína + 15g avena (1 cda) + 1 banana mediana + 10g mantequilla de maní (1 cdita) + esencia de vainilla + 200cc leche/agua",
+              p2: "Licuado: 1.5 scoop proteína + 1 banana + 20g mantequilla de maní (2 cdas) + esencia de vainilla + 200cc leche descremada fría",
+              kcal1: 390, p1_g: 31, c1_g: 44, f1_g: 10,
+              kcal2: 475, p2_g: 43, c2_g: 36, f2_g: 17
+            }
+          ],
+          lunch: [
+            {
+              opt: "Opción 1 — Ensalada de Atún y Arroz",
+              emoji: "🐟",
+              p1: "240g atún al natural (2 latas) + 40g arroz pesado en crudo (o 1 papa chica) + vegetales a voluntad + 1 cda aceite de oliva",
+              p2: "240g atún al natural (2 latas) + 60g arroz pesado en crudo + vegetales a voluntad + 1 cda aceite de oliva o aderezo Caesar light",
+              kcal1: 495, p1_g: 54, c1_g: 36, f1_g: 14,
+              kcal2: 565, p2_g: 56, c2_g: 52, f2_g: 14
+            },
+            {
+              opt: "Opción 2 — Sándwich / Omelette de Jamón, Queso y Palta",
+              emoji: "🍳",
+              p1: "Omelette de 2 huevos y 4 claras + 30g queso Port Salut light + 30g legumbres en crudo (100g cocido) + ¼ palta + ensalada de tomate y lechuga",
+              p2: "Sándwich de omelette (3 huevos + 3 claras) + 60g queso Port Salut light + 1 feta jamón + 2 rebanadas pan integral + tomate y lechuga",
+              kcal1: 510, p1_g: 42, c1_g: 28, f1_g: 24,
+              kcal2: 580, p2_g: 50, c2_g: 34, f2_g: 26
+            },
+            {
+              opt: "Opción 3 — Albóndigas / Hamburguesas Caseras con Avena y Queso",
+              emoji: "🍔",
+              p1: "160g carne vacuna o pollo magro + 30g queso Port Salut light + 1 huevo + 2 cdas harina de avena + ensalada con 1 cda aceite de oliva",
+              p2: "200g carne vacuna o pollo magro + 60g queso Port Salut light + 1 huevo + 4 cdas harina de avena + ensalada con 1 cda aceite de oliva",
+              kcal1: 520, p1_g: 49, c1_g: 19, f1_g: 26,
+              kcal2: 640, p2_g: 62, c2_g: 32, f2_g: 29
+            },
+            {
+              opt: "Opción 4 — Carne / Pechuga + Ensalada + Papas o Batatas al Horno",
+              emoji: "🥩",
+              p1: "180g bife de lomo/solomillo de cerdo/pechuga + 1 papa o batata mediana al horno (150g) + ensalada a elección con 1 cda aceite de oliva",
+              p2: "220g pechuga de pollo o carne magra + 1 papa o batata al horno (200g) + ensalada completa con 1 huevo picado y 1 cda aceite de oliva",
+              kcal1: 515, p1_g: 46, c1_g: 38, f1_g: 19,
+              kcal2: 635, p2_g: 60, c2_g: 46, f2_g: 23
+            },
+            {
+              opt: "Opción 5 — Salteado de Pollo/Carne + Brócoli/Zapallitos + Arroz o Fideos",
+              emoji: "🍲",
+              p1: "200g pollo o cerdo magro + salteado de zapallitos/calabaza y cebolla con 1 cda oliva + 40g arroz pesado en crudo",
+              p2: "220g pechuga de pollo + 250g brócoli salteado con cebolla y 1 cda oliva + 60g fideos o arroz (pesado en crudo)",
+              kcal1: 520, p1_g: 52, c1_g: 38, f1_g: 17,
+              kcal2: 615, p2_g: 59, c2_g: 54, f2_g: 18
+            }
+          ],
+          merienda: [
+            {
+              opt: "Opción 1 — Tostado Proteico de Jamón, Queso y Huevo",
+              emoji: "🥪",
+              p1: "Infusión sin azúcar + 2 rodajas pan integral (50g) + 1 feta jamón + 1 feta queso magro + 1 huevo y 2 claras revueltas",
+              p2: "Infusión sin azúcar + 3 rodajas pan integral (75g) + 1 feta jamón + 2 fetas queso magro + 2 huevos y 3 claras revueltas",
+              kcal1: 345, p1_g: 29, c1_g: 26, f1_g: 13,
+              kcal2: 465, p2_g: 41, c2_g: 38, f2_g: 16
+            },
+            {
+              opt: "Opción 2 — Bizcochuelo Fit de Avena y Chocolate",
+              emoji: "🍫",
+              p1: "Infusión + Bizcochuelo: 30g harina de avena (3 cdas) + 1 huevo y 4 claras + 1 cda cacao amargo + stevia y esencia de vainilla",
+              p2: "Infusión + Bizcochuelo: 50g harina de avena (5 cdas) + 2 huevos y 4 claras + 2 cdas cacao amargo + stevia",
+              kcal1: 295, p1_g: 26, c1_g: 24, f1_g: 9,
+              kcal2: 415, p2_g: 35, c2_g: 38, f2_g: 13
+            },
+            {
+              opt: "Opción 3 — Bizcochuelo Fit de Avena y Limón",
+              emoji: "🍋",
+              p1: "Infusión + Bizcochuelo: 30g harina de avena (3 cdas) + 1 huevo y 4 claras + ralladura de 1 limón + stevia al horno/microondas",
+              p2: "Infusión + Bizcochuelo: 50g harina de avena (5 cdas) + 2 huevos y 4 claras + ralladura de 1 limón + stevia",
+              kcal1: 280, p1_g: 24, c1_g: 23, f1_g: 8,
+              kcal2: 395, p2_g: 33, c2_g: 36, f2_g: 12
+            },
+            {
+              opt: "Opción 4 — Tostadas con Jamón, Queso y Tomate Cherry",
+              emoji: "🍅",
+              p1: "Infusión + 1 rodaja pan integral (25g) + 30g jamón cocido natural (2 fetas) + 1 feta queso magro + rodajas de tomate o cherrys",
+              p2: "Infusión + 3 rodajas pan integral + 60g jamón cocido natural (4 fetas) + 3 fetas queso bajo en grasas + tomates cherry",
+              kcal1: 240, p1_g: 19, c1_g: 16, f1_g: 9,
+              kcal2: 420, p2_g: 36, c2_g: 38, f2_g: 13
+            },
+            {
+              opt: "Opción 5 — Postre Proteico Cremoso con Frutos Rojos",
+              emoji: "🍓",
+              p1: "Infusión + 100g yogur descremado + ½ scoop proteína + 1 cdita mantequilla de maní + 100g frutos rojos",
+              p2: "Infusión + 100g ricota o yogur descremado + 1 scoop proteína + 3 cdas mantequilla de maní + 100g frutos rojos",
+              kcal1: 265, p1_g: 23, c1_g: 19, f1_g: 9,
+              kcal2: 430, p2_g: 36, c2_g: 22, f2_g: 21
+            }
+          ],
+          dinner: [
+            {
+              opt: "Opción 1 — Pescado al Horno + Vegetales + Palta",
+              emoji: "🐟",
+              p1: "200g filet de merluza/salmón/atún + ensalada completa de vegetales a elección + ¼ palta",
+              p2: "250g filet de merluza/salmón/atún + ensalada completa de vegetales a elección + ¼ palta",
+              kcal1: 390, p1_g: 42, c1_g: 10, f1_g: 19,
+              kcal2: 455, p2_g: 52, c2_g: 11, f2_g: 21
+            },
+            {
+              opt: "Opción 2 — Wrap Proteico de Carne o Pollo",
+              emoji: "🌯",
+              p1: "1 wrap integral (30g) + 200g pechuga de pollo desmenuzada + 1-2 cdas queso crema light + vegetales a elección",
+              p2: "2 wraps integrales (o de claras batidas) + 220g pollo o carne magra + 2 cdas queso crema light + vegetales",
+              kcal1: 420, p1_g: 51, c1_g: 22, f1_g: 13,
+              kcal2: 510, p2_g: 58, c2_g: 34, f2_g: 15
+            },
+            {
+              opt: "Opción 3 — Pollo o Lomo a la Plancha + Ensalada Completa",
+              emoji: "🍗",
+              p1: "180g pechuga de pollo sin piel o lomo a la plancha + ensalada de vegetales a elección con 1 cda aceite de oliva",
+              p2: "230g corte magro de carne o pechuga a la plancha + ensalada completa con 1 cda aceite de oliva",
+              kcal1: 395, p1_g: 46, c1_g: 8, f1_g: 19,
+              kcal2: 475, p2_g: 56, c2_g: 9, f2_g: 22
+            },
+            {
+              opt: "Opción 4 — Ensalada Caesar Fit con Croutons de Arroz",
+              emoji: "🥗",
+              p1: "150g pechuga al horno + hojas verdes + 1 huevo picado + 1 cda queso rallado + 1 cda aderezo Caesar light + 1 galleta de arroz triturada",
+              p2: "220g pechuga al horno + hojas verdes + 1 huevo picado + 1 cda queso rallado + 1 cda aderezo Caesar light + 1 galleta de arroz triturada",
+              kcal1: 410, p1_g: 47, c1_g: 12, f1_g: 18,
+              kcal2: 495, p2_g: 61, c2_g: 13, f2_g: 20
+            },
+            {
+              opt: "Opción 5 — Tortilla Gigante de Brócoli o Espinaca",
+              emoji: "🥦",
+              p1: "Tortilla en sartén: 1 huevo + 3 claras + brócoli/espinaca salteada con cebolla y morrón + 30g queso descremado + 30g porotos/lentejas + 1 cda oliva",
+              p2: "Tortilla grande: 1 huevo + 4 claras + brócoli/espinaca salteada + 50g queso descremado + 40g porotos/lentejas + 1 cda aceite de oliva",
+              kcal1: 430, p1_g: 38, c1_g: 24, f1_g: 19,
+              kcal2: 490, p2_g: 46, c2_g: 28, f2_g: 21
+            }
+          ]
+        },
+        keto: {
+          breakfast: [
+            {
+              opt: "Opción 1 Keto — Yogur Griego con Frutos Secos y Frutos Rojos",
+              emoji: "🥣",
+              p1: "Infusión sin azúcar + 125g yogur griego natural + 2 cdas frutos secos + 100g frutillas/arándanos + ½ scoop proteína (opcional)",
+              p2: "Infusión sin azúcar + 160g yogur griego + 3 cdas frutos secos + 120g frutos rojos + 1 scoop proteína",
+              kcal1: 350, p1_g: 28, c1_g: 12, f1_g: 21,
+              kcal2: 450, p2_g: 38, c2_g: 14, f2_g: 26
+            },
+            {
+              opt: "Opción 2 Keto — Revuelto de Palta, Huevos y Queso Gratinado",
+              emoji: "🥑",
+              p1: "Infusión + ½ palta mediana + 2 huevos y 2 claras revueltas con 2 fetas de queso gratinado",
+              p2: "Infusión + ½ palta grande + 3 huevos y 2 claras revueltas con 2 fetas de queso gratinado",
+              kcal1: 390, p1_g: 29, c1_g: 6, f1_g: 28,
+              kcal2: 470, p2_g: 36, c2_g: 7, f2_g: 33
+            },
+            {
+              opt: "Opción 3 Keto — Tostado Keto con Pan de Almendras y Huevo",
+              emoji: "🧀",
+              p1: "Infusión + Pan Keto (1 huevo + 2 cdas harina de almendras al microondas) relleno con 1 feta jamón y 2 fetas queso + 1 huevo revuelto",
+              p2: "Infusión + Pan Keto (2 huevos + 3 cdas harina de almendras) relleno con 2 fetas jamón y 3 fetas queso + 2 claras",
+              kcal1: 385, p1_g: 31, c1_g: 5, f1_g: 27,
+              kcal2: 480, p2_g: 39, c2_g: 7, f2_g: 33
+            },
+            {
+              opt: "Opción 4 Keto — Protein Bowl Keto de Frutos Rojos y Nueces",
+              emoji: "🫐",
+              p1: "Licuado espeso: ½ taza frutos rojos congelados + 4 mariposas de nuez (o 7 almendras) + 1.5 scoop proteína con agua",
+              p2: "Licuado espeso: ½ taza frutos rojos congelados + 6 mariposas de nuez + 1.5 scoop proteína + 1 cda crema o coco rallado",
+              kcal1: 325, p1_g: 36, c1_g: 9, f1_g: 15,
+              kcal2: 410, p2_g: 38, c2_g: 10, f2_g: 23
+            },
+            {
+              opt: "Opción 5 Keto — Licuado de Frutos Rojos y Mantequilla de Maní",
+              emoji: "🥤",
+              p1: "Licuado con 200cc agua fría: 1.5 scoop proteína + 20g mantequilla de maní (2 cdas) + 100g frutos rojos",
+              p2: "Licuado con 200cc agua fría: 2 scoops proteína + 25g mantequilla de maní + 120g frutos rojos",
+              kcal1: 355, p1_g: 40, c1_g: 11, f1_g: 16,
+              kcal2: 430, p2_g: 50, c2_g: 13, f2_g: 19
+            }
+          ]
+        }
+      };
+
+      const RETO_WORKOUTS = {
+        1: {
+          title: "Rutina Día 1 — Pecho y Espalda",
+          icon: "💪",
+          kcal: 340,
+          gym: [
+            "1️⃣ Press en banco plano — 4 × 12-10-8-8 (subiendo peso)",
+            "2️⃣ Aperturas en banco plano — 4 × 12",
+            "3️⃣ Press inclinado con mancuernas — 4 × 15-12-10-10",
+            "4️⃣ Jalones en polea al pecho — 4 × 12-10-8-8",
+            "5️⃣ Pull over en polea alta — 4 × 12",
+            "6️⃣ Remo a un brazo con mancuerna — 4 × 10"
+          ],
+          home: [
+            "1️⃣ Remo con banda elástica — 4 × 30",
+            "2️⃣ Remo bajo en casa (banda/mochila) — 4 × 15-12-10-10",
+            "3️⃣ Remo a un brazo con mancuerna o bidón — 5 × 15-12-12-10-10",
+            "4️⃣ Flexiones inclinadas (manos apoyadas en banco/silla) — 4 × 17",
+            "5️⃣ Flexiones cerradas — 4 × 8",
+            "6️⃣ Flexiones declinadas (pies elevados) — 4 × 8"
+          ]
+        },
+        2: {
+          title: "Rutina Día 2 — Piernas y Glúteos",
+          icon: "🦵",
+          kcal: 390,
+          gym: [
+            "1️⃣ Sentadillas en Smith o libre — 4 × 15-12-10-8",
+            "2️⃣ Prensa 45° — 4 × 15",
+            "3️⃣ Hip Thrust con barra — 4 × 15-15-12-12",
+            "4️⃣ Peso muerto con barra — 4 × 12-10-10-8",
+            "5️⃣ Sillón de cuádriceps (extensión) — 3 × 15",
+            "6️⃣ Camilla de isquiotibiales — 3 × 15"
+          ],
+          home: [
+            "1️⃣ Sentadillas libres profundas — 4 × 25",
+            "2️⃣ Paso lateral con banda + sentadilla — 4 × 30",
+            "3️⃣ Peso muerto con mancuernas / bidones — 4 × 12",
+            "4️⃣ Estocada trasera con mancuernas — 4 × 12 por pierna",
+            "5️⃣ Estocada trasera con banda — 4 × 12",
+            "6️⃣ Estocada búlgara (pie trasero en silla) — 3 × 12 por pierna"
+          ]
+        },
+        3: {
+          title: "Rutina Día 3 — Hombros, Bíceps y Tríceps",
+          icon: "🏋️",
+          kcal: 310,
+          gym: [
+            "1️⃣ Vuelos laterales con mancuernas — 4 × 12",
+            "2️⃣ Press de hombros con barra — 3 × 12-10-8",
+            "3️⃣ Vuelos posteriores (pájaros) — 3 × 12",
+            "4️⃣ Curl de bíceps en banco Scott — 4 × 12",
+            "5️⃣ Curl de bíceps parado con barra/mancuernas — 3 × 15",
+            "6️⃣ Extensión de tríceps en polea con soga — 4 × 15",
+            "7️⃣ Extensión de tríceps trasnuca con mancuerna — 3 × 12-10-10"
+          ],
+          home: [
+            "1️⃣ Vuelos laterales con banda elástica — 4 × 20",
+            "2️⃣ Vuelos laterales a 1 brazo — 4 × 10",
+            "3️⃣ Elevaciones frontales con peso/disco — 4 × 12",
+            "4️⃣ Bíceps con mancuernas o botellas — 4 × 12",
+            "5️⃣ Bíceps martillo — 4 × 15",
+            "6️⃣ Fondos de tríceps en banco/silla — 4 × 20",
+            "7️⃣ Extensión de tríceps con mancuerna — 4 × 12"
+          ]
+        },
+        abs: {
+          title: "Bonus — Abdominales y Core (1 a 2 veces por semana post-rutina)",
+          gym: ["1️⃣ Elevaciones de rodillas colgado — 3 × 15", "2️⃣ Abdominales en polea alta — 3 × 15", "3️⃣ Plancha frontal isométrica — 3 × 30 seg", "4️⃣ Espinales — 3 × 20"],
+          home: ["1️⃣ Cortitos abdominales en suelo — 3 × 25", "2️⃣ Abdominales bolita — 3 × 25", "3️⃣ Plancha frontal isométrica — 3 × 30 seg", "4️⃣ Espinales en suelo — 3 × 20"]
+        },
+        cardio: {
+          title: "Cardio del Reto (6 veces por semana • 60 a 90 min o 2 bloques de 45 min)",
+          kcal: 360,
+          desc: "Caminar a ritmo moderado/rápido, bicicleta fija, elíptico, escalador o saltar la soga (ideal post-pesas o separado)."
+        }
+      };
+
+      // Calendarios exactos de rotación de 21 días según 3, 4 o 5 días de pesas por semana
+      const SCHEDULE_21_DAYS = {
+        3: [1, 0, 2, 0, 3, 0, 0,  1, 0, 2, 0, 3, 0, 0,  1, 0, 2, 0, 3, 0, 0],
+        4: [1, 2, 0, 3, 1, 0, 0,  2, 3, 0, 1, 2, 0, 0,  3, 1, 0, 2, 3, 0, 0],
+        5: [1, 2, 3, 1, 2, 0, 0,  3, 1, 2, 3, 1, 0, 0,  2, 3, 1, 2, 3, 0, 0]
+      };
+
+      let retoUiTab = "daily"; // "daily" | "swaps" | "fruits" | "health"
+
+      function ensureReto21State() {
+        appData.profile = appData.profile || {};
+        if (!appData.profile.reto21State || typeof appData.profile.reto21State !== "object") {
+          appData.profile.reto21State = {
+            startDate: todayStr(),
+            activeDayNum: 1, // 1..21
+            dietMode: "trad_4", // "trad_4" | "trad_3" | "keto_4" | "keto_3"
+            portionSize: 2, // 1 | 2
+            trainPlace: "gym", // "gym" | "home"
+            trainDaysPerWk: 4, // 3 | 4 | 5
+            completedDays: {}, // { "1": true, ... }
+            mealChoices: {}, // { "day_slot": 0..4 }
+            checkedExercises: {} // { "day_exIdx": true }
+          };
+        }
+        return appData.profile.reto21State;
+      }
+
+      function saveReto21() {
+        appData.profile.reto21UpdatedAt = Date.now();
+        saveToServer();
+      }
+
+      function getRetoDaySlots(st, dayNum) {
+        const isKeto = st.dietMode.startsWith("keto");
+        const is3Meals = st.dietMode.endsWith("_3");
+        const pSize = Number(st.portionSize) === 1 ? 1 : 2;
+
+        const bfList = isKeto ? RETO_MEALS_DB.keto.breakfast : RETO_MEALS_DB.trad.breakfast;
+        const lnList = RETO_MEALS_DB.trad.lunch;
+        const mrList = RETO_MEALS_DB.trad.merienda;
+        const dnList = RETO_MEALS_DB.trad.dinner;
+
+        const rawSlots = [];
+        if (st.dietMode === "keto_3") {
+          // Low-Carb/Keto 3 comidas (Sin Desayuno: Almuerzo, Merienda, Cena)
+          rawSlots.push(
+            { slotKey: "lunch", slotTitle: "☀️ 1° Comida — Almuerzo Low-Carb", list: lnList },
+            { slotKey: "merienda", slotTitle: "🧉 2° Comida — Merienda Keto", list: mrList },
+            { slotKey: "dinner", slotTitle: "🌙 3° Comida — Cena Keto", list: dnList }
+          );
+        } else if (is3Meals) {
+          // Tradicional 3 comidas (Sin Cena: Desayuno, Almuerzo, Merienda-Cena)
+          rawSlots.push(
+            { slotKey: "breakfast", slotTitle: "🌅 1° Comida — Desayuno", list: bfList },
+            { slotKey: "lunch", slotTitle: "☀️ 2° Comida — Almuerzo (Método 1/3)", list: lnList },
+            { slotKey: "merienda", slotTitle: "🧉 3° Comida — Merienda-Cena Tardía", list: mrList }
+          );
+        } else {
+          rawSlots.push(
+            { slotKey: "breakfast", slotTitle: "🌅 Desayuno", list: bfList },
+            { slotKey: "lunch", slotTitle: "☀️ Almuerzo", list: lnList },
+            { slotKey: "merienda", slotTitle: "🧉 Merienda", list: mrList },
+            { slotKey: "dinner", slotTitle: "🌙 Cena", list: dnList }
+          );
+        }
+
+        return rawSlots.map((s, idx) => {
+          const choiceKey = `${dayNum}_${s.slotKey}`;
+          const defaultOptIdx = (dayNum - 1 + idx) % s.list.length;
+          const optIdx = st.mealChoices[choiceKey] !== undefined
+            ? Number(st.mealChoices[choiceKey]) % s.list.length
+            : defaultOptIdx;
+          const item = s.list[optIdx];
+          return {
+            slotKey: s.slotKey,
+            slotTitle: s.slotTitle,
+            optIdx,
+            optTitle: item.opt,
+            emoji: item.emoji,
+            desc: pSize === 1 ? item.p1 : item.p2,
+            kcal: pSize === 1 ? item.kcal1 : item.kcal2,
+            p: pSize === 1 ? item.p1_g : item.p2_g,
+            c: pSize === 1 ? item.c1_g : item.c2_g,
+            f: pSize === 1 ? item.f1_g : item.f2_g,
+            totalOptions: s.list.length
+          };
+        });
+      }
+
+      function renderReto21Modal() {
+        const root = document.getElementById("reto21RootContainer");
+        if (!root) return;
+        const st = ensureReto21State();
+        const dayNum = Math.max(1, Math.min(21, Number(st.activeDayNum) || 1));
+        const completedCount = Object.keys(st.completedDays || {}).filter(k => st.completedDays[k]).length;
+        const pctDone = Math.round((completedCount / 21) * 100);
+
+        const navTabsHtml = `
+          <div style="display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:8px;">
+            <button type="button" class="btn btn-sm ${retoUiTab === "daily" ? "btn-primary" : ""}" data-r21-tab="daily">
+              📅 Día ${dayNum}/21 (Comidas + Rutina)
+            </button>
+            <button type="button" class="btn btn-sm ${retoUiTab === "swaps" ? "btn-primary" : ""}" data-r21-tab="swaps">
+              🔄 Reemplazos y Método del Plato
+            </button>
+            <button type="button" class="btn btn-sm ${retoUiTab === "fruits" ? "btn-primary" : ""}" data-r21-tab="fruits">
+              🚦 Semáforo Frutas y Vegetales A/B/C
+            </button>
+            <button type="button" class="btn btn-sm ${retoUiTab === "health" ? "btn-primary" : ""}" data-r21-tab="health">
+              🩺 Patologías y Mente Fit
+            </button>
+          </div>
+        `;
+
+        let bodyHtml = "";
+
+        if (retoUiTab === "daily") {
+          const daySlots = getRetoDaySlots(st, dayNum);
+          const dayTotKcal = daySlots.reduce((a, x) => a + x.kcal, 0);
+          const dayTotP = daySlots.reduce((a, x) => a + x.p, 0);
+          const schedArr = SCHEDULE_21_DAYS[st.trainDaysPerWk] || SCHEDULE_21_DAYS[4];
+          const routineId = schedArr[dayNum - 1] || 0;
+          const routineObj = routineId > 0 ? RETO_WORKOUTS[routineId] : null;
+          const exList = routineObj ? (st.trainPlace === "home" ? routineObj.home : routineObj.gym) : [];
+          const absList = st.trainPlace === "home" ? RETO_WORKOUTS.abs.home : RETO_WORKOUTS.abs.gym;
+          const isDayCompleted = Boolean(st.completedDays && st.completedDays[String(dayNum)]);
+
+          bodyHtml = `
+            <!-- Configuración rápida del Reto -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:10px 12px;">
+              <div class="field">
+                <label style="font-size:0.72rem;">🍽️ Modalidad de Dieta</label>
+                <select id="r21DietModeSel" style="padding:6px 8px;font-size:0.78rem;">
+                  <option value="trad_4" ${st.dietMode === "trad_4" ? "selected" : ""}>🥗 Tradicional (4 comidas)</option>
+                  <option value="trad_3" ${st.dietMode === "trad_3" ? "selected" : ""}>🍽️ Tradicional 3 comidas (Sin Cena)</option>
+                  <option value="keto_4" ${st.dietMode === "keto_4" ? "selected" : ""}>🥑 Low-Carb / Keto (4 comidas)</option>
+                  <option value="keto_3" ${st.dietMode === "keto_3" ? "selected" : ""}>⚡ Low-Carb / Keto (3 comidas s/Desayuno)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label style="font-size:0.72rem;">⚖️ Tamaño de Porción</label>
+                <select id="r21PortionSel" style="padding:6px 8px;font-size:0.78rem;">
+                  <option value="1" ${Number(st.portionSize) === 1 ? "selected" : ""}>Plan 1 (Déficit / Porción Chica)</option>
+                  <option value="2" ${Number(st.portionSize) === 2 ? "selected" : ""}>Plan 2 (Entreno Fuerte / Porción Grande)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label style="font-size:0.72rem;">🏋️ Lugar de Entreno</label>
+                <select id="r21TrainPlaceSel" style="padding:6px 8px;font-size:0.78rem;">
+                  <option value="gym" ${st.trainPlace === "gym" ? "selected" : ""}>🏋️ Gimnasio</option>
+                  <option value="home" ${st.trainPlace === "home" ? "selected" : ""}>🏠 En Casa (Bandas/Mancuernas)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label style="font-size:0.72rem;">📆 Días de Pesas / Semana</label>
+                <select id="r21TrainFreqSel" style="padding:6px 8px;font-size:0.78rem;">
+                  <option value="3" ${Number(st.trainDaysPerWk) === 3 ? "selected" : ""}>3 días/sem (1-2-3)</option>
+                  <option value="4" ${Number(st.trainDaysPerWk) === 4 ? "selected" : ""}>4 días/sem (Rotación 1-2-3-1)</option>
+                  <option value="5" ${Number(st.trainDaysPerWk) === 5 ? "selected" : ""}>5 días/sem (Rotación 1-2-3-1-2)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Mapa de Progreso 21 Días -->
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:10px 12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;flex-wrap:wrap;gap:6px;">
+                <strong style="font-size:0.83rem;">🗺️ Camino de los 21 Días (Tocá cualquier día para ver su plan)</strong>
+                <span style="font-size:0.76rem;font-weight:800;color:var(--accent);">🏆 ${completedCount} de 21 días completados (${pctDone}%)</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;">
+                ${Array.from({ length: 21 }, (_, i) => i + 1).map(n => {
+                  const done = Boolean(st.completedDays && st.completedDays[String(n)]);
+                  const active = n === dayNum;
+                  const rId = schedArr[n - 1] || 0;
+                  return `
+                    <button type="button" class="btn btn-sm ${active ? "btn-primary" : ""}" data-r21-day="${n}"
+                      style="padding:5px 2px;flex-direction:column;gap:1px;border-color:${done ? "#22c55e" : (active ? "#15803d" : "var(--border)")};background:${active ? "" : (done ? "var(--accent-soft)" : "var(--bg-elev)")};">
+                      <span style="font-size:0.72rem;font-weight:900;">${done ? "✅" : ""} Día ${n}</span>
+                      <span style="font-size:0.62rem;opacity:0.82;">${rId > 0 ? `🏋️ Rut. ${rId}` : "🏃 Cardio"}</span>
+                    </button>
+                  `;
+                }).join("")}
+              </div>
+            </div>
+
+            <!-- Encabezado del Día Seleccionado -->
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:14px;padding:10px 13px;">
+              <div>
+                <strong style="font-size:0.95rem;color:var(--text);">🔥 Día ${dayNum} de 21 (Semana ${Math.ceil(dayNum / 7)})</strong>
+                <div style="font-size:0.76rem;color:var(--text-muted);">
+                  Total menú del día: <strong>${dayTotKcal} kcal • ${dayTotP}g Proteína</strong> • Sin picoteos entre horas
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-sm ${isDayCompleted ? "btn-primary" : ""}" id="btnToggleR21DayDone">
+                  ${isDayCompleted ? "🏆 Día " + dayNum + " Completado ✓" : "⬜ Marcar Día " + dayNum + " Cumplido"}
+                </button>
+                <button type="button" class="btn btn-sm btn-purple" id="btnPreloadR21DayToDiary">
+                  📋 Enviar Comidas de este Día a mi Diario
+                </button>
+              </div>
+            </div>
+
+            <!-- SECCIÓN A: QUÉ COMER EN EL DÍA ${dayNum} -->
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <strong style="font-size:0.86rem;">🍽️ 1. Qué comer en el Día ${dayNum} (Tocá "Cambiar Opción 1–5" para elegir tu favorita)</strong>
+              ${daySlots.map(s => `
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <strong style="font-size:0.83rem;color:var(--accent);">${s.slotTitle} — ${s.optTitle}</strong>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                      <span style="font-size:0.74rem;font-weight:800;color:var(--text-muted);">${s.kcal} kcal (${s.p}g P)</span>
+                      <button type="button" class="btn btn-sm" data-r21-cycle-meal="${s.slotKey}" style="padding:3px 8px;font-size:0.72rem;">
+                        🔄 Opción ${(s.optIdx + 1)}/${s.totalOptions}
+                      </button>
+                      <button type="button" class="btn btn-sm btn-primary" data-r21-log-meal="${s.slotKey}" style="padding:3px 8px;font-size:0.72rem;">
+                        ➕ Cargar hoy
+                      </button>
+                    </div>
+                  </div>
+                  <div style="font-size:0.83rem;color:var(--text);line-height:1.4;">
+                    ${s.emoji} ${s.desc}
+                  </div>
+                </div>
+              `).join("")}
+            </div>
+
+            <!-- SECCIÓN B: QUÉ ENTRENAR EN EL DÍA ${dayNum} -->
+            <div style="background:var(--bg-card);border:1.5px solid rgba(168,85,247,0.45);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div>
+                  <strong style="font-size:0.88rem;color:var(--purple);">
+                    ${routineObj ? `${routineObj.icon} 2. Entrenamiento del Día ${dayNum}: ${routineObj.title} (${st.trainPlace === "home" ? "🏠 En Casa" : "🏋️ Gimnasio"})` : `🏃 2. Entrenamiento del Día ${dayNum}: Cardio Activo + Recuperación Muscular`}
+                  </strong>
+                  <div style="font-size:0.74rem;color:var(--text-muted);">
+                    Descanso entre series: 30 a 60 seg • Duración máx: 60 min (+ Cardio 60-90 min o 2 bloques de 45 min)
+                  </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-purple" id="btnLogR21WorkoutToDiary">
+                  🔥 Sumar Rutina al Diario (-${routineObj ? routineObj.kcal : RETO_WORKOUTS.cardio.kcal} kcal)
+                </button>
+              </div>
+
+              ${routineObj ? `
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px;">
+                  ${exList.map((exText, exIdx) => {
+                    const chkKey = `${dayNum}_ex_${exIdx}`;
+                    const isChk = Boolean(st.checkedExercises && st.checkedExercises[chkKey]);
+                    return `
+                      <label style="display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;background:var(--bg);border:1px solid ${isChk ? "var(--accent)" : "var(--border)"};font-size:0.79rem;cursor:pointer;">
+                        <input type="checkbox" data-r21-exchk="${chkKey}" ${isChk ? "checked" : ""} />
+                        <span style="${isChk ? "text-decoration:line-through;opacity:0.75;" : "font-weight:700;"}">${exText}</span>
+                      </label>
+                    `;
+                  }).join("")}
+                </div>
+                <details style="margin-top:4px;font-size:0.78rem;">
+                  <summary style="cursor:pointer;font-weight:800;color:var(--text-muted);">➕ Ver bloque de Abdominales (1-2 veces por semana)</summary>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px;margin-top:6px;">
+                    ${absList.map(a => `<div style="padding:6px 8px;border-radius:8px;background:var(--bg);border:1px solid var(--border);">${a}</div>`).join("")}
+                  </div>
+                </details>
+              ` : `
+                <div style="padding:8px 10px;border-radius:10px;background:var(--bg);border:1px solid var(--border);font-size:0.8rem;">
+                  🏃 <strong>${RETO_WORKOUTS.cardio.title}:</strong> ${RETO_WORKOUTS.cardio.desc}
+                </div>
+              `}
+            </div>
+          `;
+        } else if (retoUiTab === "swaps") {
+          bodyHtml = `
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:0.82rem;">
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;">
+                <strong style="font-size:0.9rem;color:var(--accent);display:block;margin-bottom:6px;">🔄 Tabla Oficial de Reemplazos Exactos (Tradicional y Low-Carb)</strong>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;">
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong>🍚 Equivalencia de Carbohidratos (¼ del plato):</strong>
+                    <p style="color:var(--text-muted);font-size:0.77rem;margin-top:4px;">
+                      <strong>100g de vegetales Tipo C</strong> (papa, batata, choclo, mandioca) equivalen exactamente a:<br/>
+                      • <strong>30g en crudo</strong> (100g cocido) de arroz integral/yamani, quinoa o legumbres (lentejas, garbanzos, arvejas, porotos).<br/>
+                      • <strong>20–30g en crudo</strong> de fideos.<br/>
+                      • <strong>1 rodaja de pan integral (25g)</strong> o <strong>2 galletas de arroz</strong>.
+                    </p>
+                  </div>
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong>🥩 Equivalencia de Proteínas (Almuerzo y Cena):</strong>
+                    <p style="color:var(--text-muted);font-size:0.77rem;margin-top:4px;">
+                      • <strong>Menor grasa (priorizar en déficit):</strong> Pechuga de pollo sin piel, solomillo de cerdo, merluza, atún al natural, claras de huevo.<br/>
+                      • <strong>Cortes magros de carne roja:</strong> Peceto, nalga, paleta, cuadril, bola de lomo, bife de lomo.<br/>
+                      • <strong>En Keto / Low-Carb:</strong> Podés alternar con pata-muslo, salmón o bife.
+                    </p>
+                  </div>
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong>🧀 Lácteos y Harinas Keto (Desayuno/Merienda):</strong>
+                    <p style="color:var(--text-muted);font-size:0.77rem;margin-top:4px;">
+                      • <strong>Queso crema light</strong> ⇄ Queso Port Salut light, ricota magra o más claras/huevo.<br/>
+                      • <strong>Avena</strong> ⇄ Harina integral, o en <em>Keto</em>: harina de almendras, harina de coco o semillas molidas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;">
+                <strong style="font-size:0.9rem;color:var(--purple);display:block;margin-bottom:6px;">🍽️ El Método del Plato (Armado visual sin balanza + Regla Anti-Hambre)</strong>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;">
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong>🥗 4 Comidas (Tradicional):</strong>
+                    <div style="font-size:0.77rem;color:var(--text-muted);margin-top:3px;">
+                      • <strong>½ Plato:</strong> Vegetales Tipo A y B.<br/>
+                      • <strong>¼ Plato:</strong> Proteínas magras.<br/>
+                      • <strong>¼ Plato:</strong> Carbohidratos complejos.<br/>
+                      • <strong>Grasas:</strong> 1 cda aceite de oliva (o mayonesa light / mostaza).
+                    </div>
+                  </div>
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong>🍽️ 3 Comidas (Sin Cena):</strong>
+                    <div style="font-size:0.77rem;color:var(--text-muted);margin-top:3px;">
+                      • <strong>⅓ Plato:</strong> Proteínas.<br/>
+                      • <strong>⅓ Plato:</strong> Carbohidratos.<br/>
+                      • <strong>⅓ Plato:</strong> Vegetales + 1 cda oliva.
+                    </div>
+                  </div>
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong>🥑 Plato Cetogénico (Keto):</strong>
+                    <div style="font-size:0.77rem;color:var(--text-muted);margin-top:3px;">
+                      • <strong>⅓ Plato:</strong> Proteínas.<br/>
+                      • <strong>⅔ Plato:</strong> Vegetales Tipo A (libres) + 1 cda oliva.<br/>
+                      • <strong>Tip Saciedad:</strong> Si te quedás con hambre, podés repetir libremente el ½ plato de verduras y <strong>1 vez al día repetir el ¼ de proteína</strong>.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (retoUiTab === "fruits") {
+          bodyHtml = `
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:0.81rem;">
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;">
+                <strong style="font-size:0.9rem;display:block;margin-bottom:6px;">🚦 Semáforo de Frutas (2 a 4 porciones de 100g al día)</strong>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;">
+                  <div style="padding:9px;border-radius:10px;background:rgba(34,197,94,0.1);border:1.5px solid #22c55e;">
+                    <strong style="color:#22c55e;">🟢 Bajas en Azúcar (Ideales en Déficit y Keto)</strong>
+                    <p style="font-size:0.77rem;margin-top:4px;">Frutillas/fresas, arándanos, frambuesas, moras/zarzamoras, kiwi, mandarina, sandía.</p>
+                  </div>
+                  <div style="padding:9px;border-radius:10px;background:rgba(245,158,11,0.1);border:1.5px solid #f59e0b;">
+                    <strong style="color:#f59e0b;">🟡 Medias en Azúcar (Moderadas)</strong>
+                    <p style="font-size:0.77rem;margin-top:4px;">Manzana, pera, naranja, durazno/melocotón, ananá, melón, pomelo.</p>
+                  </div>
+                  <div style="padding:9px;border-radius:10px;background:rgba(239,68,68,0.1);border:1.5px solid #ef4444;">
+                    <strong style="color:#ef4444;">🔴 Altas en Azúcar (Ideales para Etapa de Volumen)</strong>
+                    <p style="font-size:0.77rem;margin-top:4px;">Banana/plátano, uvas, mango, higos, cerezas, dátiles, pasas y frutas deshidratadas.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;">
+                <strong style="font-size:0.9rem;display:block;margin-bottom:6px;">🥦 Clasificación de Vegetales (Tipo A, B y C)</strong>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;">
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong style="color:var(--accent);">Tipo A — Libres en todas las dietas (incluye Keto)</strong>
+                    <p style="font-size:0.76rem;color:var(--text-muted);margin-top:4px;">Acelga, achicoria, ajíes/morrón, apio, berenjena, berro, brócoli, coliflor, escarola, espárragos, espinaca, hinojo, hongos/champiñones, lechuga, nabiza, pepino, rabanito, radicheta, repollo, rúcula, tomate, zapallito, zucchini.</p>
+                  </div>
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong style="color:var(--warn);">Tipo B — Moderados (No en Low-Carb/Keto)</strong>
+                    <p style="font-size:0.76rem;color:var(--text-muted);margin-top:4px;">Alcaucil, arvejas frescas, cebolla, cebolla de verdeo, brotes de soja, chauchas, habas, nabo, palmitos, puerro, remolacha, zanahoria, zapallo/calabaza.</p>
+                  </div>
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong style="color:var(--purple);">Tipo C — Almidonados (Cuentan como Carbohidrato)</strong>
+                    <p style="font-size:0.76rem;color:var(--text-muted);margin-top:4px;">Papa, batata/boniato/camote, choclo/mazorca, mandioca/yuca. (Limitados en tradicional, excluidos en Keto).</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          bodyHtml = `
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:0.81rem;">
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;">
+                <strong style="font-size:0.9rem;color:var(--accent);display:block;margin-bottom:6px;">🩺 Recomendaciones según Patologías (del Manual Reto 21 Días)</strong>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong>🩸 Resistencia a la Insulina / Diabetes Tipo 2:</strong>
+                    <p style="font-size:0.76rem;color:var(--text-muted);margin-top:3px;">Priorizar carbohidratos complejos con fibra o modalidad Low-Carb, evitando azúcares simples, miel, jugos exprimidos y harinas refinadas.</p>
+                  </div>
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong>🦋 Hipotiroidismo:</strong>
+                    <p style="font-size:0.76rem;color:var(--text-muted);margin-top:3px;">Con medicación controlada (levotiroxina), este plan de déficit con alta proteína y entrenamiento de fuerza funciona sin inconvenientes.</p>
+                  </div>
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong>💓 Hipertensión Arterial:</strong>
+                    <p style="font-size:0.76rem;color:var(--text-muted);margin-top:3px;">Evitar sal de mesa, elegir alimentos bajos en sodio y evitar enlatados en salmuera, embutidos/fiambres y sopas ultraprocesadas (preferir carnes frescas y huevos).</p>
+                  </div>
+                  <div style="padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);">
+                    <strong>🫀 Colesterol y Triglicéridos Altos:</strong>
+                    <p style="font-size:0.76rem;color:var(--text-muted);margin-top:3px;">Evitar frituras, ultraprocesados y azúcares; priorizar fruta con cáscara, vegetales fibrosos, clara de huevo, pescado, pechuga y aceite de oliva en crudo.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;">
+                <strong style="font-size:0.9rem;color:var(--purple);display:block;margin-bottom:4px;">🧠 Reglas de Oro "Mente Fit" y Endulzantes Permitidos</strong>
+                <p style="font-size:0.78rem;color:var(--text-muted);line-height:1.45;">
+                  • <strong>Compromiso de 21 días:</strong> Sin "comidas libres" ni picoteo entre horas durante las 3 semanas (hacer tus 3 o 4 comidas completas).<br/>
+                  • <strong>Agua:</strong> 2 a 2.5 litros de agua pura por día (aparte de infusiones).<br/>
+                  • <strong>Endulzantes y saborizantes permitidos:</strong> Stevia líquida (evitar sobres en polvo que traen 75% azúcar/maltodextrina), esencia de vainilla, 1 cda de cacao amargo puro, coco rallado y ralladura de limón/naranja.
+                </p>
+              </div>
+            </div>
+          `;
+        }
+
+        root.innerHTML = navTabsHtml + bodyHtml;
+
+        root.querySelectorAll("[data-r21-tab]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            retoUiTab = btn.getAttribute("data-r21-tab") || "daily";
+            renderReto21Modal();
+          });
+        });
+
+        document.getElementById("r21DietModeSel")?.addEventListener("change", (e) => {
+          st.dietMode = e.target.value;
+          saveReto21();
+          renderReto21Modal();
+        });
+        document.getElementById("r21PortionSel")?.addEventListener("change", (e) => {
+          st.portionSize = Number(e.target.value) || 2;
+          saveReto21();
+          renderReto21Modal();
+        });
+        document.getElementById("r21TrainPlaceSel")?.addEventListener("change", (e) => {
+          st.trainPlace = e.target.value;
+          saveReto21();
+          renderReto21Modal();
+        });
+        document.getElementById("r21TrainFreqSel")?.addEventListener("change", (e) => {
+          st.trainDaysPerWk = Number(e.target.value) || 4;
+          saveReto21();
+          renderReto21Modal();
+        });
+
+        root.querySelectorAll("[data-r21-day]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            st.activeDayNum = Number(btn.getAttribute("data-r21-day")) || 1;
+            saveReto21();
+            renderReto21Modal();
+          });
+        });
+
+        document.getElementById("btnToggleR21DayDone")?.addEventListener("click", () => {
+          st.completedDays = st.completedDays || {};
+          const k = String(dayNum);
+          st.completedDays[k] = !st.completedDays[k];
+          if (st.completedDays[k] && typeof window.fireCartoonConfetti === "function") {
+            window.fireCartoonConfetti("big");
+          }
+          saveReto21();
+          renderReto21Modal();
+        });
+
+        root.querySelectorAll("[data-r21-cycle-meal]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const sk = btn.getAttribute("data-r21-cycle-meal");
+            const k = `${dayNum}_${sk}`;
+            const curSlots = getRetoDaySlots(st, dayNum);
+            const found = curSlots.find(x => x.slotKey === sk);
+            st.mealChoices = st.mealChoices || {};
+            st.mealChoices[k] = ((found ? found.optIdx : 0) + 1) % (found ? found.totalOptions : 5);
+            saveReto21();
+            renderReto21Modal();
+          });
+        });
+
+        root.querySelectorAll("[data-r21-log-meal]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const sk = btn.getAttribute("data-r21-log-meal");
+            const curSlots = getRetoDaySlots(st, dayNum);
+            const found = curSlots.find(x => x.slotKey === sk);
+            if (!found) return;
+            addFoodItemToCurrentDay({
+              mealType: found.slotKey,
+              name: `${found.optTitle}: ${found.desc}`,
+              kcal: found.kcal,
+              p: found.p,
+              c: found.c,
+              f: found.f,
+              emoji: found.emoji || "🍽️"
+            });
+            btn.textContent = "✅ Cargado";
+            setTimeout(() => { btn.textContent = "➕ Cargar hoy"; }, 1400);
+          });
+        });
+
+        document.getElementById("btnPreloadR21DayToDiary")?.addEventListener("click", () => {
+          const targetKey = selectedDate || todayStr();
+          const dayRec = ensureDayRecord(targetKey);
+          const eaten = (dayRec.meals || []).filter(m => isMealConsumed(m));
+          const curSlots = getRetoDaySlots(st, dayNum);
+          const plannedNew = curSlots.map((m, i) => ({
+            id: `plan-r21-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+            mealType: m.slotKey,
+            name: `${m.optTitle}: ${m.desc}`,
+            kcal: m.kcal,
+            p: m.p,
+            c: m.c,
+            f: m.f,
+            emoji: m.emoji || "🍽️",
+            planned: true,
+            checked: false,
+            updatedAt: Date.now()
+          }));
+          dayRec.meals = [...eaten, ...plannedNew];
+          saveToServer();
+          renderAll();
+          closeModal("modalReto21Dias");
+          setRaccoonSpeech(`"🔥 ¡Listo Angel! Te precargué el Día ${dayNum} del Reto 21 Días en tu Diario (${targetKey}) como 📋 Planificado 🐱💪."`);
+        });
+
+        root.querySelectorAll("[data-r21-exchk]").forEach(chk => {
+          chk.addEventListener("change", () => {
+            const k = chk.getAttribute("data-r21-exchk");
+            st.checkedExercises = st.checkedExercises || {};
+            st.checkedExercises[k] = chk.checked;
+            saveReto21();
+            renderReto21Modal();
+          });
+        });
+
+        document.getElementById("btnLogR21WorkoutToDiary")?.addEventListener("click", () => {
+          const schedArr = SCHEDULE_21_DAYS[st.trainDaysPerWk] || SCHEDULE_21_DAYS[4];
+          const rId = schedArr[dayNum - 1] || 0;
+          const rObj = rId > 0 ? RETO_WORKOUTS[rId] : null;
+          const exName = rObj
+            ? `Reto 21 Días — ${rObj.title} (${st.trainPlace === "home" ? "Casa" : "Gimnasio"})`
+            : `Reto 21 Días — Cardio Activo 60 min`;
+          const exKcal = rObj ? rObj.kcal : RETO_WORKOUTS.cardio.kcal;
+          const targetKey = selectedDate || todayStr();
+          const dayRec = ensureDayRecord(targetKey);
+          dayRec.exercises = Array.isArray(dayRec.exercises) ? dayRec.exercises : [];
+          dayRec.exercises.push({
+            id: `ex-r21-${Date.now()}`,
+            name: exName,
+            kcal: exKcal,
+            updatedAt: Date.now()
+          });
+          dayRec.exerciseKcal = dayRec.exercises.reduce((a, x) => a + (Number(x.kcal) || 0), 0);
+          saveToServer();
+          renderAll();
+          if (typeof window.fireCartoonConfetti === "function") window.fireCartoonConfetti("normal");
+          const b = document.getElementById("btnLogR21WorkoutToDiary");
+          if (b) b.textContent = "✅ ¡Entrenamiento sumado al Diario!";
+        });
+      }
+
+      window.openReto21Modal = function () {
+        const isExclusiveAdminAngel = Boolean(
+          currentUserInfo && (currentUserInfo.role === "superadmin" || currentUserInfo.id === "u-owner")
+        );
+        if (!isExclusiveAdminAngel) return;
+        renderReto21Modal();
+        openModal("modalReto21Dias");
+      };
     })();
 
     // Inicializar aplicación
