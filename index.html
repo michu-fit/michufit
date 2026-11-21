@@ -14777,8 +14777,10 @@
 
         if (retoUiTab === "daily") {
           const daySlots = getRetoDaySlots(st, dayNum);
-          const dayTotKcal = daySlots.reduce((a, x) => a + x.kcal, 0);
-          const dayTotP = daySlots.reduce((a, x) => a + x.p, 0);
+          const dayTotKcal = Math.round(daySlots.reduce((a, x) => a + (Number(x.kcal) || 0), 0));
+          const dayTotP = Math.round(daySlots.reduce((a, x) => a + (Number(x.p) || 0), 0));
+          const dayTotC = Math.round(daySlots.reduce((a, x) => a + (Number(x.c) || 0), 0));
+          const dayTotF = Math.round(daySlots.reduce((a, x) => a + (Number(x.f) || 0), 0));
           const schedArr = SCHEDULE_21_DAYS[st.trainDaysPerWk] || SCHEDULE_21_DAYS[4];
           const routineId = schedArr[dayNum - 1] || 0;
           const routineObj = routineId > 0 ? RETO_WORKOUTS[routineId] : null;
@@ -14844,21 +14846,39 @@
               </div>
             </div>
 
-            <!-- Encabezado del Día Seleccionado -->
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:14px;padding:10px 13px;">
-              <div>
-                <strong style="font-size:0.95rem;color:var(--text);">🔥 Día ${dayNum} de 21 (Semana ${Math.ceil(dayNum / 7)})</strong>
-                <div style="font-size:0.76rem;color:var(--text-muted);">
-                  Total menú del día: <strong>${dayTotKcal} kcal • ${dayTotP}g Proteína</strong> • Sin picoteos entre horas
+            <!-- Encabezado del Día Seleccionado con Recuento Total de Kcal, Proteína, Carbos y Grasa -->
+            <div style="display:flex;flex-direction:column;gap:9px;background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:14px;padding:11px 13px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                <strong style="font-size:0.96rem;color:var(--text);">🔥 Día ${dayNum} de 21 (Semana ${Math.ceil(dayNum / 7)}) — Suma Total del Menú</strong>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button type="button" class="btn btn-sm ${isDayCompleted ? "btn-primary" : ""}" id="btnToggleR21DayDone">
+                    ${isDayCompleted ? "🏆 Día " + dayNum + " Completado ✓" : "⬜ Marcar Día " + dayNum + " Cumplido"}
+                  </button>
+                  <button type="button" class="btn btn-sm btn-purple" id="btnPreloadR21DayToDiary">
+                    📋 Enviar Comidas de este Día a mi Diario
+                  </button>
                 </div>
               </div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button type="button" class="btn btn-sm ${isDayCompleted ? "btn-primary" : ""}" id="btnToggleR21DayDone">
-                  ${isDayCompleted ? "🏆 Día " + dayNum + " Completado ✓" : "⬜ Marcar Día " + dayNum + " Cumplido"}
-                </button>
-                <button type="button" class="btn btn-sm btn-purple" id="btnPreloadR21DayToDiary">
-                  📋 Enviar Comidas de este Día a mi Diario
-                </button>
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;text-align:center;">
+                <div style="background:var(--bg-elev);border:1px solid var(--accent);border-radius:10px;padding:6px 4px;">
+                  <div style="font-size:0.68rem;font-weight:800;color:var(--accent);">🔥 CALORÍAS</div>
+                  <div style="font-size:0.92rem;font-weight:900;color:var(--text);">${dayTotKcal} kcal</div>
+                </div>
+                <div style="background:var(--bg-elev);border:1px solid rgba(56,189,248,0.45);border-radius:10px;padding:6px 4px;">
+                  <div style="font-size:0.68rem;font-weight:800;color:#0284c7;">🥩 PROTEÍNAS</div>
+                  <div style="font-size:0.92rem;font-weight:900;color:var(--text);">${dayTotP} g</div>
+                  <div style="font-size:0.65rem;color:var(--text-muted);">${dayTotP * 4} kcal</div>
+                </div>
+                <div style="background:var(--bg-elev);border:1px solid rgba(245,158,11,0.45);border-radius:10px;padding:6px 4px;">
+                  <div style="font-size:0.68rem;font-weight:800;color:#d97706;">🍞 CARBOS</div>
+                  <div style="font-size:0.92rem;font-weight:900;color:var(--text);">${dayTotC} g</div>
+                  <div style="font-size:0.65rem;color:var(--text-muted);">${dayTotC * 4} kcal</div>
+                </div>
+                <div style="background:var(--bg-elev);border:1px solid rgba(168,85,247,0.45);border-radius:10px;padding:6px 4px;">
+                  <div style="font-size:0.68rem;font-weight:800;color:#9333ea;">🥑 GRASAS</div>
+                  <div style="font-size:0.92rem;font-weight:900;color:var(--text);">${dayTotF} g</div>
+                  <div style="font-size:0.65rem;color:var(--text-muted);">${dayTotF * 9} kcal</div>
+                </div>
               </div>
             </div>
 
@@ -14869,8 +14889,8 @@
                 <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;">
                   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                     <strong style="font-size:0.83rem;color:var(--accent);">${s.slotTitle} — ${s.optTitle}</strong>
-                    <div style="display:flex;gap:6px;align-items:center;">
-                      <span style="font-size:0.74rem;font-weight:800;color:var(--text-muted);">${s.kcal} kcal (${s.p}g P)</span>
+                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                      <span style="font-size:0.73rem;font-weight:800;color:var(--text-muted);background:var(--bg);padding:2px 7px;border-radius:999px;border:1px solid var(--border);">${s.kcal} kcal • ${s.p}g P • ${s.c}g C • ${s.f}g G</span>
                       <button type="button" class="btn btn-sm" data-r21-cycle-meal="${s.slotKey}" style="padding:3px 8px;font-size:0.72rem;">
                         🔄 Opción ${(s.optIdx + 1)}/${s.totalOptions}
                       </button>
