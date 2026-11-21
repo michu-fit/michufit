@@ -246,21 +246,40 @@
       border-radius: 11px;
     }
 
-    /* Raccoon Hero Section — Escenario Ilustrado de Dibujo Animado */
+    /* Raccoon Hero Section — Pop-Up Dinámico que Aparece, Habla y se Va */
     .raccoon-stage {
+      position: fixed;
+      bottom: 16px;
+      left: 14px;
+      right: 14px;
+      max-width: 510px;
+      margin: 0 auto;
+      z-index: 9400;
       display: grid;
-      grid-template-columns: 225px 1fr;
-      gap: 20px;
+      grid-template-columns: 106px 1fr;
+      gap: 12px;
       background: linear-gradient(135deg, var(--bg-elev) 0%, var(--bg-card) 100%);
-      border: 2.5px solid var(--border);
+      border: 2.5px solid var(--accent);
       border-radius: 24px;
-      padding: 22px;
-      box-shadow: 0 7px 0 var(--border), var(--shadow);
-      margin-bottom: 20px;
+      padding: 13px 15px;
+      box-shadow: 0 8px 0 rgba(21, 128, 61, 0.45), 0 20px 48px rgba(0, 0, 0, 0.42);
       align-items: center;
-      position: relative;
       overflow: hidden;
       isolation: isolate;
+      transform: translateY(145%) scale(0.9);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.28s ease;
+    }
+
+    .raccoon-stage.michu-visible {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .raccoon-stage.michu-disabled {
+      display: none !important;
     }
 
     .cartoon-scene-bg {
@@ -318,8 +337,12 @@
 
     @media (max-width: 720px) {
       .raccoon-stage {
-        grid-template-columns: 1fr;
-        text-align: center;
+        grid-template-columns: 94px 1fr;
+        text-align: left;
+        padding: 11px 12px;
+        bottom: 12px;
+        left: 10px;
+        right: 10px;
       }
     }
 
@@ -336,10 +359,10 @@
     }
 
     .raccoon-svg {
-      width: 175px;
-      height: 175px;
+      width: 98px;
+      height: 98px;
       transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.35));
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.32));
       overflow: visible;
     }
 
@@ -497,9 +520,9 @@
 
     @media (max-width: 720px) {
       .speech-bubble::before {
-        left: 50%;
-        top: -11px;
-        transform: translateX(-50%) rotate(135deg);
+        left: -10px;
+        top: 50%;
+        transform: translateY(-50%) rotate(45deg);
       }
     }
 
@@ -2124,7 +2147,7 @@
           🔥 Reto 21 Días (Exclusivo)
         </button>
         <div style="display:flex;flex-direction:column;gap:5px;padding:6px 4px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
-          <span style="font-size:0.74rem;font-weight:700;color:var(--text-muted);">🎭 Personalidad de Michu:</span>
+          <span style="font-size:0.74rem;font-weight:700;color:var(--text-muted);">🎭 Personalidad y Aparición de Michu:</span>
           <div class="mood-switch" role="group" aria-label="Personalidad de Michu" style="display:grid;grid-template-columns:1fr 1fr;width:100%;">
             <button type="button" class="mood-btn sarcastic active" id="btnMoodSarcastic" style="justify-content:center;text-align:center;">
               🔥 Sarcástico
@@ -2133,6 +2156,9 @@
               🌿 Tierno
             </button>
           </div>
+          <button type="button" class="btn btn-sm" id="btnToggleMichuPopup" style="margin-top:2px;">
+            🐾 Apariciones de Michu: ON
+          </button>
         </div>
         <button type="button" class="btn btn-sm" id="btnToggleTheme">
           🌓 Cambiar Tema (Claro / Oscuro)
@@ -2227,8 +2253,8 @@
             </g>
             <!-- Ojos almendrados amarillo-verdosos / ámbar con pupila vertical de gato -->
             <g id="raccoonEyes">
-              <ellipse cx="75" cy="82" rx="12.5" ry="9.5" transform="rotate(-8 75 82)" fill="url(#michuEyeGrad)" stroke="#111827" stroke-width="2.6"/>
-              <ellipse cx="125" cy="82" rx="12.5" ry="9.5" transform="rotate(8 125 82)" fill="url(#michuEyeGrad)" stroke="#111827" stroke-width="2.6"/>
+              <ellipse id="eyeOrbLeft" cx="75" cy="82" rx="12.5" ry="9.5" transform="rotate(-8 75 82)" fill="url(#michuEyeGrad)" stroke="#111827" stroke-width="2.6"/>
+              <ellipse id="eyeOrbRight" cx="125" cy="82" rx="12.5" ry="9.5" transform="rotate(8 125 82)" fill="url(#michuEyeGrad)" stroke="#111827" stroke-width="2.6"/>
               <ellipse id="pupilLeft" cx="76" cy="82" rx="3.2" ry="7.6" fill="#0f172a"/>
               <ellipse id="pupilRight" cx="124" cy="82" rx="3.2" ry="7.6" fill="#0f172a"/>
               <circle id="shineLeft" cx="79" cy="78.5" r="2.3" fill="#ffffff"/>
@@ -2306,43 +2332,49 @@
           <!-- Efecto visual de zarpazo en el lugar exacto del clic/dedo -->
           <g id="swipeEffectGroup" style="opacity:0; pointer-events:none; transition: opacity 0.18s ease;"></g>
         </svg>
-        <span class="raccoon-status-badge" id="raccoonStateLabel">🐱 En zona de déficit</span>
+        <span class="raccoon-status-badge" id="raccoonStateLabel" style="font-size:0.66rem;padding:2px 8px;">🐱 En zona de déficit</span>
       </div>
 
-      <div class="raccoon-dialogue">
-        <div class="raccoon-header-row">
-          <div>
-            <strong style="font-size:1.0rem;">Michu el Gato Nutricionista</strong>
-            <span style="font-size:0.75rem;color:var(--text-muted);margin-left:6px;">(1 clic: zarpazo • 2 clics: panza • Mantener: ataque)</span>
+      <div class="raccoon-dialogue" style="gap:7px;">
+        <div class="raccoon-header-row" style="justify-content:space-between;align-items:center;">
+          <strong style="font-size:0.86rem;">🐱 Michu dice:</strong>
+          <div style="display:flex;gap:5px;align-items:center;">
+            <button type="button" class="btn btn-sm" id="btnQuickMuteMichu" title="Apagar apariciones automáticas de Michu" style="padding:2px 7px;font-size:0.68rem;">
+              🔕 Apagar
+            </button>
+            <button type="button" class="btn btn-sm" id="btnCloseMichuPeek" title="Ocultar ahora" style="padding:2px 7px;font-size:0.72rem;">
+              ✕
+            </button>
           </div>
         </div>
 
-        <div class="speech-bubble" id="raccoonSpeechText">
+        <div class="speech-bubble" id="raccoonSpeechText" style="padding:10px 13px;font-size:0.86rem;">
           "A ver, humano... hoy venimos bien con el desayuno, pero no te hagas el distraído con la proteína que los músculos no viven de aire 🐱💪."
-        </div>
-
-        <div class="speech-meta">
-          <span id="raccoonQuickSummary">Meta de hoy: 1,850 kcal • Déficit programado: -500 kcal/día</span>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button type="button" class="btn btn-sm btn-primary" id="btnHeroAddFood" onclick="window.openFoodModal && window.openFoodModal()">
-              ➕ Registrar comida
-            </button>
-            <button type="button" class="btn btn-sm" id="btnHeroSuggestedMenu" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="border-color:var(--accent);color:var(--accent);font-weight:800;">
-              🥗 Menú Sugerido
-            </button>
-            <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnHeroReto21" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;font-weight:900;">
-              🔥 Reto 21 Días
-            </button>
-            <button type="button" class="btn btn-sm btn-purple" id="btnHeroScanAI">
-              📸 Escáner IA
-            </button>
-            <button type="button" class="btn btn-sm" id="btnHeroRandomQuip">
-              🎲 Otra frase de Michu
-            </button>
-          </div>
         </div>
       </div>
     </section>
+
+    <!-- BARRA COMPACTA DE ACCIONES RÁPIDAS (Siempre visible arriba sin ocupar media pantalla) -->
+    <div class="top-quick-actions-bar" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:var(--bg-elev);border:2px solid var(--border);border-radius:18px;padding:10px 13px;margin-bottom:14px;box-shadow:0 4px 0 var(--border);">
+      <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;">
+        <button type="button" class="btn btn-sm btn-primary" id="btnHeroAddFood" onclick="window.openFoodModal && window.openFoodModal()">
+          ➕ Registrar comida
+        </button>
+        <button type="button" class="btn btn-sm" id="btnHeroSuggestedMenu" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="border-color:var(--accent);color:var(--accent);font-weight:800;">
+          🥗 Menú Sugerido
+        </button>
+        <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnHeroReto21" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;font-weight:900;">
+          🔥 Reto 21 Días
+        </button>
+        <button type="button" class="btn btn-sm btn-purple" id="btnHeroScanAI">
+          📸 Escáner IA
+        </button>
+        <button type="button" class="btn btn-sm" id="btnHeroRandomQuip" title="Hacer que Michu se asome, salude y se vaya">
+          🐱 Llamar a Michu
+        </button>
+      </div>
+      <span id="raccoonQuickSummary" style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">Meta de hoy: 1,850 kcal</span>
+    </div>
 
     <!-- NAVIGATION TABS -->
     <nav class="nav-tabs" aria-label="Secciones principales">
@@ -2665,6 +2697,13 @@
               <select id="profTheme">
                 <option value="light">☀️ Tema Claro (Por defecto)</option>
                 <option value="dark">🌙 Tema Oscuro</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="profMichuPopup">Apariciones de Michu</label>
+              <select id="profMichuPopup">
+                <option value="on">🐾 Activadas (Se asoma, habla y se va)</option>
+                <option value="off">🔕 Desactivadas (No mostrar a Michu)</option>
               </select>
             </div>
             <div style="grid-column: 1 / -1; margin-top: 6px;">
@@ -5177,13 +5216,18 @@
       return pool[Math.floor(Math.random() * pool.length)];
     }
 
-    function setRaccoonSpeech(text) {
+    function setRaccoonSpeech(text, { forceShow = false } = {}) {
       const el = document.getElementById("raccoonSpeechText");
-      el.style.opacity = "0.3";
-      setTimeout(() => {
-        el.textContent = text;
-        el.style.opacity = "1";
-      }, 90);
+      if (el) {
+        el.style.opacity = "0.3";
+        setTimeout(() => {
+          el.textContent = text;
+          el.style.opacity = "1";
+        }, 70);
+      }
+      if (typeof window.triggerMichuPeekPopup === "function") {
+        window.triggerMichuPeekPopup(forceShow);
+      }
     }
 
     // =========================================================================
@@ -5485,6 +5529,13 @@
         if (lRetoTs > sRetoTs && localData.profile.reto21State) {
           merged.profile.reto21State = JSON.parse(JSON.stringify(localData.profile.reto21State));
           merged.profile.reto21UpdatedAt = lRetoTs;
+          hadLocalChanges = true;
+        }
+        const lPopTs = Number(localData.profile.michuPopupUpdatedAt) || 0;
+        const sPopTs = Number(merged.profile.michuPopupUpdatedAt) || 0;
+        if (lPopTs > sPopTs && localData.profile.michuPopupEnabled !== undefined) {
+          merged.profile.michuPopupEnabled = Boolean(localData.profile.michuPopupEnabled);
+          merged.profile.michuPopupUpdatedAt = lPopTs;
           hadLocalChanges = true;
         }
       }
@@ -7143,12 +7194,39 @@
     }
     window.applyAppTheme = applyAppTheme;
 
+    function applyMichuPopupSetting(isEnabled, { persist = false } = {}) {
+      const enabled = isEnabled !== false;
+      const stageEl = document.getElementById("michuHeroStage");
+      if (stageEl) {
+        stageEl.classList.toggle("michu-disabled", !enabled);
+        if (!enabled) stageEl.classList.remove("michu-visible");
+      }
+      const btnT = document.getElementById("btnToggleMichuPopup");
+      if (btnT) {
+        btnT.innerHTML = enabled
+          ? "🐾 Apariciones de Michu: ON"
+          : "🔕 Apariciones de Michu: OFF";
+      }
+      const selP = document.getElementById("profMichuPopup");
+      if (selP) {
+        selP.value = enabled ? "on" : "off";
+      }
+      if (persist && appData && appData.profile) {
+        appData.profile.michuPopupEnabled = enabled;
+        appData.profile.michuPopupUpdatedAt = Date.now();
+        saveToServer();
+      }
+    }
+    window.applyMichuPopupSetting = applyMichuPopupSetting;
+
     function renderCalculatorTab() {
       const p = appData.profile;
       const isOwnProfile = !inspectedUserId || (currentUserInfo && inspectedUserId === currentUserInfo.id);
       const userTheme = p.theme === "dark" ? "dark" : "light";
+      const popupEnabled = p.michuPopupEnabled !== false;
       if (isOwnProfile) {
         applyAppTheme(userTheme, { persist: false });
+        applyMichuPopupSetting(popupEnabled, { persist: false });
       }
       document.getElementById("profName").value = p.name || "Campeón";
       document.getElementById("profSex").value = p.sex || "male";
@@ -7163,6 +7241,8 @@
       document.getElementById("profWaterGoal").value = p.waterGoal || 8;
       const profThemeEl = document.getElementById("profTheme");
       if (profThemeEl) profThemeEl.value = userTheme;
+      const profPopEl = document.getElementById("profMichuPopup");
+      if (profPopEl) profPopEl.value = popupEnabled ? "on" : "off";
 
       const isCustomMode = p.deficitType === "custom" || p.deficitType === "custom_surplus";
       document.getElementById("customDeficitFieldWrap").style.display = isCustomMode ? "flex" : "none";
@@ -9407,6 +9487,11 @@
       appData.profile.themeUpdatedAt = Date.now();
       applyAppTheme(chosenTheme, { persist: false });
 
+      const chosenPopup = document.getElementById("profMichuPopup")?.value !== "off";
+      appData.profile.michuPopupEnabled = chosenPopup;
+      appData.profile.michuPopupUpdatedAt = Date.now();
+      applyMichuPopupSetting(chosenPopup, { persist: false });
+
       saveToServer();
       renderAll();
       setRaccoonSpeech(generateContextualRaccoonComment());
@@ -9415,6 +9500,16 @@
     document.getElementById("profTheme")?.addEventListener("change", (e) => {
       const nextTheme = e.target.value === "dark" ? "dark" : "light";
       applyAppTheme(nextTheme, { persist: true });
+    });
+
+    document.getElementById("profMichuPopup")?.addEventListener("change", (e) => {
+      const enabled = e.target.value !== "off";
+      applyMichuPopupSetting(enabled, { persist: true });
+    });
+
+    document.getElementById("btnToggleMichuPopup")?.addEventListener("click", () => {
+      const cur = !(appData.profile && appData.profile.michuPopupEnabled === false);
+      applyMichuPopupSetting(!cur, { persist: true });
     });
 
     // Registro de peso
@@ -14076,7 +14171,74 @@
       }
       window.fireCartoonConfetti = fireCartoonConfetti;
 
-      // Loop autónomo de vida de Michu (parpadeo natural, respiración suave y cola en movimiento)
+      // Loop autónomo de vida de Michu (parpadeo natural fijo en su sitio, respiración suave y cola en movimiento)
+      let michuPeekHideTimer = null;
+
+      function hideMichuPeekPopup() {
+        const stageEl = document.getElementById("michuHeroStage");
+        if (stageEl) stageEl.classList.remove("michu-visible");
+        if (michuPeekHideTimer) {
+          clearTimeout(michuPeekHideTimer);
+          michuPeekHideTimer = null;
+        }
+      }
+      window.hideMichuPeekPopup = hideMichuPeekPopup;
+
+      function triggerMichuPeekPopup(forceShow = false, durationMs = 4600) {
+        const stageEl = document.getElementById("michuHeroStage");
+        if (!stageEl) return;
+        const isEnabled = !(appData && appData.profile && appData.profile.michuPopupEnabled === false);
+        if (!isEnabled && !forceShow) return;
+        stageEl.classList.remove("michu-disabled");
+        stageEl.classList.add("michu-visible");
+        triggerMichuCartoonJump();
+
+        // Saludo con la patita derecha al asomarse
+        const pawR = document.getElementById("pawRightGroup");
+        if (window.gsap && pawR) {
+          window.gsap.fromTo(
+            pawR,
+            { rotation: 0, y: 0 },
+            { rotation: -22, y: -7, duration: 0.22, yoyo: true, repeat: 3, ease: "sine.inOut" }
+          );
+        }
+
+        if (michuPeekHideTimer) clearTimeout(michuPeekHideTimer);
+        michuPeekHideTimer = setTimeout(() => {
+          stageEl.classList.remove("michu-visible");
+          if (!isEnabled) stageEl.classList.add("michu-disabled");
+        }, durationMs);
+      }
+      window.triggerMichuPeekPopup = triggerMichuPeekPopup;
+
+      document.getElementById("btnCloseMichuPeek")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        hideMichuPeekPopup();
+      });
+
+      document.getElementById("btnQuickMuteMichu")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        hideMichuPeekPopup();
+        if (typeof window.applyMichuPopupSetting === "function") {
+          window.applyMichuPopupSetting(false, { persist: true });
+        }
+      });
+
+      // Tocar el iconito de Michu arriba a la izquierda o el botón "Llamar a Michu" lo hace asomarse a pedido
+      document.querySelector(".topbar-minimal .brand-logo")?.addEventListener("click", () => {
+        setRaccoonSpeech(generateContextualRaccoonComment(), { forceShow: true });
+      });
+      document.getElementById("btnHeroRandomQuip")?.addEventListener("click", () => {
+        setRaccoonSpeech(generateContextualRaccoonComment(), { forceShow: true });
+      });
+
+      // Saludo inicial breve al entrar a la app (si está activado) y luego se retira solo
+      setTimeout(() => {
+        if (document.documentElement.getAttribute("data-auth-state") === "logged-in") {
+          triggerMichuPeekPopup(false, 4200);
+        }
+      }, 1100);
+
       function initMichuAutonomousLife() {
         if (!window.gsap) {
           setTimeout(initMichuAutonomousLife, 400);
@@ -14085,13 +14247,26 @@
         const body = document.getElementById("raccoonBody");
         const belly = document.getElementById("raccoonBelly");
         const tail = document.getElementById("raccoonTail");
-        const eyes = document.getElementById("raccoonEyes");
+        const orbL = document.getElementById("eyeOrbLeft");
+        const orbR = document.getElementById("eyeOrbRight");
+        const pupL = document.getElementById("pupilLeft");
+        const pupR = document.getElementById("pupilRight");
+        const shL = document.getElementById("shineLeft");
+        const shR = document.getElementById("shineRight");
 
-        if (body && belly) {
-          window.gsap.to([body, belly], {
-            scaleX: 1.035,
-            scaleY: 0.975,
-            transformOrigin: "50% 80%",
+        // Respiración animando rx/ry directamente en SVG para no desplazar jamás coordenadas
+        if (body) {
+          window.gsap.to(body, {
+            attr: { rx: 46.4, ry: 35.8 },
+            duration: 1.6,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut"
+          });
+        }
+        if (belly) {
+          window.gsap.to(belly, {
+            attr: { rx: 30.0, ry: 24.1 },
             duration: 1.6,
             repeat: -1,
             yoyo: true,
@@ -14100,8 +14275,8 @@
         }
         if (tail) {
           window.gsap.to(tail, {
-            rotation: 11,
-            transformOrigin: "132px 150px",
+            rotation: 10,
+            svgOrigin: "132 150",
             duration: 1.35,
             repeat: -1,
             yoyo: true,
@@ -14109,18 +14284,33 @@
           });
         }
 
+        // Parpadeo animando el radio vertical ry de las elipses de los ojos (nunca se mueve de y=82)
         function scheduleNextBlink() {
-          const delayMs = 2400 + Math.random() * 2800;
+          const delayMs = 2600 + Math.random() * 2800;
           setTimeout(() => {
-            if (eyes && window.gsap) {
-              window.gsap.to(eyes, {
-                scaleY: 0.08,
-                transformOrigin: "100px 82px",
+            if (orbL && orbR && pupL && pupR && window.gsap) {
+              window.gsap.to([orbL, orbR], {
+                attr: { ry: 0.7 },
                 duration: 0.075,
                 yoyo: true,
                 repeat: 1,
                 ease: "power1.inOut"
               });
+              window.gsap.to([pupL, pupR], {
+                attr: { ry: 0.5 },
+                duration: 0.075,
+                yoyo: true,
+                repeat: 1,
+                ease: "power1.inOut"
+              });
+              if (shL && shR) {
+                window.gsap.to([shL, shR], {
+                  opacity: 0,
+                  duration: 0.075,
+                  yoyo: true,
+                  repeat: 1
+                });
+              }
             }
             scheduleNextBlink();
           }, delayMs);
