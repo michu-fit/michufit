@@ -246,36 +246,25 @@
       border-radius: 11px;
     }
 
-    /* Raccoon Hero Section — Pop-Up Dinámico que Aparece, Habla y se Va */
+    /* Michu Caminando Directamente Encima de la Pantalla (Sin Caja de Fondo) */
     .raccoon-stage {
       position: fixed;
-      bottom: 16px;
-      left: 14px;
-      right: 14px;
-      max-width: 510px;
-      margin: 0 auto;
+      bottom: 8px;
+      left: 0;
+      right: 0;
       z-index: 9400;
-      display: grid;
-      grid-template-columns: 106px 1fr;
-      gap: 12px;
-      background: linear-gradient(135deg, var(--bg-elev) 0%, var(--bg-card) 100%);
-      border: 2.5px solid var(--accent);
-      border-radius: 24px;
-      padding: 13px 15px;
-      box-shadow: 0 8px 0 rgba(21, 128, 61, 0.45), 0 20px 48px rgba(0, 0, 0, 0.42);
-      align-items: center;
-      overflow: hidden;
-      isolation: isolate;
-      transform: translateY(145%) scale(0.9);
-      opacity: 0;
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0;
+      margin: 0;
+      overflow: visible;
       pointer-events: none;
-      transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.28s ease;
-    }
-
-    .raccoon-stage.michu-visible {
-      transform: translateY(0) scale(1);
+      transform: translateX(-210px);
       opacity: 1;
-      pointer-events: auto;
     }
 
     .raccoon-stage.michu-disabled {
@@ -283,14 +272,7 @@
     }
 
     .cartoon-scene-bg {
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      pointer-events: none;
-      overflow: hidden;
-      border-radius: 22px;
-      opacity: 0.92;
-      transition: background 0.6s ease;
+      display: none !important;
     }
 
     html[data-theme="light"] .cartoon-scene-bg[data-scene="morning"] {
@@ -337,12 +319,7 @@
 
     @media (max-width: 720px) {
       .raccoon-stage {
-        grid-template-columns: 94px 1fr;
-        text-align: left;
-        padding: 11px 12px;
-        bottom: 12px;
-        left: 10px;
-        right: 10px;
+        bottom: 6px;
       }
     }
 
@@ -356,13 +333,14 @@
       -webkit-user-select: none;
       touch-action: none;
       position: relative;
+      pointer-events: auto;
+      flex-shrink: 0;
     }
 
     .raccoon-svg {
-      width: 98px;
-      height: 98px;
-      transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.32));
+      width: 118px;
+      height: 118px;
+      filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.38));
       overflow: visible;
     }
 
@@ -2196,7 +2174,63 @@
             </radialGradient>
           </defs>
           <!-- Sombra base -->
-          <ellipse cx="100" cy="184" rx="58" ry="10" fill="rgba(0,0,0,0.28)" />
+          <ellipse cx="100" cy="184" rx="54" ry="9" fill="rgba(0,0,0,0.32)" />
+
+          <!-- POSE A: MICHU CAMINANDO DE PERFIL (Gato gris atigrado con 4 patitas articuladas) -->
+          <g id="michuSideWalkPose" style="display:none;">
+            <g id="walkTorsoGroup">
+              <!-- Cola ondulante de perfil -->
+              <g id="walkTail" style="transform-origin: 48px 132px;">
+                <path d="M52 134 C20 126, 12 88, 28 72 C38 62, 46 78, 38 100 C33 114, 44 122, 54 126 Z" fill="url(#michuFurGrad)" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M24 84 C32 82, 36 90, 27 94 M31 102 C39 101, 42 108, 34 112" stroke="#262b33" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+              </g>
+              <!-- Patitas traseras (plano posterior más oscuro) -->
+              <g id="walkLegBL" style="transform-origin: 64px 148px;">
+                <rect x="57" y="144" width="13" height="34" rx="6.5" fill="#4b5563" stroke="#1e293b" stroke-width="2.6"/>
+                <ellipse cx="65" cy="178" rx="9" ry="5.5" fill="#6b7280" stroke="#1e293b" stroke-width="2.4"/>
+              </g>
+              <g id="walkLegFL" style="transform-origin: 122px 148px;">
+                <rect x="115" y="144" width="13" height="34" rx="6.5" fill="#4b5563" stroke="#1e293b" stroke-width="2.6"/>
+                <ellipse cx="123" cy="178" rx="9" ry="5.5" fill="#6b7280" stroke="#1e293b" stroke-width="2.4"/>
+              </g>
+              <!-- Cuerpo alargado de gato caminando -->
+              <ellipse cx="95" cy="134" rx="46" ry="25" fill="url(#michuFurGrad)" stroke="#1e293b" stroke-width="3.2"/>
+              <path d="M62 124 Q88 144 126 128" fill="none" stroke="#d6d3cd" stroke-width="11" stroke-linecap="round" opacity="0.85"/>
+              <!-- Rayas atigradas del lomo -->
+              <path d="M72 111 Q76 124 70 132 M90 109 Q95 123 89 133 M108 111 Q112 124 106 132" stroke="#262b33" stroke-width="4.2" stroke-linecap="round" fill="none"/>
+              <!-- Patitas delanteras (primer plano) -->
+              <g id="walkLegBR" style="transform-origin: 72px 148px;">
+                <rect x="65" y="144" width="14" height="35" rx="7" fill="#78808c" stroke="#1e293b" stroke-width="2.8"/>
+                <ellipse cx="74" cy="179" rx="9.5" ry="5.8" fill="#d6d3cd" stroke="#1e293b" stroke-width="2.5"/>
+              </g>
+              <g id="walkLegFR" style="transform-origin: 130px 148px;">
+                <rect x="123" y="144" width="14" height="35" rx="7" fill="#78808c" stroke="#1e293b" stroke-width="2.8"/>
+                <ellipse cx="132" cy="179" rx="9.5" ry="5.8" fill="#d6d3cd" stroke="#1e293b" stroke-width="2.5"/>
+              </g>
+              <!-- Cabeza en perfil 3/4 mirando hacia adelante al caminar -->
+              <g id="walkHead" transform="translate(36, 12)">
+                <path d="M74 62 L66 24 L98 44 Z" fill="#6b7280" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M77 58 L71 32 L93 46 Z" fill="#dfb98c"/>
+                <ellipse cx="102" cy="78" rx="36" ry="31" fill="url(#michuFurGrad)" stroke="#1e293b" stroke-width="3.2"/>
+                <path d="M114 58 L128 24 L98 48 Z" fill="#78808c" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M112 55 L122 31 L101 48 Z" fill="#dfb98c"/>
+                <!-- Vincha deportiva verde en perfil -->
+                <path d="M70 57 Q104 48 134 58 L132 65 Q104 56 71 64 Z" fill="#22c55e" stroke="#14532d" stroke-width="2"/>
+                <!-- Ojo dorado mirando al frente del camino -->
+                <ellipse cx="116" cy="76" rx="9.5" ry="8" fill="url(#michuEyeGrad)" stroke="#111827" stroke-width="2.4"/>
+                <ellipse cx="118" cy="76" rx="2.8" ry="6.2" fill="#0f172a"/>
+                <circle cx="120" cy="73.5" r="2" fill="#ffffff"/>
+                <!-- Hocico, nariz rosada y bigotes de perfil -->
+                <ellipse cx="131" cy="88" rx="11" ry="7.5" fill="#e6dfd3" stroke="#1e293b" stroke-width="2"/>
+                <polygon points="134,80 142,83 136,88" fill="#d97762" stroke="#1e293b" stroke-width="1.8"/>
+                <path d="M126 92 Q132 96 137 91" stroke="#1e293b" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+                <path d="M128 88 Q148 85 162 87 M128 91 Q148 92 161 96" stroke="#f8fafc" stroke-width="1.7" stroke-linecap="round"/>
+              </g>
+            </g>
+          </g>
+
+          <!-- POSE B: MICHU FRENADO MIRÁNDOTE DE FRENTE -->
+          <g id="michuFrontTalkPose">
           <!-- Cola peluda de gato gris atigrado -->
           <g id="raccoonTail">
             <path d="M136 156 C176 154, 192 114, 168 94 C154 83, 142 104, 146 128 C148 140, 138 146, 132 150 Z" fill="url(#michuFurGrad)" stroke="#1f2937" stroke-width="3" stroke-linejoin="round"/>
@@ -2331,25 +2365,28 @@
           <text id="raccoonProp" x="150" y="138" font-size="26">🥗</text>
           <!-- Efecto visual de zarpazo en el lugar exacto del clic/dedo -->
           <g id="swipeEffectGroup" style="opacity:0; pointer-events:none; transition: opacity 0.18s ease;"></g>
+          </g>
         </svg>
-        <span class="raccoon-status-badge" id="raccoonStateLabel" style="font-size:0.66rem;padding:2px 8px;">🐱 En zona de déficit</span>
+        <span class="raccoon-status-badge" id="raccoonStateLabel" style="display:none;">🐱 En zona de déficit</span>
       </div>
 
-      <div class="raccoon-dialogue" style="gap:7px;">
-        <div class="raccoon-header-row" style="justify-content:space-between;align-items:center;">
-          <strong style="font-size:0.86rem;">🐱 Michu dice:</strong>
-          <div style="display:flex;gap:5px;align-items:center;">
-            <button type="button" class="btn btn-sm" id="btnQuickMuteMichu" title="Apagar apariciones automáticas de Michu" style="padding:2px 7px;font-size:0.68rem;">
-              🔕 Apagar
-            </button>
-            <button type="button" class="btn btn-sm" id="btnCloseMichuPeek" title="Ocultar ahora" style="padding:2px 7px;font-size:0.72rem;">
-              ✕
-            </button>
+      <!-- Globo de historieta flotante (aparece recién cuando Michu frena y te mira) -->
+      <div class="raccoon-dialogue" id="michuFloatingBubbleWrap" style="gap:5px;max-width:min(330px, calc(100vw - 145px));pointer-events:auto;opacity:0;transform:scale(0.4) translateY(18px);transform-origin:left bottom;margin-bottom:18px;">
+        <div class="speech-bubble" style="padding:11px 14px;font-size:0.84rem;background:var(--bg-elev);border:2.5px solid var(--accent);border-radius:20px;box-shadow:0 6px 0 rgba(21,128,61,0.35), 0 14px 32px rgba(0,0,0,0.28);">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px;">
+            <strong style="font-size:0.76rem;color:var(--accent);">🐱 Michu</strong>
+            <div style="display:flex;gap:4px;align-items:center;">
+              <button type="button" class="btn btn-sm" id="btnQuickMuteMichu" title="Apagar apariciones automáticas de Michu" style="padding:1px 6px;font-size:0.65rem;">
+                🔕 Apagar
+              </button>
+              <button type="button" class="btn btn-sm" id="btnCloseMichuPeek" title="Ocultar ahora" style="padding:1px 6px;font-size:0.68rem;">
+                ✕
+              </button>
+            </div>
           </div>
-        </div>
-
-        <div class="speech-bubble" id="raccoonSpeechText" style="padding:10px 13px;font-size:0.86rem;">
-          "A ver, humano... hoy venimos bien con el desayuno, pero no te hagas el distraído con la proteína que los músculos no viven de aire 🐱💪."
+          <div id="raccoonSpeechText" style="line-height:1.38;">
+            "A ver, humano... hoy venimos bien con el desayuno, pero no te hagas el distraído con la proteína que los músculos no viven de aire 🐱💪."
+          </div>
         </div>
       </div>
     </section>
@@ -14171,54 +14208,187 @@
       }
       window.fireCartoonConfetti = fireCartoonConfetti;
 
-      // Loop autónomo de vida de Michu (parpadeo natural fijo en su sitio, respiración suave y cola en movimiento)
+      // Coreografía estilo película animada:
+      // 1) Michu entra caminando despacio de perfil por encima de la pantalla
+      // 2) Se detiene, gira para mirarte de frente, saluda con la patita y despliega su globo de diálogo
+      // 3) Cierra el globo, gira y se va caminando despacio fuera de la pantalla
       let michuPeekHideTimer = null;
+      let walkCycleTweens = [];
+      let mainWalkTl = null;
 
-      function hideMichuPeekPopup() {
+      function stopWalkCycleLoops() {
+        walkCycleTweens.forEach(tw => {
+          try { tw.kill(); } catch (_) {}
+        });
+        walkCycleTweens = [];
+      }
+
+      function startWalkCycleLoops() {
+        stopWalkCycleLoops();
+        if (!window.gsap) return;
+        const legFL = document.getElementById("walkLegFL");
+        const legBR = document.getElementById("walkLegBR");
+        const legFR = document.getElementById("walkLegFR");
+        const legBL = document.getElementById("walkLegBL");
+        const torso = document.getElementById("walkTorsoGroup");
+        const wTail = document.getElementById("walkTail");
+
+        if (legFL && legBR) {
+          walkCycleTweens.push(
+            window.gsap.fromTo([legFL, legBR], { rotation: -24 }, { rotation: 24, duration: 0.28, repeat: -1, yoyo: true, ease: "sine.inOut" })
+          );
+        }
+        if (legFR && legBL) {
+          walkCycleTweens.push(
+            window.gsap.fromTo([legFR, legBL], { rotation: 24 }, { rotation: -24, duration: 0.28, repeat: -1, yoyo: true, ease: "sine.inOut" })
+          );
+        }
+        if (torso) {
+          walkCycleTweens.push(
+            window.gsap.fromTo(torso, { y: 0 }, { y: -4.5, duration: 0.14, repeat: -1, yoyo: true, ease: "sine.inOut" })
+          );
+        }
+        if (wTail) {
+          walkCycleTweens.push(
+            window.gsap.fromTo(wTail, { rotation: -8 }, { rotation: 12, duration: 0.36, repeat: -1, yoyo: true, ease: "sine.inOut" })
+          );
+        }
+      }
+
+      function hideMichuPeekPopup(immediate = false) {
         const stageEl = document.getElementById("michuHeroStage");
-        if (stageEl) stageEl.classList.remove("michu-visible");
+        const svg = document.getElementById("michuSvg");
+        const sidePose = document.getElementById("michuSideWalkPose");
+        const frontPose = document.getElementById("michuFrontTalkPose");
+        const bubbleWrap = document.getElementById("michuFloatingBubbleWrap");
         if (michuPeekHideTimer) {
           clearTimeout(michuPeekHideTimer);
           michuPeekHideTimer = null;
         }
+        if (!stageEl || !window.gsap) {
+          if (stageEl) stageEl.style.transform = "translateX(-220px)";
+          return;
+        }
+        if (mainWalkTl) {
+          mainWalkTl.kill();
+          mainWalkTl = null;
+        }
+        if (immediate) {
+          stopWalkCycleLoops();
+          if (bubbleWrap) window.gsap.set(bubbleWrap, { opacity: 0, scale: 0.4, y: 18 });
+          window.gsap.set(stageEl, { x: -220 });
+          return;
+        }
+
+        // Salida caminando despacio hacia la izquierda
+        mainWalkTl = window.gsap.timeline({
+          onComplete: () => {
+            stopWalkCycleLoops();
+            if (svg) window.gsap.set(svg, { scaleX: 1 });
+          }
+        });
+        if (bubbleWrap) {
+          mainWalkTl.to(bubbleWrap, { opacity: 0, scale: 0.4, y: 16, duration: 0.22, ease: "back.in(1.6)" }, 0);
+        }
+        mainWalkTl.add(() => {
+          if (frontPose) frontPose.style.display = "none";
+          if (sidePose) sidePose.style.display = "block";
+          if (svg) window.gsap.set(svg, { scaleX: -1 });
+          startWalkCycleLoops();
+        }, 0.18);
+        mainWalkTl.to(stageEl, { x: -220, duration: 1.55, ease: "power1.inOut" }, 0.2);
       }
       window.hideMichuPeekPopup = hideMichuPeekPopup;
 
-      function triggerMichuPeekPopup(forceShow = false, durationMs = 4600) {
+      function triggerMichuPeekPopup(forceShow = false, durationMs = 4800) {
         const stageEl = document.getElementById("michuHeroStage");
+        const svg = document.getElementById("michuSvg");
+        const sidePose = document.getElementById("michuSideWalkPose");
+        const frontPose = document.getElementById("michuFrontTalkPose");
+        const bubbleWrap = document.getElementById("michuFloatingBubbleWrap");
+        const pawR = document.getElementById("pawRightGroup");
         if (!stageEl) return;
+
         const isEnabled = !(appData && appData.profile && appData.profile.michuPopupEnabled === false);
         if (!isEnabled && !forceShow) return;
         stageEl.classList.remove("michu-disabled");
-        stageEl.classList.add("michu-visible");
-        triggerMichuCartoonJump();
 
-        // Saludo con la patita derecha al asomarse
-        const pawR = document.getElementById("pawRightGroup");
-        if (window.gsap && pawR) {
-          window.gsap.fromTo(
-            pawR,
-            { rotation: 0, y: 0 },
-            { rotation: -22, y: -7, duration: 0.22, yoyo: true, repeat: 3, ease: "sine.inOut" }
-          );
+        if (!window.gsap) {
+          stageEl.style.transform = "translateX(12px)";
+          return;
         }
 
         if (michuPeekHideTimer) clearTimeout(michuPeekHideTimer);
+        if (mainWalkTl) mainWalkTl.kill();
+
+        // Si ya está parado en pantalla hablando, solo hace un saltito y actualiza el globo
+        const currentX = Number(window.gsap.getProperty(stageEl, "x")) || -210;
+        if (currentX > -30 && frontPose && frontPose.style.display !== "none") {
+          triggerMichuCartoonJump();
+          if (bubbleWrap) {
+            window.gsap.fromTo(bubbleWrap, { scale: 0.88 }, { opacity: 1, scale: 1, y: 0, duration: 0.35, ease: "elastic.out(1.1, 0.5)" });
+          }
+          michuPeekHideTimer = setTimeout(() => hideMichuPeekPopup(false), durationMs);
+          return;
+        }
+
+        // Acto 1: Preparar a Michu fuera de pantalla a la izquierda en pose de caminata lateral
+        if (bubbleWrap) window.gsap.set(bubbleWrap, { opacity: 0, scale: 0.4, y: 18 });
+        if (frontPose) frontPose.style.display = "none";
+        if (sidePose) sidePose.style.display = "block";
+        if (svg) window.gsap.set(svg, { scaleX: 1, scaleY: 1, rotation: 0, y: 0 });
+        window.gsap.set(stageEl, { x: -180 });
+        startWalkCycleLoops();
+
+        mainWalkTl = window.gsap.timeline();
+        // Camina despacio entrando a la pantalla
+        mainWalkTl.to(stageEl, { x: 10, duration: 1.65, ease: "power1.out" });
+
+        // Acto 2: Frena, gira con Squash & Stretch para mirarte de frente y saluda
+        mainWalkTl.add(() => {
+          stopWalkCycleLoops();
+          if (sidePose) sidePose.style.display = "none";
+          if (frontPose) frontPose.style.display = "block";
+          if (svg) {
+            window.gsap.fromTo(
+              svg,
+              { scaleX: 0.82, scaleY: 1.12, y: -6 },
+              { scaleX: 1, scaleY: 1, y: 0, duration: 0.38, ease: "elastic.out(1.2, 0.45)" }
+            );
+          }
+          if (pawR) {
+            window.gsap.fromTo(
+              pawR,
+              { rotation: 0, y: 0 },
+              { rotation: -24, y: -7, duration: 0.22, yoyo: true, repeat: 3, ease: "sine.inOut" }
+            );
+          }
+        });
+
+        // Despliega el globo de historieta arriba/al lado de Michu
+        if (bubbleWrap) {
+          mainWalkTl.to(
+            bubbleWrap,
+            { opacity: 1, scale: 1, y: 0, duration: 0.42, ease: "back.out(1.7)" },
+            "-=0.05"
+          );
+        }
+
+        // Acto 3: Programar su salida caminando
         michuPeekHideTimer = setTimeout(() => {
-          stageEl.classList.remove("michu-visible");
-          if (!isEnabled) stageEl.classList.add("michu-disabled");
-        }, durationMs);
+          hideMichuPeekPopup(false);
+        }, durationMs + 1650);
       }
       window.triggerMichuPeekPopup = triggerMichuPeekPopup;
 
       document.getElementById("btnCloseMichuPeek")?.addEventListener("click", (e) => {
         e.stopPropagation();
-        hideMichuPeekPopup();
+        hideMichuPeekPopup(false);
       });
 
       document.getElementById("btnQuickMuteMichu")?.addEventListener("click", (e) => {
         e.stopPropagation();
-        hideMichuPeekPopup();
+        hideMichuPeekPopup(true);
         if (typeof window.applyMichuPopupSetting === "function") {
           window.applyMichuPopupSetting(false, { persist: true });
         }
