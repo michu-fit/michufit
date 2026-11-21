@@ -2176,37 +2176,40 @@
           <!-- Sombra base -->
           <ellipse cx="100" cy="184" rx="54" ry="9" fill="rgba(0,0,0,0.32)" />
 
-          <!-- POSE A: MICHU CAMINANDO DE PERFIL (Gato gris atigrado con 4 patitas articuladas) -->
+          <!-- POSE A: MICHU CAMINANDO DE PERFIL (Cinemática inversa fluida 60fps con curvas Bezier continuas) -->
           <g id="michuSideWalkPose" style="display:none;">
             <g id="walkTorsoGroup">
-              <!-- Cola ondulante de perfil -->
-              <g id="walkTail" style="transform-origin: 48px 132px;">
-                <path d="M52 134 C20 126, 12 88, 28 72 C38 62, 46 78, 38 100 C33 114, 44 122, 54 126 Z" fill="url(#michuFurGrad)" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
-                <path d="M24 84 C32 82, 36 90, 27 94 M31 102 C39 101, 42 108, 34 112" stroke="#262b33" stroke-width="4.5" stroke-linecap="round" fill="none"/>
-              </g>
-              <!-- Patitas traseras (plano posterior más oscuro) -->
-              <g id="walkLegBL" style="transform-origin: 64px 148px;">
-                <rect x="57" y="144" width="13" height="34" rx="6.5" fill="#4b5563" stroke="#1e293b" stroke-width="2.6"/>
-                <ellipse cx="65" cy="178" rx="9" ry="5.5" fill="#6b7280" stroke="#1e293b" stroke-width="2.4"/>
-              </g>
-              <g id="walkLegFL" style="transform-origin: 122px 148px;">
-                <rect x="115" y="144" width="13" height="34" rx="6.5" fill="#4b5563" stroke="#1e293b" stroke-width="2.6"/>
-                <ellipse cx="123" cy="178" rx="9" ry="5.5" fill="#6b7280" stroke="#1e293b" stroke-width="2.4"/>
-              </g>
-              <!-- Cuerpo alargado de gato caminando -->
-              <ellipse cx="95" cy="134" rx="46" ry="25" fill="url(#michuFurGrad)" stroke="#1e293b" stroke-width="3.2"/>
-              <path d="M62 124 Q88 144 126 128" fill="none" stroke="#d6d3cd" stroke-width="11" stroke-linecap="round" opacity="0.85"/>
+              <!-- Cola orgánica con onda viajera continua -->
+              <path id="walkTailOutline" d="M52 130 C30 122, 16 98, 26 64" fill="none" stroke="#1e293b" stroke-width="17" stroke-linecap="round"/>
+              <path id="walkTailCore" d="M52 130 C30 122, 16 98, 26 64" fill="none" stroke="url(#michuFurGrad)" stroke-width="11.5" stroke-linecap="round"/>
+
+              <!-- Extremidades posteriores (plano lejano, unidas orgánicamente al tronco con rodilla/codo real) -->
+              <path id="walkPathBL" d="M64 138 Q58 158 62 178" fill="none" stroke="#1e293b" stroke-width="16.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path id="walkPathBLFill" d="M64 138 Q58 158 62 178" fill="none" stroke="#525b69" stroke-width="11.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <ellipse id="walkPawBL" cx="64" cy="178.5" rx="8.5" ry="5" fill="#6b7280" stroke="#1e293b" stroke-width="2.3"/>
+
+              <path id="walkPathFL" d="M122 138 Q126 158 122 178" fill="none" stroke="#1e293b" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path id="walkPathFLFill" d="M122 138 Q126 158 122 178" fill="none" stroke="#525b69" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <ellipse id="walkPawFL" cx="124" cy="178.5" rx="8.5" ry="5" fill="#6b7280" stroke="#1e293b" stroke-width="2.3"/>
+
+              <!-- Tronco felino flexible con lomo y pecho integrados -->
+              <path id="walkBodyPath" d="M50 128 C50 106, 138 104, 140 128 C142 150, 122 156, 95 155 C66 154, 50 146, 50 128 Z" fill="url(#michuFurGrad)" stroke="#1e293b" stroke-width="3.2" stroke-linejoin="round"/>
+              <!-- Pancita crema suave -->
+              <path id="walkBellyPath" d="M64 144 Q96 154 128 142" fill="none" stroke="#d6d3cd" stroke-width="9" stroke-linecap="round" opacity="0.9"/>
               <!-- Rayas atigradas del lomo -->
-              <path d="M72 111 Q76 124 70 132 M90 109 Q95 123 89 133 M108 111 Q112 124 106 132" stroke="#262b33" stroke-width="4.2" stroke-linecap="round" fill="none"/>
-              <!-- Patitas delanteras (primer plano) -->
-              <g id="walkLegBR" style="transform-origin: 72px 148px;">
-                <rect x="65" y="144" width="14" height="35" rx="7" fill="#78808c" stroke="#1e293b" stroke-width="2.8"/>
-                <ellipse cx="74" cy="179" rx="9.5" ry="5.8" fill="#d6d3cd" stroke="#1e293b" stroke-width="2.5"/>
-              </g>
-              <g id="walkLegFR" style="transform-origin: 130px 148px;">
-                <rect x="123" y="144" width="14" height="35" rx="7" fill="#78808c" stroke="#1e293b" stroke-width="2.8"/>
-                <ellipse cx="132" cy="179" rx="9.5" ry="5.8" fill="#d6d3cd" stroke="#1e293b" stroke-width="2.5"/>
-              </g>
+              <path id="walkStripesPath" d="M72 110 Q76 123 70 131 M91 108 Q96 122 90 132 M110 110 Q114 123 108 131" stroke="#262b33" stroke-width="4.2" stroke-linecap="round" fill="none"/>
+
+              <!-- Extremidades delanteras (primer plano, muslo/hombro fundido con el cuerpo sin costura) -->
+              <path id="walkPathBR" d="M70 138 Q64 158 70 178" fill="none" stroke="#1e293b" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+              <path id="walkPathBRFill" d="M70 138 Q64 158 70 178" fill="none" stroke="#78808c" stroke-width="11.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="70" cy="136" r="10.5" fill="url(#michuFurGrad)"/>
+              <ellipse id="walkPawBR" cx="72" cy="178.5" rx="9" ry="5.2" fill="#d6d3cd" stroke="#1e293b" stroke-width="2.4"/>
+
+              <path id="walkPathFR" d="M128 138 Q134 158 130 178" fill="none" stroke="#1e293b" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+              <path id="walkPathFRFill" d="M128 138 Q134 158 130 178" fill="none" stroke="#78808c" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="128" cy="136" r="10" fill="url(#michuFurGrad)"/>
+              <ellipse id="walkPawFR" cx="130" cy="178.5" rx="9" ry="5.2" fill="#d6d3cd" stroke="#1e293b" stroke-width="2.4"/>
+
               <!-- Cabeza en perfil 3/4 mirando hacia adelante al caminar -->
               <g id="walkHead" transform="translate(36, 12)">
                 <path d="M74 62 L66 24 L98 44 Z" fill="#6b7280" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
