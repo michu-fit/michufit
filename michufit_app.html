@@ -4459,18 +4459,20 @@
       };
     }
 
+    const DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwocpAw2NNfGiPGvRYXPqBlAmGRdW9Oil54AEr0wN96Cd-zO-c8mu3XOG4WNHA_jzNfqA/exec";
+
     async function sbSendAdminRegistrationEmail(newUser, usersList, isTest = false) {
       try {
         const owner = (usersList || []).find(u => u.id === "u-owner" || u.role === "superadmin");
         const targetEmail = (
           (owner && owner.adminNotifyEmail) ||
           localStorage.getItem("michufit_admin_notify_email") ||
-          "ali.gourmet.ar@gmail.com"
+          ""
         ).trim();
         const webhookUrl = (
           (owner && owner.adminWebhookUrl) ||
           localStorage.getItem("michufit_admin_webhook_url") ||
-          ""
+          DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL
         ).trim();
 
         const prof = (newUser && newUser.trackerData && newUser.trackerData.profile) || {};
@@ -10864,11 +10866,11 @@
         emailNotifySec.style.display = isSuper ? "block" : "none";
         if (isSuper && emailNotifyInp && !emailNotifyInp.dataset.initialized) {
           emailNotifyInp.dataset.initialized = "1";
-          emailNotifyInp.value = currentUserInfo.adminNotifyEmail || localStorage.getItem("michufit_admin_notify_email") || "ali.gourmet.ar@gmail.com";
+          emailNotifyInp.value = currentUserInfo.adminNotifyEmail || localStorage.getItem("michufit_admin_notify_email") || "";
         }
         if (isSuper && webhookUrlInp && !webhookUrlInp.dataset.initialized) {
           webhookUrlInp.dataset.initialized = "1";
-          webhookUrlInp.value = currentUserInfo.adminWebhookUrl || localStorage.getItem("michufit_admin_webhook_url") || "";
+          webhookUrlInp.value = currentUserInfo.adminWebhookUrl || localStorage.getItem("michufit_admin_webhook_url") || DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL;
         }
         if (isSuper && btnCopyGasCode && !btnCopyGasCode.dataset.bound) {
           btnCopyGasCode.dataset.bound = "1";
@@ -10905,11 +10907,7 @@
           btnSaveTestMail.dataset.bound = "1";
           btnSaveTestMail.addEventListener("click", async () => {
             const targetMail = (emailNotifyInp ? emailNotifyInp.value : "").trim().toLowerCase();
-            const targetHook = (webhookUrlInp ? webhookUrlInp.value : "").trim();
-            if (!targetMail || !targetMail.includes("@")) {
-              alert("Ingresá tu dirección de Gmail (ej: ali.gourmet.ar@gmail.com).");
-              return;
-            }
+            const targetHook = (webhookUrlInp ? webhookUrlInp.value : "").trim() || DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL;
             btnSaveTestMail.disabled = true;
             btnSaveTestMail.textContent = "⏳ Enviando...";
             try {
@@ -10940,8 +10938,8 @@
                 emailStatusMsg.style.color = "var(--accent)";
                 emailStatusMsg.style.border = "1px solid var(--accent)";
                 emailStatusMsg.innerHTML = mailRes && mailRes.via === "google-script"
-                  ? `✅ ¡Listo! Se envió el correo de prueba vía tu <strong>Google Apps Script</strong> a <strong>${targetMail}</strong> con remitente <strong>"🐱 Michu Fit"</strong>.`
-                  : `✅ Configuración guardada para <strong>${targetMail}</strong>. (Cuando pegues la URL de tu Google Script, el remitente saldrá como <strong>"🐱 Michu Fit"</strong>).`;
+                  ? `✅ ¡Listo! Se envió el correo de prueba vía tu <strong>Google Apps Script</strong> con remitente <strong>"🐱 Michu Fit"</strong>.`
+                  : `✅ Configuración guardada.`;
               }
             } finally {
               btnSaveTestMail.disabled = false;

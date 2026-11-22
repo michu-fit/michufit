@@ -1,4 +1,4 @@
-const CACHE_NAME = 'michufit-cloud-v53';
+const CACHE_NAME = 'michufit-cloud-v54';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (e) => {
