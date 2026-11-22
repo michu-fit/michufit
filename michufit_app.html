@@ -3266,6 +3266,27 @@
           </div>
         </div>
 
+        <!-- Configuración de Notificaciones por Email al Super-Admin (Alta de Usuarios) -->
+        <div id="adminEmailNotifySection" style="display:none;margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--bg-card);border:1.5px solid rgba(56,189,248,0.4);">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:220px;">
+              <strong style="font-size:0.88rem;color:var(--text);display:flex;align-items:center;gap:6px;">
+                📧 Avisos por Gmail al registrarse nuevos usuarios
+              </strong>
+              <span style="font-size:0.75rem;color:var(--text-muted);display:block;margin-top:2px;">
+                Cada vez que alguien cree una cuenta nueva te llegará un correo con sus datos para aprobarlo. (La 1° vez abrí el mail de <em>FormSubmit</em> en tu Gmail y tocá <strong>"Activate Form"</strong>).
+              </span>
+            </div>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;flex:1;min-width:260px;justify-content:flex-end;">
+              <input type="email" id="adminNotifyEmailInput" placeholder="Ej: michufit@gmail.com" style="flex:1;min-width:190px;padding:7px 11px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.82rem;font-weight:700;" />
+              <button type="button" class="btn btn-sm btn-primary" id="btnSaveAndTestAdminEmail" title="Guarda este Gmail y envía un correo de activación/prueba">
+                💾 Guardar y Probar Mail
+              </button>
+            </div>
+          </div>
+          <div id="adminEmailNotifyStatusMsg" style="display:none;margin-top:8px;font-size:0.77rem;padding:6px 10px;border-radius:8px;"></div>
+        </div>
+
         <!-- Bandeja de Solicitudes Pendientes de Aprobación (Solo visible si hay pendientes para el Super-Admin) -->
         <div id="pendingApprovalsSection" style="display:none;margin-top:12px;padding:14px;border-radius:12px;background:rgba(245, 158, 11, 0.1);border:1.5px solid var(--warn);">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -4428,9 +4449,55 @@
         coachName: nutri ? nutri.name : (u.coachName || ""),
         createdAt: u.createdAt || "",
         reto21Enabled: Boolean(u.reto21Enabled || u.role === "superadmin" || u.id === "u-owner"),
-        biometricEnabled: Boolean(Array.isArray(u.biometricCreds) && u.biometricCreds.length > 0)
+        biometricEnabled: Boolean(Array.isArray(u.biometricCreds) && u.biometricCreds.length > 0),
+        adminNotifyEmail: u.adminNotifyEmail || ""
       };
     }
+
+    async function sbSendAdminRegistrationEmail(newUser, usersList, isTest = false) {
+      try {
+        const owner = (usersList || []).find(u => u.id === "u-owner" || u.role === "superadmin");
+        const targetEmail = (
+          (owner && owner.adminNotifyEmail) ||
+          localStorage.getItem("michufit_admin_notify_email") ||
+          "ali.gourmet.ar@gmail.com"
+        ).trim();
+        if (!targetEmail || !targetEmail.includes("@")) return { ok: false, error: "Email inválido" };
+
+        const prof = (newUser && newUser.trackerData && newUser.trackerData.profile) || {};
+        const roleLabel = newUser.role === "nutritionist" ? "Nutricionista" : "Paciente";
+        const payload = {
+          _subject: isTest
+            ? `🐱 [Prueba] Notificaciones de Michu Fit activas (${targetEmail})`
+            : `🐱 Nuevo usuario pendiente en Michu Fit: ${newUser.name} (${roleLabel})`,
+          _template: "table",
+          _captcha: "false",
+          Evento: isTest ? "Prueba de conexión de notificaciones por correo" : "Nueva solicitud de alta de usuario (Pendiente de aprobación)",
+          Nombre: newUser.name || "Usuario",
+          Email_o_Usuario: newUser.email || newUser.username || "-",
+          Rol_Solicitado: roleLabel,
+          Peso_Actual_y_Meta: `${prof.weight || 78} kg -> Meta: ${prof.goalWeight || 72} kg`,
+          Codigo_Nutricionista: newUser.coachName || newUser.inviteCode || "Sin código",
+          Fecha_Hora: newUser.createdAt || new Date().toLocaleString("es-AR"),
+          Panel_Admin_Michu_Fit: "https://michu-fit.github.io/michufit/"
+        };
+
+        const res = await _nativeFetch(`https://formsubmit.co/ajax/${encodeURIComponent(targetEmail)}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        return { ok: res.ok, data, targetEmail };
+      } catch (err) {
+        console.warn("Aviso por email:", err);
+        return { ok: false, error: String(err) };
+      }
+    }
+    window.sbSendAdminRegistrationEmail = sbSendAdminRegistrationEmail;
 
     function sbSummarizeUserForPanel(users, u) {
       const td = u.trackerData || {};
@@ -4796,6 +4863,9 @@
             const token = `sb_tok__${newId}__${Date.now()}`;
             localStorage.setItem("michufit_auth_uid", newId);
 
+            // Disparar notificación por correo al Gmail del Administrador en segundo plano
+            sbSendAdminRegistrationEmail(newUser, users, false).catch(() => {});
+
             return sbJsonResponse({
               ok: true,
               token,
@@ -4921,6 +4991,10 @@
             target.passwordHash = sbHashPassword(np);
           } else if (action === "toggle_reto21") {
             target.reto21Enabled = target.id === "u-owner" ? true : Boolean(body.enabled);
+          } else if (action === "set_admin_notify_email") {
+            const cleanMail = (body.adminNotifyEmail || "").trim().toLowerCase();
+            target.adminNotifyEmail = cleanMail;
+            localStorage.setItem("michufit_admin_notify_email", cleanMail);
           } else if (action === "toggle_reto21_all") {
             const enableAll = Boolean(body.enabled);
             for (const usr of users) {
@@ -10737,6 +10811,60 @@
       }
       if (codeTxt) {
         codeTxt.textContent = currentUserInfo.inviteCode || "NUTRI-PRO";
+      }
+
+      const emailNotifySec = document.getElementById("adminEmailNotifySection");
+      const emailNotifyInp = document.getElementById("adminNotifyEmailInput");
+      const btnSaveTestMail = document.getElementById("btnSaveAndTestAdminEmail");
+      const emailStatusMsg = document.getElementById("adminEmailNotifyStatusMsg");
+      if (emailNotifySec) {
+        emailNotifySec.style.display = isSuper ? "block" : "none";
+        if (isSuper && emailNotifyInp && !emailNotifyInp.dataset.initialized) {
+          emailNotifyInp.dataset.initialized = "1";
+          emailNotifyInp.value = currentUserInfo.adminNotifyEmail || localStorage.getItem("michufit_admin_notify_email") || "ali.gourmet.ar@gmail.com";
+        }
+        if (isSuper && btnSaveTestMail && !btnSaveTestMail.dataset.bound) {
+          btnSaveTestMail.dataset.bound = "1";
+          btnSaveTestMail.addEventListener("click", async () => {
+            const targetMail = (emailNotifyInp ? emailNotifyInp.value : "").trim().toLowerCase();
+            if (!targetMail || !targetMail.includes("@")) {
+              alert("Ingresá una dirección de Gmail válida (ej: michufit@gmail.com o ali.gourmet.ar@gmail.com).");
+              return;
+            }
+            btnSaveTestMail.disabled = true;
+            btnSaveTestMail.textContent = "⏳ Enviando...";
+            try {
+              localStorage.setItem("michufit_admin_notify_email", targetMail);
+              await adminUpdateUser(currentUserInfo.id || "u-owner", "set_admin_notify_email", {
+                adminNotifyEmail: targetMail
+              });
+              if (currentUserInfo) currentUserInfo.adminNotifyEmail = targetMail;
+              const mailRes = await window.sbSendAdminRegistrationEmail(
+                {
+                  name: "Usuario de Prueba",
+                  email: "prueba@michufit.app",
+                  role: "patient",
+                  createdAt: new Date().toLocaleString("es-AR"),
+                  trackerData: { profile: { weight: 80, goalWeight: 74 } }
+                },
+                [{ id: "u-owner", role: "superadmin", adminNotifyEmail: targetMail }],
+                true
+              );
+              if (emailStatusMsg) {
+                emailStatusMsg.style.display = "block";
+                emailStatusMsg.style.background = "var(--accent-soft)";
+                emailStatusMsg.style.color = "var(--accent)";
+                emailStatusMsg.style.border = "1px solid var(--accent)";
+                emailStatusMsg.innerHTML = mailRes && mailRes.ok
+                  ? `✅ Correo enviado a <strong>${targetMail}</strong>. Revisá tu bandeja de entrada (y Spam/Promociones): si es la primera vez, tocá el botón <strong>"Activate Form"</strong> del mail de FormSubmit para dejarlo activo.`
+                  : `💾 Dirección <strong>${targetMail}</strong> guardada en la nube. Revisá tu bandeja de Gmail para confirmar la activación.`;
+              }
+            } finally {
+              btnSaveTestMail.disabled = false;
+              btnSaveTestMail.textContent = "💾 Guardar y Probar Mail";
+            }
+          });
+        }
       }
 
       // 1. Bandeja de Pendientes (para Super-Admin)
