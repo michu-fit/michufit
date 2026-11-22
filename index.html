@@ -249,7 +249,7 @@
     /* Michu Caminando Directamente Encima de la Pantalla (Sin Caja de Fondo) */
     .raccoon-stage {
       position: fixed;
-      bottom: 8px;
+      bottom: calc(18px + env(safe-area-inset-bottom, 0px));
       left: 0;
       right: 0;
       z-index: 9400;
@@ -263,7 +263,7 @@
       margin: 0;
       overflow: visible;
       pointer-events: none;
-      transform: translate(12px, 165px);
+      transform: translate(12px, 220px);
       opacity: 1;
     }
 
@@ -319,7 +319,7 @@
 
     @media (max-width: 720px) {
       .raccoon-stage {
-        bottom: 6px;
+        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
       }
     }
 
@@ -9361,9 +9361,6 @@
       });
       wrap.addEventListener("contextmenu", (e) => e.preventDefault());
     })();
-    document.getElementById("btnHeroRandomQuip").addEventListener("click", () => {
-      setRaccoonSpeech(generateContextualRaccoonComment());
-    });
     document.getElementById("btnHeroAddFood").addEventListener("click", () => {
       openFoodModal();
     });
@@ -14517,7 +14514,7 @@
         }
         if (!stageEl || !window.gsap) {
           michuVisibleNow = false;
-          if (stageEl) stageEl.style.transform = "translate(12px, 165px)";
+          if (stageEl) stageEl.style.transform = "translate(12px, 220px)";
           return;
         }
         if (mainWalkTl) {
@@ -14528,7 +14525,7 @@
           michuVisibleNow = false;
           if (bubbleWrap) window.gsap.set(bubbleWrap, { opacity: 0, scale: 0.4, y: 18 });
           if (svg) window.gsap.set(svg, { scaleX: 1, scaleY: 1, y: 0, rotation: 0 });
-          window.gsap.set(stageEl, { x: 12, y: 165 });
+          window.gsap.set(stageEl, { x: 12, y: 220 });
           return;
         }
 
@@ -14546,7 +14543,7 @@
           mainWalkTl.to(svg, { scaleX: 1.08, scaleY: 0.9, y: 5, duration: 0.14, ease: "sine.inOut" }, 0.08);
           mainWalkTl.to(svg, { scaleX: 0.95, scaleY: 1.05, y: -6, duration: 0.14, ease: "power1.out" }, 0.22);
         }
-        mainWalkTl.to(stageEl, { x: 12, y: 165, duration: 0.46, ease: "back.in(1.2)" }, 0.26);
+        mainWalkTl.to(stageEl, { x: 12, y: 220, duration: 0.46, ease: "back.in(1.2)" }, 0.26);
       }
       window.hideMichuPeekPopup = hideMichuPeekPopup;
 
@@ -14573,8 +14570,12 @@
         if (michuPeekHideTimer) clearTimeout(michuPeekHideTimer);
         if (mainWalkTl) mainWalkTl.kill();
 
-        // Si ya está visible en pantalla hablando, hace un saltito orgánico y actualiza el globo
-        if (michuVisibleNow) {
+        const currentY = Number(window.gsap.getProperty(stageEl, "y"));
+        const isAlreadyUp = michuVisibleNow && isFinite(currentY) && currentY < 25;
+
+        // Si ya está completamente arriba hablando, aseguramos y=0, damos un saltito orgánico y actualizamos el globo
+        if (isAlreadyUp) {
+          window.gsap.to(stageEl, { x: 12, y: 0, duration: 0.2, ease: "power2.out" });
           triggerMichuCartoonJump();
           if (bubbleWrap) {
             window.gsap.fromTo(bubbleWrap, { scale: 0.9 }, { opacity: 1, scale: 1, y: 0, duration: 0.34, ease: "elastic.out(1.1, 0.5)" });
@@ -14583,10 +14584,10 @@
           return;
         }
 
-        // Entrada orgánica: Michu salta suavemente desde el borde inferior con Squash & Stretch natural
+        // Entrada orgánica completa: Michu salta suavemente desde abajo hasta quedar 100% en pantalla (y: 0)
         michuVisibleNow = true;
         if (bubbleWrap) window.gsap.set(bubbleWrap, { opacity: 0, scale: 0.4, y: 18 });
-        window.gsap.set(stageEl, { x: 12, y: 160 });
+        window.gsap.set(stageEl, { x: 12, y: 210 });
         if (svg) window.gsap.set(svg, { scaleX: 0.9, scaleY: 1.12, rotation: -3, y: 0 });
 
         mainWalkTl = window.gsap.timeline();
@@ -14810,11 +14811,10 @@
         }
       }, { passive: true });
 
-      // Conectar reacciones animadas y confeti al tildar comidas, sumar agua o cambiar frases
+      // Conectar reacciones animadas y confeti al tildar comidas o sumar agua
       document.addEventListener("click", (e) => {
-        const target = e.target.closest("[data-toggle-planned], .cup-btn, #btnHeroRandomQuip, #btnConfirmAddFood");
+        const target = e.target.closest("[data-toggle-planned], .cup-btn, #btnConfirmAddFood");
         if (!target) return;
-        triggerMichuCartoonJump();
         if (target.hasAttribute("data-toggle-planned") || target.id === "btnConfirmAddFood") {
           fireCartoonConfetti("normal");
         } else if (target.classList.contains("cup-btn") && !target.classList.contains("filled")) {
