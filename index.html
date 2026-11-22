@@ -3333,6 +3333,28 @@
           </div>
         </div>
 
+        <div id="accBiometricSection" style="background:var(--bg-card);border:1.5px solid rgba(34,197,94,0.4);border-radius:12px;padding:12px 13px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <strong style="font-size:0.88rem;color:var(--text);display:flex;align-items:center;gap:6px;">
+              🫆 Ingreso con Huella Dactilar / Biometría
+            </strong>
+            <span id="accBiometricBadge" class="chip" style="font-size:0.7rem;font-weight:800;background:var(--bg-elev);color:var(--text-muted);">
+              No vinculado
+            </span>
+          </div>
+          <p id="accBiometricStatusText" style="font-size:0.77rem;color:var(--text-muted);line-height:1.4;margin:0;">
+            Activá el lector de huella o rostro de tu celular para entrar a tu cuenta con 1 solo toque sin escribir tu contraseña.
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-sm btn-primary" id="btnEnrollBiometric" style="flex:1;justify-content:center;">
+              🫆 Vincular mi Huella / Rostro en este celu
+            </button>
+            <button type="button" class="btn btn-sm btn-danger" id="btnRemoveBiometric" style="display:none;justify-content:center;">
+              🗑️ Quitar huella
+            </button>
+          </div>
+        </div>
+
         <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;" />
 
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -3658,10 +3680,13 @@
           Alcanza<br/>tus<br/>metas de<br/>peso
         </h1>
 
-        <!-- BOTONERA INFERIOR: "Empezar" + "Ya tengo una cuenta" -->
-        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;z-index:3;padding-top:8px;">
+        <!-- BOTONERA INFERIOR: "Empezar" + Huella + "Ya tengo una cuenta" -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:11px;width:100%;z-index:3;padding-top:8px;">
           <button type="button" class="michu-splash-start-btn" id="btnSplashStartRegister">
             Empezar
+          </button>
+          <button type="button" id="btnSplashBiometricLogin" style="display:none;align-items:center;justify-content:center;gap:8px;width:min(280px, 86%);padding:13px 20px;border-radius:999px;border:2px solid #22c55e;background:#f0fdf4;color:#15803d;font-family:'Nunito',sans-serif;font-size:0.96rem;font-weight:900;cursor:pointer;box-shadow:0 8px 20px rgba(34,197,94,0.18);transition:transform 0.15s ease;">
+            🫆 <span id="btnSplashBiometricText">Ingresar con Huella</span>
           </button>
           <button type="button" class="michu-splash-login-link" id="btnSplashOpenLogin">
             Ya tengo una cuenta
@@ -3704,6 +3729,9 @@
           </div>
           <button type="submit" class="btn btn-primary" style="justify-content:center;padding:12px;margin-top:4px;">
             🚀 Entrar a Michu Fit
+          </button>
+          <button type="button" class="btn" id="btnFormBiometricLogin" style="display:none;justify-content:center;padding:11px 14px;border:2px solid var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:900;gap:8px;">
+            🫆 <span id="btnFormBiometricText">Ingresar con Huella Dactilar / Rostro</span>
           </button>
         </form>
 
@@ -4399,7 +4427,8 @@
         coachNoteUpdatedAt: u.coachNoteUpdatedAt || "",
         coachName: nutri ? nutri.name : (u.coachName || ""),
         createdAt: u.createdAt || "",
-        reto21Enabled: Boolean(u.reto21Enabled || u.role === "superadmin" || u.id === "u-owner")
+        reto21Enabled: Boolean(u.reto21Enabled || u.role === "superadmin" || u.id === "u-owner"),
+        biometricEnabled: Boolean(Array.isArray(u.biometricCreds) && u.biometricCreds.length > 0)
       };
     }
 
@@ -4627,6 +4656,50 @@
             return sbJsonResponse({ ok: false, error: "Esta cuenta se encuentra pausada por el administrador." }, 403);
           }
 
+          const token = `sb_tok__${matched.id}__${Date.now()}`;
+          localStorage.setItem("michufit_auth_uid", matched.id);
+          return sbJsonResponse({
+            ok: true,
+            token,
+            user: sbSanitizeUser(users, matched),
+            pendingApproval: matched.status !== "approved",
+            data: matched.status === "approved" ? matched.trackerData : null
+          });
+        }
+
+        // 3b. POST /api/auth/biometric-login
+        if (method === "POST" && path.endsWith("/api/auth/biometric-login")) {
+          const credId = (body.credId || "").trim();
+          const reqUid = (body.userId || "").trim();
+          const bioToken = (body.bioToken || "").trim();
+          if (!credId) {
+            return sbJsonResponse({ ok: false, error: "No se recibió la credencial biométrica del dispositivo." }, 400);
+          }
+          const users = await sbFetchAllUsers();
+          const bioHash = bioToken ? sbHashPassword(bioToken) : "";
+          let matched = null;
+          if (reqUid) {
+            const candidate = users.find(u => u.id === reqUid);
+            if (candidate && Array.isArray(candidate.biometricCreds)) {
+              const hasCred = candidate.biometricCreds.some(c =>
+                c && c.credId === credId && (!c.bioTokenHash || !bioHash || c.bioTokenHash === bioHash)
+              );
+              if (hasCred) matched = candidate;
+            }
+          }
+          if (!matched) {
+            matched = users.find(u =>
+              Array.isArray(u.biometricCreds) && u.biometricCreds.some(c =>
+                c && c.credId === credId && (!c.bioTokenHash || !bioHash || c.bioTokenHash === bioHash)
+              )
+            );
+          }
+          if (!matched) {
+            return sbJsonResponse({ ok: false, error: "Esta huella aún no está vinculada en la nube. Iniciá sesión con tu clave y activala en 👤 Mi Cuenta." }, 401);
+          }
+          if (matched.status === "blocked") {
+            return sbJsonResponse({ ok: false, error: "Esta cuenta se encuentra pausada por el administrador." }, 403);
+          }
           const token = `sb_tok__${matched.id}__${Date.now()}`;
           localStorage.setItem("michufit_auth_uid", matched.id);
           return sbJsonResponse({
@@ -4945,6 +5018,25 @@
               return sbJsonResponse({ ok: false, error: "La contraseña debe tener al menos 4 caracteres." }, 400);
             }
             actor.passwordHash = sbHashPassword(np);
+          }
+          if (body.registerBiometric && body.registerBiometric.credId) {
+            const rb = body.registerBiometric;
+            actor.biometricCreds = Array.isArray(actor.biometricCreds) ? actor.biometricCreds : [];
+            actor.biometricCreds = actor.biometricCreds.filter(c => c && c.credId !== rb.credId);
+            actor.biometricCreds.push({
+              credId: rb.credId,
+              bioTokenHash: rb.bioToken ? sbHashPassword(rb.bioToken) : "",
+              deviceLabel: rb.deviceLabel || "Celular / Dispositivo",
+              createdAt: new Date().toISOString()
+            });
+          }
+          if (body.removeBiometric) {
+            const rmId = body.removeBiometric.credId;
+            if (rmId && Array.isArray(actor.biometricCreds)) {
+              actor.biometricCreds = actor.biometricCreds.filter(c => c && c.credId !== rmId);
+            } else {
+              actor.biometricCreds = [];
+            }
           }
           await sbUpsertUser(actor);
           return sbJsonResponse({ ok: true, user: sbSanitizeUser(users, actor) });
@@ -10407,6 +10499,9 @@
         if (pendingView) pendingView.style.display = "none";
         if (headerIntro) headerIntro.style.display = "none";
       }
+      if (typeof window.refreshBiometricButtonsUI === "function") {
+        window.refreshBiometricButtonsUI();
+      }
       openModal("modalAuthOverlay");
     }
 
@@ -10437,6 +10532,9 @@
 
       if (typeof updateMobileInstallButtonVisibility === "function") {
         updateMobileInstallButtonVisibility();
+      }
+      if (typeof window.refreshBiometricButtonsUI === "function") {
+        window.refreshBiometricButtonsUI();
       }
 
       const canAccessReto21 = Boolean(
@@ -10933,6 +11031,336 @@
       if (btnSwitchLogin) btnSwitchLogin.addEventListener("click", () => showAuthModal("login"));
       if (btnSwitchReg) btnSwitchReg.addEventListener("click", () => showAuthModal("register"));
 
+      // =========================================================================
+      // INGRESO CON HUELLA DACTILAR / ROSTRO (WEBAUTHN PASSKEYS DEL CELULAR)
+      // =========================================================================
+      const BIOMETRIC_STORAGE_KEY = "michufit_biometric_cred_v1";
+
+      function uint8ToBase64Url(bytes) {
+        let bin = "";
+        for (let i = 0; i < bytes.length; i++) {
+          bin += String.fromCharCode(bytes[i]);
+        }
+        return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+      }
+
+      function base64UrlToUint8(b64url) {
+        const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
+        const b64 = (b64url + pad).replace(/-/g, "+").replace(/_/g, "/");
+        const raw = atob(b64);
+        const out = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i++) {
+          out[i] = raw.charCodeAt(i);
+        }
+        return out;
+      }
+
+      function getSavedBiometricCred() {
+        try {
+          const raw = localStorage.getItem(BIOMETRIC_STORAGE_KEY);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          return parsed && parsed.credId ? parsed : null;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function isWebAuthnSupported() {
+        return Boolean(window.PublicKeyCredential && navigator.credentials && typeof navigator.credentials.create === "function");
+      }
+
+      function refreshBiometricButtonsUI() {
+        const saved = getSavedBiometricCred();
+        const supported = isWebAuthnSupported();
+        const splashBtn = document.getElementById("btnSplashBiometricLogin");
+        const splashTxt = document.getElementById("btnSplashBiometricText");
+        const formBtn = document.getElementById("btnFormBiometricLogin");
+        const formTxt = document.getElementById("btnFormBiometricText");
+
+        const accSec = document.getElementById("accBiometricSection");
+        const accBadge = document.getElementById("accBiometricBadge");
+        const accStatus = document.getElementById("accBiometricStatusText");
+        const btnEnroll = document.getElementById("btnEnrollBiometric");
+        const btnRemove = document.getElementById("btnRemoveBiometric");
+
+        // En la pantalla de bienvenida y login mostramos el botón si hay una huella guardada en este celu (o si soporta Passkeys)
+        if (splashBtn) {
+          if (saved && supported) {
+            splashBtn.style.display = "inline-flex";
+            if (splashTxt) {
+              splashTxt.textContent = saved.userName ? `Ingresar con Huella (${saved.userName})` : "Ingresar con Huella";
+            }
+          } else {
+            splashBtn.style.display = "none";
+          }
+        }
+        if (formBtn) {
+          if (supported && saved) {
+            formBtn.style.display = "inline-flex";
+            if (formTxt) {
+              formTxt.textContent = saved.userName
+                ? `Ingresar con Huella como ${saved.userName}`
+                : "Ingresar con Huella Dactilar / Rostro";
+            }
+          } else if (supported) {
+            formBtn.style.display = "inline-flex";
+            if (formTxt) {
+              formTxt.textContent = "Ingresar con Huella / Passkey";
+            }
+          } else {
+            formBtn.style.display = "none";
+          }
+        }
+
+        // En el modal Mi Cuenta (👤 Perfil / Cuenta)
+        if (accSec) {
+          if (!supported) {
+            accSec.style.display = "none";
+          } else {
+            accSec.style.display = "flex";
+            const isLinkedForCurrent = Boolean(saved && (!currentUserInfo || saved.userId === currentUserInfo.id));
+            if (isLinkedForCurrent) {
+              if (accBadge) {
+                accBadge.textContent = "🟢 Huella Activa";
+                accBadge.style.background = "var(--accent-soft)";
+                accBadge.style.color = "var(--accent)";
+              }
+              if (accStatus) {
+                accStatus.innerHTML = `✅ Tu huella / rostro está vinculada en este dispositivo para <strong>${saved.userName || (currentUserInfo && currentUserInfo.name) || "tu cuenta"}</strong>. Podés entrar con 1 toque desde la portada.`;
+              }
+              if (btnEnroll) btnEnroll.textContent = "🔄 Volver a registrar huella";
+              if (btnRemove) btnRemove.style.display = "inline-flex";
+            } else {
+              if (accBadge) {
+                accBadge.textContent = "⚪ No vinculada";
+                accBadge.style.background = "var(--bg-elev)";
+                accBadge.style.color = "var(--text-muted)";
+              }
+              if (accStatus) {
+                accStatus.textContent = "Activá el lector de huella o rostro de tu celular para entrar a tu cuenta con 1 solo toque sin escribir tu contraseña.";
+              }
+              if (btnEnroll) btnEnroll.textContent = "🫆 Vincular mi Huella / Rostro en este celu";
+              if (btnRemove) btnRemove.style.display = "none";
+            }
+          }
+        }
+      }
+      window.refreshBiometricButtonsUI = refreshBiometricButtonsUI;
+
+      async function enrollBiometricForCurrentUser() {
+        if (!currentUserInfo || !currentAuthToken) {
+          alert("Iniciá sesión primero con tu usuario y contraseña para vincular tu huella.");
+          return false;
+        }
+        if (!isWebAuthnSupported()) {
+          alert("Este navegador o dispositivo no permite acceso al sensor biométrico (huella/rostro). Probá abriendo Michu Fit en Chrome o Safari.");
+          return false;
+        }
+        const btnEnroll = document.getElementById("btnEnrollBiometric");
+        const origLabel = btnEnroll ? btnEnroll.textContent : "";
+        try {
+          if (btnEnroll) {
+            btnEnroll.disabled = true;
+            btnEnroll.textContent = "🫆 Apoyá tu huella en el lector...";
+          }
+          const challenge = new Uint8Array(32);
+          window.crypto.getRandomValues(challenge);
+          const userIdBytes = new TextEncoder().encode(String(currentUserInfo.id || "u-owner"));
+          const secretArr = new Uint8Array(24);
+          window.crypto.getRandomValues(secretArr);
+          const bioToken = uint8ToBase64Url(secretArr);
+
+          const credential = await navigator.credentials.create({
+            publicKey: {
+              challenge,
+              rp: {
+                name: "Michu Fit"
+              },
+              user: {
+                id: userIdBytes,
+                name: currentUserInfo.email || currentUserInfo.username || currentUserInfo.name || "usuario@michufit.app",
+                displayName: currentUserInfo.name || "Usuario Michu Fit"
+              },
+              pubKeyCredParams: [
+                { type: "public-key", alg: -7 },   // ES256 (Android / iOS)
+                { type: "public-key", alg: -257 }  // RS256 (Windows Hello / otros)
+              ],
+              authenticatorSelection: {
+                authenticatorAttachment: "platform",
+                userVerification: "required",
+                residentKey: "preferred"
+              },
+              timeout: 60000,
+              attestation: "none"
+            }
+          });
+
+          if (!credential || !credential.rawId) {
+            throw new Error("No se completó la lectura de huella.");
+          }
+
+          const credId = uint8ToBase64Url(new Uint8Array(credential.rawId));
+          const deviceLabel = /Android/i.test(navigator.userAgent)
+            ? "Android (Huella/Biometría)"
+            : (/iPhone|iPad|iPod/i.test(navigator.userAgent) ? "iPhone (FaceID/TouchID)" : "Dispositivo Biométrico");
+
+          const res = await fetch("/api/user/account", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Michu-Token": currentAuthToken
+            },
+            body: JSON.stringify({
+              registerBiometric: {
+                credId,
+                bioToken,
+                deviceLabel
+              }
+            })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || "No se pudo guardar la huella en el servidor.");
+          }
+
+          localStorage.setItem(BIOMETRIC_STORAGE_KEY, JSON.stringify({
+            credId,
+            userId: currentUserInfo.id,
+            userName: currentUserInfo.name,
+            userEmail: currentUserInfo.email || currentUserInfo.username || "",
+            bioToken,
+            linkedAt: Date.now()
+          }));
+          if (data.user) currentUserInfo = data.user;
+          refreshBiometricButtonsUI();
+          setRaccoonSpeech(`"🫆 ¡Huella dactilar vinculada con éxito, ${currentUserInfo.name}! La próxima vez entrás apoyando el dedo en 1 segundo 🐱🔓."`, { forceShow: true });
+          return true;
+        } catch (err) {
+          if (err && err.name === "NotAllowedError") {
+            // El usuario canceló el lector de huella
+          } else {
+            alert("No se pudo vincular la huella: " + (err && err.message ? err.message : "Verificá que tengas bloqueo por huella o rostro activo en tu celular."));
+          }
+          return false;
+        } finally {
+          if (btnEnroll) {
+            btnEnroll.disabled = false;
+            refreshBiometricButtonsUI();
+          }
+        }
+      }
+
+      async function removeBiometricFromCurrentDevice() {
+        const saved = getSavedBiometricCred();
+        localStorage.removeItem(BIOMETRIC_STORAGE_KEY);
+        if (saved && saved.credId && currentAuthToken) {
+          try {
+            await fetch("/api/user/account", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Michu-Token": currentAuthToken
+              },
+              body: JSON.stringify({
+                removeBiometric: { credId: saved.credId }
+              })
+            });
+          } catch (_) {}
+        }
+        refreshBiometricButtonsUI();
+      }
+
+      async function performBiometricLogin() {
+        if (!isWebAuthnSupported()) {
+          showAuthModal("login-form");
+          showAuthAlert("Tu navegador actual no soporta ingreso por huella dactilar.");
+          return;
+        }
+        showAuthAlert("");
+        const saved = getSavedBiometricCred();
+        try {
+          const challenge = new Uint8Array(32);
+          window.crypto.getRandomValues(challenge);
+          const publicKeyOpts = {
+            challenge,
+            userVerification: "required",
+            timeout: 60000
+          };
+          if (saved && saved.credId) {
+            publicKeyOpts.allowCredentials = [
+              {
+                type: "public-key",
+                id: base64UrlToUint8(saved.credId),
+                transports: ["internal", "hybrid"]
+              }
+            ];
+          }
+
+          const assertion = await navigator.credentials.get({ publicKey: publicKeyOpts });
+          if (!assertion || !assertion.rawId) {
+            throw new Error("No se pudo verificar la huella.");
+          }
+          const credId = uint8ToBase64Url(new Uint8Array(assertion.rawId));
+          const res = await fetch("/api/auth/biometric-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              credId,
+              userId: saved ? saved.userId : "",
+              bioToken: saved ? saved.bioToken : ""
+            })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            showAuthModal("login-form");
+            showAuthAlert(data.error || "Huella no vinculada todavía. Iniciá sesión con tu clave y activala en 👤 Mi Cuenta.");
+            return;
+          }
+          currentAuthToken = data.token;
+          localStorage.setItem("michufit_auth_token", currentAuthToken);
+          currentUserInfo = data.user;
+          if (currentUserInfo) {
+            try { localStorage.setItem("michufit_cached_user_info", JSON.stringify(currentUserInfo)); } catch (_) {}
+          }
+          inspectedUserId = null;
+          inspectedUserInfo = null;
+          if (data.pendingApproval) {
+            showAuthModal("pending");
+            return;
+          }
+          if (data.data) {
+            appData = data.data;
+            localStorage.setItem(getBackupStorageKey(), JSON.stringify(appData));
+          }
+          closeModal("modalAuthOverlay");
+          renderAll();
+          loadFromServer();
+        } catch (err) {
+          if (err && err.name === "NotAllowedError") {
+            return;
+          }
+          showAuthModal("login-form");
+          showAuthAlert("Para usar tu huella por primera vez en este celu, iniciá sesión con tu contraseña y tocá 'Vincular Huella' en 👤 Mi Cuenta.");
+        }
+      }
+
+      document.getElementById("btnEnrollBiometric")?.addEventListener("click", () => {
+        enrollBiometricForCurrentUser();
+      });
+      document.getElementById("btnRemoveBiometric")?.addEventListener("click", () => {
+        if (confirm("¿Quitar el ingreso con huella dactilar de este dispositivo?")) {
+          removeBiometricFromCurrentDevice();
+        }
+      });
+      document.getElementById("btnSplashBiometricLogin")?.addEventListener("click", () => {
+        performBiometricLogin();
+      });
+      document.getElementById("btnFormBiometricLogin")?.addEventListener("click", () => {
+        performBiometricLogin();
+      });
+      refreshBiometricButtonsUI();
+
       async function performLogin(identifier, password) {
         showAuthAlert("");
         try {
@@ -10965,6 +11393,18 @@
           closeModal("modalAuthOverlay");
           renderAll();
           loadFromServer();
+
+          // Si el celu soporta huella y todavía no la vinculó en este dispositivo, ofrecer activarla en 1 toque
+          const savedBio = getSavedBiometricCred();
+          const bioPromptDismissed = localStorage.getItem("michufit_bio_prompt_offered_" + (currentUserInfo?.id || ""));
+          if (isWebAuthnSupported() && (!savedBio || savedBio.userId !== currentUserInfo?.id) && !bioPromptDismissed) {
+            localStorage.setItem("michufit_bio_prompt_offered_" + (currentUserInfo?.id || ""), "1");
+            setTimeout(() => {
+              if (confirm(`🫆 ¿Querés activar el ingreso rápido con Huella Dactilar / Rostro en este celular para ${currentUserInfo?.name || "tu cuenta"}?`)) {
+                enrollBiometricForCurrentUser();
+              }
+            }, 650);
+          }
         } catch (err) {
           showAuthAlert("No se pudo conectar con el servidor. Verificá tu conexión a internet.");
         }
