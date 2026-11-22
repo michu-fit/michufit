@@ -3266,25 +3266,29 @@
           </div>
         </div>
 
-        <!-- Configuración de Notificaciones por Email al Super-Admin (Alta de Usuarios) -->
-        <div id="adminEmailNotifySection" style="display:none;margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--bg-card);border:1.5px solid rgba(56,189,248,0.4);">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <!-- Configuración de Notificaciones por Email al Super-Admin (Alta de Usuarios con Remitente Propio "🐱 Michu Fit") -->
+        <div id="adminEmailNotifySection" style="display:none;margin-top:12px;padding:13px 14px;border-radius:12px;background:var(--bg-card);border:1.5px solid rgba(34,197,94,0.4);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
             <div style="flex:1;min-width:220px;">
-              <strong style="font-size:0.88rem;color:var(--text);display:flex;align-items:center;gap:6px;">
-                📧 Avisos por Gmail al registrarse nuevos usuarios
+              <strong style="font-size:0.89rem;color:var(--text);display:flex;align-items:center;gap:6px;">
+                📧 Avisos por Gmail con remitente propio "🐱 Michu Fit" (Google Apps Script)
               </strong>
               <span style="font-size:0.75rem;color:var(--text-muted);display:block;margin-top:2px;">
-                Cada vez que alguien cree una cuenta nueva te llegará un correo con sus datos para aprobarlo. (La 1° vez abrí el mail de <em>FormSubmit</em> en tu Gmail y tocá <strong>"Activate Form"</strong>).
+                Pegá abajo la URL de tu <strong>Google Apps Script</strong> para que los correos salgan desde tu propio Gmail con nombre <strong>"🐱 Michu Fit"</strong> y 100% en español.
               </span>
             </div>
-            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;flex:1;min-width:260px;justify-content:flex-end;">
-              <input type="email" id="adminNotifyEmailInput" placeholder="Ej: michufit@gmail.com" style="flex:1;min-width:190px;padding:7px 11px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.82rem;font-weight:700;" />
-              <button type="button" class="btn btn-sm btn-primary" id="btnSaveAndTestAdminEmail" title="Guarda este Gmail y envía un correo de activación/prueba">
-                💾 Guardar y Probar Mail
-              </button>
-            </div>
+            <button type="button" class="btn btn-sm btn-purple" id="btnCopyGoogleScriptCode" title="Copia el código listo para pegar en script.google.com">
+              📋 Copiar código para Google Script
+            </button>
           </div>
-          <div id="adminEmailNotifyStatusMsg" style="display:none;margin-top:8px;font-size:0.77rem;padding:6px 10px;border-radius:8px;"></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:8px;align-items:center;">
+            <input type="email" id="adminNotifyEmailInput" placeholder="Tu Gmail (ej: michufit@gmail.com)" style="padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.82rem;font-weight:700;" />
+            <input type="url" id="adminWebhookUrlInput" placeholder="Pegá acá la URL https://script.google.com/macros/s/.../exec" style="padding:8px 11px;border-radius:9px;border:1px solid var(--accent);background:var(--bg);color:var(--text);font-size:0.81rem;" />
+            <button type="button" class="btn btn-sm btn-primary" id="btnSaveAndTestAdminEmail" style="justify-content:center;padding:8px 14px;">
+              💾 Guardar y Probar Mail
+            </button>
+          </div>
+          <div id="adminEmailNotifyStatusMsg" style="display:none;margin-top:8px;font-size:0.77rem;padding:7px 10px;border-radius:8px;"></div>
         </div>
 
         <!-- Bandeja de Solicitudes Pendientes de Aprobación (Solo visible si hay pendientes para el Super-Admin) -->
@@ -4450,7 +4454,8 @@
         createdAt: u.createdAt || "",
         reto21Enabled: Boolean(u.reto21Enabled || u.role === "superadmin" || u.id === "u-owner"),
         biometricEnabled: Boolean(Array.isArray(u.biometricCreds) && u.biometricCreds.length > 0),
-        adminNotifyEmail: u.adminNotifyEmail || ""
+        adminNotifyEmail: u.adminNotifyEmail || "",
+        adminWebhookUrl: u.adminWebhookUrl || ""
       };
     }
 
@@ -4462,10 +4467,43 @@
           localStorage.getItem("michufit_admin_notify_email") ||
           "ali.gourmet.ar@gmail.com"
         ).trim();
-        if (!targetEmail || !targetEmail.includes("@")) return { ok: false, error: "Email inválido" };
+        const webhookUrl = (
+          (owner && owner.adminWebhookUrl) ||
+          localStorage.getItem("michufit_admin_webhook_url") ||
+          ""
+        ).trim();
 
         const prof = (newUser && newUser.trackerData && newUser.trackerData.profile) || {};
         const roleLabel = newUser.role === "nutritionist" ? "Nutricionista" : "Paciente";
+        const pesoMetaStr = `${prof.weight || 78} kg → Meta: ${prof.goalWeight || 72} kg`;
+        const codigoNutriStr = newUser.coachName || newUser.inviteCode || "Sin código";
+        const fechaHoraStr = newUser.createdAt || new Date().toLocaleString("es-AR");
+
+        // 1. Si hay URL de Google Apps Script configurada, sale directo con remitente "🐱 Michu Fit" y diseño 100% en español
+        if (webhookUrl && webhookUrl.startsWith("https://script.google.com/")) {
+          const gasPayload = {
+            to: targetEmail,
+            isTest: Boolean(isTest),
+            nombre: newUser.name || "Usuario",
+            emailUsuario: newUser.email || newUser.username || "-",
+            rol: roleLabel,
+            pesoMeta: pesoMetaStr,
+            codigoNutri: codigoNutriStr,
+            fechaHora: fechaHoraStr,
+            linkAdmin: "https://michu-fit.github.io/michufit/"
+          };
+          const res = await _nativeFetch(webhookUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: JSON.stringify(gasPayload)
+          });
+          return { ok: true, via: "google-script", status: res.status, targetEmail };
+        }
+
+        // 2. Fallback a FormSubmit si todavía no pegó la URL de Google Apps Script
+        if (!targetEmail || !targetEmail.includes("@")) return { ok: false, error: "Email inválido" };
         const payload = {
           _subject: isTest
             ? `🐱 [Prueba] Notificaciones de Michu Fit activas (${targetEmail})`
@@ -4476,9 +4514,9 @@
           Nombre: newUser.name || "Usuario",
           Email_o_Usuario: newUser.email || newUser.username || "-",
           Rol_Solicitado: roleLabel,
-          Peso_Actual_y_Meta: `${prof.weight || 78} kg -> Meta: ${prof.goalWeight || 72} kg`,
-          Codigo_Nutricionista: newUser.coachName || newUser.inviteCode || "Sin código",
-          Fecha_Hora: newUser.createdAt || new Date().toLocaleString("es-AR"),
+          Peso_Actual_y_Meta: pesoMetaStr,
+          Codigo_Nutricionista: codigoNutriStr,
+          Fecha_Hora: fechaHoraStr,
           Panel_Admin_Michu_Fit: "https://michu-fit.github.io/michufit/"
         };
 
@@ -4491,7 +4529,7 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json().catch(() => ({}));
-        return { ok: res.ok, data, targetEmail };
+        return { ok: res.ok, via: "formsubmit", data, targetEmail };
       } catch (err) {
         console.warn("Aviso por email:", err);
         return { ok: false, error: String(err) };
@@ -4993,8 +5031,11 @@
             target.reto21Enabled = target.id === "u-owner" ? true : Boolean(body.enabled);
           } else if (action === "set_admin_notify_email") {
             const cleanMail = (body.adminNotifyEmail || "").trim().toLowerCase();
+            const cleanHook = (body.adminWebhookUrl || "").trim();
             target.adminNotifyEmail = cleanMail;
+            target.adminWebhookUrl = cleanHook;
             localStorage.setItem("michufit_admin_notify_email", cleanMail);
+            localStorage.setItem("michufit_admin_webhook_url", cleanHook);
           } else if (action === "toggle_reto21_all") {
             const enableAll = Boolean(body.enabled);
             for (const usr of users) {
@@ -10815,6 +10856,8 @@
 
       const emailNotifySec = document.getElementById("adminEmailNotifySection");
       const emailNotifyInp = document.getElementById("adminNotifyEmailInput");
+      const webhookUrlInp = document.getElementById("adminWebhookUrlInput");
+      const btnCopyGasCode = document.getElementById("btnCopyGoogleScriptCode");
       const btnSaveTestMail = document.getElementById("btnSaveAndTestAdminEmail");
       const emailStatusMsg = document.getElementById("adminEmailNotifyStatusMsg");
       if (emailNotifySec) {
@@ -10823,22 +10866,63 @@
           emailNotifyInp.dataset.initialized = "1";
           emailNotifyInp.value = currentUserInfo.adminNotifyEmail || localStorage.getItem("michufit_admin_notify_email") || "ali.gourmet.ar@gmail.com";
         }
+        if (isSuper && webhookUrlInp && !webhookUrlInp.dataset.initialized) {
+          webhookUrlInp.dataset.initialized = "1";
+          webhookUrlInp.value = currentUserInfo.adminWebhookUrl || localStorage.getItem("michufit_admin_webhook_url") || "";
+        }
+        if (isSuper && btnCopyGasCode && !btnCopyGasCode.dataset.bound) {
+          btnCopyGasCode.dataset.bound = "1";
+          btnCopyGasCode.addEventListener("click", () => {
+            const gasCode = `function doPost(e) {
+  var d = JSON.parse(e.postData.contents);
+  var dest = d.to || Session.getActiveUser().getEmail();
+  var subj = d.isTest
+    ? "🐱 [Prueba] Avisos de Michu Fit activados"
+    : "🐱 Nuevo usuario pendiente en Michu Fit: " + d.nombre + " (" + d.rol + ")";
+  var html = "<div style='font-family:Arial,sans-serif;max-width:520px;margin:0 auto;border:2px solid #22c55e;border-radius:16px;overflow:hidden;'>"
+    + "<div style='background:#22c55e;color:#ffffff;padding:16px 20px;font-size:18px;font-weight:bold;'>🐱 Michu Fit — Alta de Usuario</div>"
+    + "<div style='padding:18px 20px;color:#1e293b;font-size:14px;line-height:1.5;'>"
+    + "<p style='margin-top:0;'>¡Hola Angel! Se registró una nueva solicitud de cuenta en <strong>Michu Fit</strong>:</p>"
+    + "<table style='width:100%;border-collapse:collapse;margin:14px 0;'>"
+    + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>👤 Nombre:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.nombre + "</td></tr>"
+    + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>📧 Email / Usuario:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.emailUsuario + "</td></tr>"
+    + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>🏷️ Rol solicitado:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.rol + "</td></tr>"
+    + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>⚖️ Peso y Meta:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.pesoMeta + "</td></tr>"
+    + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>🕒 Fecha y Hora:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.fechaHora + "</td></tr>"
+    + "</table>"
+    + "<div style='text-align:center;margin-top:18px;'>"
+    + "<a href='" + d.linkAdmin + "' style='display:inline-block;background:#22c55e;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:999px;'>👑 Abrir Panel Admin y Aprobar</a>"
+    + "</div></div></div>";
+  MailApp.sendEmail({ to: dest, subject: subj, name: "🐱 Michu Fit", htmlBody: html });
+  return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
+}`;
+            navigator.clipboard.writeText(gasCode);
+            btnCopyGasCode.textContent = "✅ ¡Código copiado!";
+            setTimeout(() => { btnCopyGasCode.textContent = "📋 Copiar código para Google Script"; }, 2500);
+          });
+        }
         if (isSuper && btnSaveTestMail && !btnSaveTestMail.dataset.bound) {
           btnSaveTestMail.dataset.bound = "1";
           btnSaveTestMail.addEventListener("click", async () => {
             const targetMail = (emailNotifyInp ? emailNotifyInp.value : "").trim().toLowerCase();
+            const targetHook = (webhookUrlInp ? webhookUrlInp.value : "").trim();
             if (!targetMail || !targetMail.includes("@")) {
-              alert("Ingresá una dirección de Gmail válida (ej: michufit@gmail.com o ali.gourmet.ar@gmail.com).");
+              alert("Ingresá tu dirección de Gmail (ej: ali.gourmet.ar@gmail.com).");
               return;
             }
             btnSaveTestMail.disabled = true;
             btnSaveTestMail.textContent = "⏳ Enviando...";
             try {
               localStorage.setItem("michufit_admin_notify_email", targetMail);
+              localStorage.setItem("michufit_admin_webhook_url", targetHook);
               await adminUpdateUser(currentUserInfo.id || "u-owner", "set_admin_notify_email", {
-                adminNotifyEmail: targetMail
+                adminNotifyEmail: targetMail,
+                adminWebhookUrl: targetHook
               });
-              if (currentUserInfo) currentUserInfo.adminNotifyEmail = targetMail;
+              if (currentUserInfo) {
+                currentUserInfo.adminNotifyEmail = targetMail;
+                currentUserInfo.adminWebhookUrl = targetHook;
+              }
               const mailRes = await window.sbSendAdminRegistrationEmail(
                 {
                   name: "Usuario de Prueba",
@@ -10847,7 +10931,7 @@
                   createdAt: new Date().toLocaleString("es-AR"),
                   trackerData: { profile: { weight: 80, goalWeight: 74 } }
                 },
-                [{ id: "u-owner", role: "superadmin", adminNotifyEmail: targetMail }],
+                [{ id: "u-owner", role: "superadmin", adminNotifyEmail: targetMail, adminWebhookUrl: targetHook }],
                 true
               );
               if (emailStatusMsg) {
@@ -10855,9 +10939,9 @@
                 emailStatusMsg.style.background = "var(--accent-soft)";
                 emailStatusMsg.style.color = "var(--accent)";
                 emailStatusMsg.style.border = "1px solid var(--accent)";
-                emailStatusMsg.innerHTML = mailRes && mailRes.ok
-                  ? `✅ Correo enviado a <strong>${targetMail}</strong>. Revisá tu bandeja de entrada (y Spam/Promociones): si es la primera vez, tocá el botón <strong>"Activate Form"</strong> del mail de FormSubmit para dejarlo activo.`
-                  : `💾 Dirección <strong>${targetMail}</strong> guardada en la nube. Revisá tu bandeja de Gmail para confirmar la activación.`;
+                emailStatusMsg.innerHTML = mailRes && mailRes.via === "google-script"
+                  ? `✅ ¡Listo! Se envió el correo de prueba vía tu <strong>Google Apps Script</strong> a <strong>${targetMail}</strong> con remitente <strong>"🐱 Michu Fit"</strong>.`
+                  : `✅ Configuración guardada para <strong>${targetMail}</strong>. (Cuando pegues la URL de tu Google Script, el remitente saldrá como <strong>"🐱 Michu Fit"</strong>).`;
               }
             } finally {
               btnSaveTestMail.disabled = false;
