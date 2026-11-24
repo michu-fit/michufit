@@ -15022,7 +15022,10 @@
       }
 
       function scaleDishToTarget(dish, targetSlotKcal) {
-        const ratio = Math.max(0.55, Math.min(1.85, targetSlotKcal / Math.max(100, dish.baseKcal)));
+        if (targetSlotKcal <= 0) {
+          return { ...dish, kcal: 0, p: 0, c: 0, f: 0, scaleRatio: 0 };
+        }
+        const ratio = Math.max(0.30, Math.min(2.60, targetSlotKcal / Math.max(80, dish.baseKcal)));
         const kcal = Math.round(dish.baseKcal * ratio);
         const p = Math.round(dish.baseP * ratio * 10) / 10;
         const c = Math.round(dish.baseC * ratio * 10) / 10;
@@ -15049,6 +15052,14 @@
           })
           .sort((a, b) => (b.learnedScore - a.learnedScore) || (a.origIdx - b.origIdx));
       }
+
+      const SLOT_SHORT_LABELS = {
+        breakfast: "🌅 Desayuno",
+        lunch: "☀️ Almuerzo",
+        merienda: "🧉 Merienda",
+        dinner: "🌙 Cena",
+        snack: "🍿 Snack"
+      };
 
       function generateWeeklyMenuPlan() {
         const prefs = ensureMenuPrefs();
@@ -15102,9 +15113,41 @@
 
         const weekDays = [];
         const shoppingTotals = {};
+        const refDateStr = selectedDate || todayStr();
+        const refDayRec = (appData.days && appData.days[refDateStr]) || null;
+        const refDayTotals = getDayTotals(refDateStr);
+        const refEatenMeals = refDayRec && Array.isArray(refDayRec.meals)
+          ? refDayRec.meals.filter(m => isMealConsumed(m))
+          : [];
+
+        // Detectar qué momentos de comida (Desayuno, Almuerzo, Merienda, Cena, Snack) ya fueron cargados hoy (selectedDate)
+        const slotEatenKcal = {};
+        const slotHasFood = {};
+        for (const em of refEatenMeals) {
+          const mk = em.mealType || "lunch";
+          const kVal = Number(em.kcal) || 0;
+          slotEatenKcal[mk] = (slotEatenKcal[mk] || 0) + kVal;
+          const isTinyInfusion = kVal < 25 && /^(mate|te|té|cafe negro|café solo|agua|infusion|infusión)\b/i.test(String(em.name || "").trim());
+          if (!isTinyInfusion) {
+            slotHasFood[mk] = true;
+          }
+        }
+
+        const consumedSlotKeys = new Set(
+          Object.keys(slotEatenKcal).filter(mk => slotHasFood[mk] || slotEatenKcal[mk] >= 25)
+        );
+        const consumedSlotLabels = Array.from(consumedSlotKeys).map(mk => SLOT_SHORT_LABELS[mk] || mk);
+
+        const effectiveTargetKcal = targets.targetKcal + (refDayTotals.exerciseKcal || 0);
+        const eatenKcal = refDayTotals.kcal || 0;
+        const eatenP = Math.round(refDayTotals.p || 0);
+        const eatenC = Math.round(refDayTotals.c || 0);
+        const eatenF = Math.round(refDayTotals.f || 0);
+        const remainingKcal = Math.max(0, effectiveTargetKcal - eatenKcal);
 
         for (let dIdx = 0; dIdx < 7; dIdx++) {
-          const dayMeals = [];
+          // 1. Calcular el menú completo de referencia del día (para Lista de Compras y precarga de días futuros sin consumos)
+          const fullDayMeals = [];
           for (let sIdx = 0; sIdx < slotShares.length; sIdx++) {
             const slot = slotShares[sIdx];
             const varOffset = Number(sugMenuState.variantOffsets[`${dIdx}_${slot.key}`]) || 0;
@@ -15114,27 +15157,68 @@
                   ? (dIdx * 2 + (slot.offsetBase || 0) + varOffset) % slot.pool.length
                   : (dIdx + sIdx + varOffset) % slot.pool.length);
             const rawDish = slot.pool[poolIdx];
-            const slotTargetKcal = Math.round(targets.targetKcal * slot.share);
-            const scaled = scaleDishToTarget(rawDish, slotTargetKcal);
-            dayMeals.push({
+            const fullSlotKcal = Math.round(targets.targetKcal * slot.share);
+            const fullScaled = scaleDishToTarget(rawDish, fullSlotKcal);
+            fullDayMeals.push({
               slotKey: slot.key,
               slotTitle: slot.title,
-              ...scaled
+              ...fullScaled
             });
-
-            if (scaled.shop) {
-              for (const [ingName, info] of Object.entries(scaled.shop)) {
+            if (fullScaled.shop) {
+              for (const [ingName, info] of Object.entries(fullScaled.shop)) {
                 if (!info || !info.qty) continue;
                 if (!shoppingTotals[ingName]) {
                   shoppingTotals[ingName] = { qty: 0, unit: info.unit || "g" };
                 }
                 const addQty = info.unit === "u" || info.unit === "porción"
-                  ? Math.max(1, Math.round(info.qty * scaled.scaleRatio))
-                  : Math.round((info.qty * scaled.scaleRatio) / 5) * 5;
+                  ? Math.max(1, Math.round(info.qty * fullScaled.scaleRatio))
+                  : Math.round((info.qty * fullScaled.scaleRatio) / 5) * 5;
                 shoppingTotals[ingName].qty += addQty;
               }
             }
           }
+
+          // 2. Filtrar los turnos ya cargados en el día activo (ej: si ya cargó Desayuno, no mostrar Desayuno) y redistribuir las kcal restantes
+          let pendingSlots = slotShares
+            .map((slot, origIdx) => ({ ...slot, origIdx }))
+            .filter(slot => !consumedSlotKeys.has(slot.key));
+
+          if (pendingSlots.length === 0 && remainingKcal > 90) {
+            pendingSlots = [
+              { key: "snack", title: "🍽️ Comida / Colación para completar tu meta de hoy", share: 1, pool: meriendaPool, origIdx: 0 }
+            ];
+          }
+
+          const totalPendingShare = pendingSlots.reduce((acc, s) => acc + s.share, 0) || 1;
+          const dayMeals = [];
+          let allocatedKcalSoFar = 0;
+
+          if (remainingKcal > 0 && pendingSlots.length > 0) {
+            for (let pIdx = 0; pIdx < pendingSlots.length; pIdx++) {
+              const slot = pendingSlots[pIdx];
+              const sIdx = slot.origIdx;
+              const varOffset = Number(sugMenuState.variantOffsets[`${dIdx}_${slot.key}`]) || 0;
+              const poolIdx = moodPoolObj
+                ? (varOffset + (slot.offsetBase || 0)) % slot.pool.length
+                : (slot.isMain
+                    ? (dIdx * 2 + (slot.offsetBase || 0) + varOffset) % slot.pool.length
+                    : (dIdx + sIdx + varOffset) % slot.pool.length);
+              const rawDish = slot.pool[poolIdx];
+              const normShare = slot.share / totalPendingShare;
+              const slotTargetKcal = (pIdx === pendingSlots.length - 1)
+                ? Math.max(60, remainingKcal - allocatedKcalSoFar)
+                : Math.max(60, Math.round(remainingKcal * normShare));
+              allocatedKcalSoFar += slotTargetKcal;
+
+              const scaled = scaleDishToTarget(rawDish, slotTargetKcal);
+              dayMeals.push({
+                slotKey: slot.key,
+                slotTitle: slot.title,
+                ...scaled
+              });
+            }
+          }
+
           const totKcal = dayMeals.reduce((a, m) => a + m.kcal, 0);
           const totP = Math.round(dayMeals.reduce((a, m) => a + m.p, 0));
           const totC = Math.round(dayMeals.reduce((a, m) => a + m.c, 0));
@@ -15144,7 +15228,18 @@
             dayName: DAY_NAMES[dIdx],
             dayShort: DAY_SHORT[dIdx],
             meals: dayMeals,
-            totals: { kcal: totKcal, p: totP, c: totC, f: totF }
+            fullMeals: fullDayMeals,
+            totals: { kcal: totKcal, p: totP, c: totC, f: totF },
+            eatenKcal,
+            eatenP,
+            eatenC,
+            eatenF,
+            exerciseKcal: refDayTotals.exerciseKcal || 0,
+            effectiveTargetKcal,
+            remainingKcal,
+            consumedSlotKeys: Array.from(consumedSlotKeys),
+            consumedSlotLabels,
+            consumedSummaryText: consumedSlotLabels.length > 0 ? consumedSlotLabels.join(", ") : "Comidas registradas"
           });
         }
 
@@ -15492,13 +15587,32 @@
           <!-- Platos del día seleccionado -->
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;padding:0 2px;">
-              <strong style="font-size:0.9rem;">📅 Menú de referencia — ${activeDay.dayName} ${activeMoodObj ? `<span style="color:${activeMoodObj.color};">(${activeMoodObj.shortLabel})</span>` : ""}</strong>
+              <strong style="font-size:0.9rem;">📅 Menú sugerido — ${activeDay.dayName} ${activeMoodObj ? `<span style="color:${activeMoodObj.color};">(${activeMoodObj.shortLabel})</span>` : ""}</strong>
               <span style="font-size:0.77rem;color:var(--text-muted);">
-                Total día: <strong style="color:var(--accent);">${activeDay.totals.kcal} kcal</strong> (${activeDay.totals.p}g P • ${activeDay.totals.c}g C • ${activeDay.totals.f}g G)
+                ${activeDay.eatenKcal > 0
+                  ? `Restante a distribuir: <strong style="color:var(--accent);">${activeDay.totals.kcal} kcal</strong> (${activeDay.totals.p}g P • ${activeDay.totals.c}g C • ${activeDay.totals.f}g G)`
+                  : `Total día: <strong style="color:var(--accent);">${activeDay.totals.kcal} kcal</strong> (${activeDay.totals.p}g P • ${activeDay.totals.c}g C • ${activeDay.totals.f}g G)`}
               </span>
             </div>
 
-            ${activeDay.meals.map(m => {
+            ${activeDay.eatenKcal > 0 ? `
+              <div style="background:var(--accent-soft);border:1px solid rgba(34,197,94,0.4);border-radius:11px;padding:8px 11px;font-size:0.77rem;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div>
+                  <strong style="color:var(--accent);">✅ Ya cargado hoy (${activeDay.consumedSummaryText}):</strong>
+                  <span><strong>${activeDay.eatenKcal} kcal</strong> (${activeDay.eatenP}g P) consumidas${activeDay.exerciseKcal > 0 ? ` • 🏃 +${activeDay.exerciseKcal} kcal ejercicio` : ""}</span>
+                </div>
+                <span style="padding:2px 8px;border-radius:999px;background:var(--bg-card);border:1px solid rgba(34,197,94,0.4);font-weight:800;color:var(--accent);">
+                  🎯 Distribuimos tus ${activeDay.remainingKcal} kcal restantes en ${activeDay.meals.length} ${activeDay.meals.length === 1 ? "comida" : "comidas"}
+                </span>
+              </div>
+            ` : ""}
+
+            ${activeDay.meals.length === 0 ? `
+              <div style="background:var(--bg-card);border:1.5px solid var(--accent);border-radius:12px;padding:14px;text-align:center;font-size:0.84rem;">
+                🎉 <strong>¡Ya completaste tu meta calórica de hoy (${activeDay.eatenKcal} / ${activeDay.effectiveTargetKcal} kcal)!</strong>
+                <div style="font-size:0.76rem;color:var(--text-muted);margin-top:4px;">Si sentís ansiedad o ganas de algo fresco, podés preparar una infusión caliente o gelatina light sin azúcar.</div>
+              </div>
+            ` : activeDay.meals.map(m => {
               const learnedPill = m.chosenCount > 0
                 ? `<span style="font-size:0.69rem;padding:2px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:800;">⭐ Elegido ${m.chosenCount}x${m.successCount > 0 ? ` • ${m.successCount}x en déficit ✅` : ""}</span>`
                 : "";
@@ -15535,7 +15649,7 @@
           <!-- Botonera inferior para aplicar el día o toda la semana al Diario -->
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--border);">
             <button type="button" class="btn btn-sm" id="btnApplyDayAsPlanned">
-              📋 Precargar este ${activeDay.dayName} en hoy (${selectedDate || todayStr()})
+              📋 Precargar comidas restantes en hoy (${selectedDate || todayStr()})
             </button>
             <button type="button" class="btn btn-sm btn-primary" id="btnApplyWeekAsPlanned">
               📅 Precargar los 7 días en mi Diario (como Planificado)
@@ -15614,7 +15728,7 @@
               });
             }
             btn.textContent = "✅ Cargado";
-            setTimeout(() => { renderSuggestedMenuModal(); }, 900);
+            setTimeout(() => { renderSuggestedMenuModal(); }, 450);
           });
         });
 
@@ -15639,7 +15753,7 @@
           saveToServer();
           renderAll();
           closeModal("modalSuggestedMenu");
-          setRaccoonSpeech(`"🥗 ¡Listo! Te dejé precargado el menú del ${activeDay.dayName} en tu Diario (${targetKey}) como 📋 Planificado. Tocá el tilde a medida que comas 🐱✨."`);
+          setRaccoonSpeech(`"🥗 ¡Listo! Te dejé precargadas las comidas restantes del ${activeDay.dayName} en tu Diario (${targetKey}) como 📋 Planificado 🐱✨."`);
         });
 
         document.getElementById("btnApplyWeekAsPlanned")?.addEventListener("click", () => {
@@ -15651,7 +15765,8 @@
             const wdPlan = plan.weekDays[wdIdx] || plan.weekDays[0];
             const dayRec = ensureDayRecord(dStr);
             const eaten = (dayRec.meals || []).filter(m => isMealConsumed(m));
-            const plannedNew = wdPlan.meals.map((m, i) => ({
+            const mealsSource = eaten.length > 0 ? wdPlan.meals : (wdPlan.fullMeals || wdPlan.meals);
+            const plannedNew = mealsSource.map((m, i) => ({
               id: `plan-${Date.now()}-${offset}-${i}-${Math.random().toString(36).slice(2, 6)}`,
               mealType: m.slotKey,
               name: m.title,
@@ -15684,7 +15799,7 @@
           sugMenuState.mode = "menu";
         }
         sugMenuState.wizStep = 0;
-        sugMenuState.activeDayIdx = (new Date().getDay() + 6) % 7;
+        sugMenuState.activeDayIdx = (new Date((selectedDate || todayStr()) + "T12:00:00").getDay() + 6) % 7;
         renderSuggestedMenuModal();
         openModal("modalSuggestedMenu");
       };
