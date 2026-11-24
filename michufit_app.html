@@ -2196,20 +2196,20 @@
             <path d="M32 41.5 L32 44.2 M26.5 44 C27.8 46.8, 32 46.5, 32 44 M32 44 C32 46.5, 36.2 46.8, 37.5 44" fill="none" stroke="#111318" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-width:0;flex:1;">
-          <span id="userWelcomeGreeting" style="font-size:0.95rem;font-weight:800;color:var(--text);line-height:1.15;word-break:break-word;">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-width:0;flex:1;">
+          <span id="userWelcomeGreeting" style="font-size:0.95rem;font-weight:800;color:var(--text);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">
             👋 ¡Hola!
           </span>
-          <span class="streak-pill" id="streakBadge" title="Días seguidos registrando comidas" style="padding:2px 8px;font-size:0.7rem;flex-shrink:0;">
+          <span class="streak-pill" id="streakBadge" title="Días seguidos registrando comidas" style="padding:2px 8px;font-size:0.69rem;flex-shrink:0;white-space:nowrap;">
             🔥 <span id="streakCount">3</span> días en racha
           </span>
         </div>
       </div>
 
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-        <button type="button" class="tab-btn" data-tab="tab-admin-coach" id="navTabAdminCoach" style="flex:0 0 auto;white-space:nowrap;padding:6px 10px;font-size:0.78rem;border-color:rgba(168,85,247,0.45);">
+        <button type="button" class="tab-btn" data-tab="tab-admin-coach" id="navTabAdminCoach" style="flex:0 0 auto;white-space:nowrap;padding:6px 10px;font-size:0.78rem;border-color:rgba(168,85,247,0.45);display:inline-flex;align-items:center;gap:5px;">
           <span id="navTabAdminCoachText">👑 Admin</span>
-          <span id="navPendingUsersBadge" style="display:none;margin-left:4px;font-size:0.68rem;padding:1px 6px;border-radius:999px;background:var(--danger);color:#fff;font-weight:800;">0</span>
+          <span id="navPendingUsersBadge" style="display:none;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--danger);color:#fff;font-size:0.7rem;font-weight:900;line-height:19px;text-align:center;">0</span>
         </button>
 
         <!-- Botón Hamburguesa -->
@@ -2448,28 +2448,28 @@
     </section>
 
     <!-- BARRA COMPACTA DE ACCIONES RÁPIDAS (Siempre visible arriba sin ocupar media pantalla) -->
-    <div class="top-quick-actions-bar" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:var(--bg-elev);border:2px solid var(--border);border-radius:18px;padding:10px 13px;margin-bottom:14px;box-shadow:0 4px 0 var(--border);">
-      <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;">
-        <button type="button" class="btn btn-sm btn-primary" id="btnHeroAddFood" onclick="window.openFoodModal && window.openFoodModal()">
+    <div class="top-quick-actions-bar" style="display:flex;flex-direction:column;gap:8px;background:var(--bg-elev);border:2px solid var(--border);border-radius:18px;padding:10px 12px;margin-bottom:14px;box-shadow:0 4px 0 var(--border);">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:7px;width:100%;">
+        <button type="button" class="btn btn-sm btn-primary" id="btnHeroAddFood" onclick="window.openFoodModal && window.openFoodModal()" style="justify-content:center;">
           ➕ Registrar comida
         </button>
-        <button type="button" class="btn btn-sm" id="btnHeroSuggestedMenu" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="border-color:var(--accent);color:var(--accent);font-weight:800;">
+        <button type="button" class="btn btn-sm" id="btnHeroSuggestedMenu" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="border-color:var(--accent);color:var(--accent);font-weight:800;justify-content:center;">
           🥗 Menú Sugerido
         </button>
-        <button type="button" class="btn btn-sm" id="btnHeroMoodFood" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal('mood')" style="border-color:#38bdf8;color:#0284c7;background:rgba(56,189,248,0.12);font-weight:800;" title="Recomendaciones de comida según tu estado de ánimo y hambre">
+        <button type="button" class="btn btn-sm" id="btnHeroMoodFood" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal('mood')" style="border-color:#38bdf8;color:#0284c7;background:rgba(56,189,248,0.12);font-weight:800;justify-content:center;" title="Recomendaciones de comida según tu estado de ánimo y hambre">
           🧠 ¿Cómo te sentís?
         </button>
-        <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnHeroReto21" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;font-weight:900;">
+        <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnHeroReto21" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;font-weight:900;justify-content:center;">
           🔥 Reto 21 Días
         </button>
-        <button type="button" class="btn btn-sm btn-purple" id="btnHeroScanAI">
+        <button type="button" class="btn btn-sm btn-purple" id="btnHeroScanAI" style="justify-content:center;">
           📸 Escáner IA
         </button>
-        <button type="button" class="btn btn-sm" id="btnHeroRandomQuip" title="Hacer que Michu se asome, salude y se vaya">
+        <button type="button" class="btn btn-sm" id="btnHeroRandomQuip" title="Hacer que Michu se asome, salude y se vaya" style="justify-content:center;">
           🐱 Llamar a Michu
         </button>
       </div>
-      <span id="raccoonQuickSummary" style="font-size:0.75rem;color:var(--text-muted);font-weight:700;">Meta de hoy: 1,850 kcal</span>
+      <span id="raccoonQuickSummary" style="font-size:0.74rem;color:var(--text-muted);font-weight:700;text-align:center;">Meta de hoy: 1,850 kcal</span>
     </div>
 
     <!-- NAVIGATION TABS -->
@@ -10751,7 +10751,7 @@
             if (pendingBadge) {
               if (currentUserInfo.role === "superadmin" && pendingUsersCount > 0) {
                 pendingBadge.style.display = "inline-block";
-                pendingBadge.textContent = `${pendingUsersCount} pend.`;
+                pendingBadge.textContent = `${pendingUsersCount}`;
               } else {
                 pendingBadge.style.display = "none";
               }
@@ -11011,7 +11011,7 @@
       const navBadge = document.getElementById("navPendingUsersBadge");
       if (navBadge) {
         navBadge.style.display = isSuper && pendingUsersCount > 0 ? "inline-block" : "none";
-        navBadge.textContent = `${pendingUsersCount} pend.`;
+        navBadge.textContent = `${pendingUsersCount}`;
       }
 
       if (pendingSec && pendingListEl) {
