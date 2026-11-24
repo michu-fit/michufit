@@ -4470,8 +4470,8 @@
         const targetEmail = (
           (owner && owner.adminNotifyEmail) ||
           localStorage.getItem("michufit_admin_notify_email") ||
-          ""
-        ).trim();
+          "ali.gourmet.ar@gmail.com"
+        ).trim() || "ali.gourmet.ar@gmail.com";
         const webhookUrl = (
           (owner && owner.adminWebhookUrl) ||
           localStorage.getItem("michufit_admin_webhook_url") ||
@@ -10912,7 +10912,7 @@
         emailNotifySec.style.display = isSuper ? "block" : "none";
         if (isSuper && emailNotifyInp && !emailNotifyInp.dataset.initialized) {
           emailNotifyInp.dataset.initialized = "1";
-          emailNotifyInp.value = currentUserInfo.adminNotifyEmail || localStorage.getItem("michufit_admin_notify_email") || "";
+          emailNotifyInp.value = currentUserInfo.adminNotifyEmail || localStorage.getItem("michufit_admin_notify_email") || "ali.gourmet.ar@gmail.com";
         }
         if (isSuper && webhookUrlInp && !webhookUrlInp.dataset.initialized) {
           webhookUrlInp.dataset.initialized = "1";
