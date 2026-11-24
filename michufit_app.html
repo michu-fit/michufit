@@ -2456,9 +2456,6 @@
         <button type="button" class="btn btn-sm" id="btnHeroSuggestedMenu" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="border-color:var(--accent);color:var(--accent);font-weight:800;justify-content:center;">
           🥗 Menú Sugerido
         </button>
-        <button type="button" class="btn btn-sm" id="btnHeroMoodFood" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal('mood')" style="border-color:#38bdf8;color:#0284c7;background:rgba(56,189,248,0.12);font-weight:800;justify-content:center;" title="Recomendaciones de comida según tu estado de ánimo y hambre">
-          🧠 ¿Cómo te sentís?
-        </button>
         <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnHeroReto21" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;font-weight:900;justify-content:center;">
           🔥 Reto 21 Días
         </button>
@@ -14373,11 +14370,254 @@
       ];
 
       let sugMenuState = {
-        mode: "menu", // "menu" | "wizard" | "shopping" | "mood"
-        selectedMoodId: "anxious",
+        mode: "menu", // "menu" | "wizard" | "shopping"
+        selectedMoodId: "normal", // "normal" | "anxious" | "sweet_craving" | "tired" | "starving" | "focused"
         wizStep: 0,
         activeDayIdx: (new Date().getDay() + 6) % 7,
         variantOffsets: {} // key: `${dayIdx}_${slotKey}` -> number
+      };
+
+      const MOOD_MENU_POOLS = {
+        anxious: {
+          breakfast: [
+            {
+              id: "anx_bf_1",
+              title: "Omelette Soufflé Gigante (3 claras batidas a nieve + 1 huevo) con espinaca y 25g queso magro + 2 galletas de arroz crujientes + infusión grande",
+              emoji: "🍳",
+              baseKcal: 340, baseP: 31, baseC: 18, baseF: 14,
+              tip: "😰 Anti-Ansiedad: Al batir las claras duplica su volumen en el plato y las galletas aportan descarga crujiente.",
+              shop: { "Huevos": { qty: 3, unit: "u" }, "Queso untable / cremoso": { qty: 25, unit: "g" }, "Espinaca y Rúcula": { qty: 80, unit: "g" } }
+            },
+            {
+              id: "anx_bf_2",
+              title: "Mega-Bowl Tibio de 45g Avena cocida (doble volumen con agua/leche) + 150g Yogur Griego + 100g frutillas fileteadas",
+              emoji: "🥣",
+              baseKcal: 365, baseP: 24, baseC: 48, baseF: 7,
+              tip: "😰 Anti-Ansiedad: Más de 400g de volumen tibio y espeso que distiende los receptores del estómago.",
+              shop: { "Avena / Granola": { qty: 45, unit: "g" }, "Yogur griego / natural": { qty: 150, unit: "g" }, "Fruta de estación (banana/frutilla)": { qty: 100, unit: "g" } }
+            }
+          ],
+          main: [
+            {
+              id: "anx_main_1",
+              title: "1 Taza de caldo caliente de entrada + 200g Pechuga de pollo grillada + Ensalada XXL Crunch (repollo, zanahoria rallada, pepino y apio) + 120g calabaza al horno",
+              emoji: "🍲",
+              baseKcal: 420, baseP: 52, baseC: 30, baseF: 8,
+              tip: "😰 Anti-Ansiedad: El caldo caliente previo + 600g de vegetales crujientes exigen 20 min de masticación y apagan la ansiedad con poquísimas calorías.",
+              shop: { "Pechuga de Pollo": { qty: 200, unit: "g" }, "Zanahorias": { qty: 150, unit: "g" }, "Calabaza y Choclo": { qty: 120, unit: "g" } }
+            },
+            {
+              id: "anx_main_2",
+              title: "180g Bife magro en tiras al wok con 300g de brócoli, morrón, zucchini y brotes crujientes + 100g papa rústica",
+              emoji: "🥩",
+              baseKcal: 435, baseP: 47, baseC: 28, baseF: 13,
+              tip: "😰 Anti-Ansiedad: Plato desbordante en volumen vegetal y fibra con alta densidad proteica.",
+              shop: { "Carne vacuna magra (lomo/cuadril/bife)": { qty: 180, unit: "g" }, "Brócoli / Coliflor": { qty: 200, unit: "g" }, "Papa / Batata": { qty: 100, unit: "g" } }
+            },
+            {
+              id: "anx_main_3",
+              title: "Ensalada Gigante de 1 lata de atún al natural + 2 claras y 1 huevo duro + colchón grande de hojas verdes, pepino, tomate y 2 galletas de arroz en trocitos (croutons)",
+              emoji: "🥗",
+              baseKcal: 365, baseP: 46, baseC: 22, baseF: 9,
+              tip: "😰 Anti-Ansiedad: Textura crujiente tipo croutons + 46g de proteína magra en un bol enorme.",
+              shop: { "Pescado / Atún al natural": { qty: 150, unit: "g" }, "Huevos": { qty: 2, unit: "u" }, "Tomate, Lechuga y Cebolla": { qty: 220, unit: "g" } }
+            }
+          ],
+          snack: [
+            {
+              id: "anx_snk_1",
+              title: "Bowl gigante de pochoclos caseros en olla (35g maíz pisingallo sin aceite, salados o con canela) + 150g yogur proteico + infusión",
+              emoji: "🍿",
+              baseKcal: 235, baseP: 18, baseC: 34, baseF: 3,
+              tip: "😰 Anti-Ansiedad: Ocupa un bol entero para comer uno por uno descargando la ansiedad motora sin romper el déficit.",
+              shop: { "Yogur griego / natural": { qty: 150, unit: "g" } }
+            },
+            {
+              id: "anx_snk_2",
+              title: "Bowl XXL de Gelatina Light + 150g Yogur Griego + 100g frutillas en trozos + bastones crujientes de zanahoria/apio",
+              emoji: "🍮",
+              baseKcal: 165, baseP: 16, baseC: 18, baseF: 2,
+              tip: "😰 Anti-Ansiedad: Casi medio kilo de volumen en el estómago con menos de 170 kcal.",
+              shop: { "Gelatina light": { qty: 1, unit: "porción" }, "Yogur griego / natural": { qty: 150, unit: "g" } }
+            }
+          ]
+        },
+        sweet_craving: {
+          breakfast: [
+            {
+              id: "swt_bf_1",
+              title: "Torre de Panquequitos tibios de 45g Avena + 2 huevos + cacao amargo/vainilla + 2 cdas queso crema light y 80g frutillas",
+              emoji: "🥞",
+              baseKcal: 410, baseP: 26, baseC: 42, baseF: 14,
+              tip: "🍫 Calma Antojo Dulce: Sabor y textura de pastelería real pero con alto aporte proteico que estabiliza la glucosa.",
+              shop: { "Avena / Granola": { qty: 45, unit: "g" }, "Huevos": { qty: 2, unit: "u" }, "Fruta de estación (banana/frutilla)": { qty: 80, unit: "g" } }
+            },
+            {
+              id: "swt_bf_2",
+              title: "Bowl Chocolatoso: 200g Yogur Griego + 1 cda Cacao Amargo 100% + ½ banana en rodajas con canela + 15g pasta de maní",
+              emoji: "🍫",
+              baseKcal: 380, baseP: 24, baseC: 36, baseF: 13,
+              tip: "🍫 Calma Antojo Dulce: El cacao puro aporta magnesio y triptófano para subir la serotonina sin azúcar.",
+              shop: { "Yogur griego / natural": { qty: 200, unit: "g" }, "Fruta de estación (banana/frutilla)": { qty: 70, unit: "g" } }
+            }
+          ],
+          main: [
+            {
+              id: "swt_main_1",
+              title: "200g Suprema de pollo dorada al limón/mostaza + 220g Batata y Calabaza caramelizadas al horno con canela + hojas verdes",
+              emoji: "🍗",
+              baseKcal: 440, baseP: 52, baseC: 40, baseF: 7,
+              tip: "🍫 Calma Antojo Dulce: El dulzor natural de la batata y calabaza asada al horno apaga las ganas de cosas dulces en la comida principal.",
+              shop: { "Pechuga de Pollo": { qty: 200, unit: "g" }, "Papa / Batata": { qty: 220, unit: "g" } }
+            },
+            {
+              id: "swt_main_2",
+              title: "180g Lomo/Carré magro a la plancha + 200g Puré cremoso de calabaza asada y choclo dulce + cebollitas doradas",
+              emoji: "🥩",
+              baseKcal: 430, baseP: 46, baseC: 32, baseF: 12,
+              tip: "🍫 Calma Antojo Dulce: Combinación agridulce natural con 46g de proteína que evita el picoteo nocturno.",
+              shop: { "Carne vacuna magra (lomo/cuadril/bife)": { qty: 180, unit: "g" }, "Calabaza y Choclo": { qty: 200, unit: "g" } }
+            }
+          ],
+          snack: [
+            {
+              id: "swt_snk_1",
+              title: "Falsa Mousse Chocolatosa: 180g Yogur Griego/Natural + 1 cda colmada Cacao Amargo 100% + 1 cdita Pasta de Maní + stevia",
+              emoji: "🍫",
+              baseKcal: 195, baseP: 18, baseC: 13, baseF: 7.5,
+              tip: "🍫 Calma Antojo Dulce: Textura idéntica a un postre de chocolate con 18g de proteína saciante.",
+              shop: { "Yogur griego / natural": { qty: 180, unit: "g" } }
+            },
+            {
+              id: "swt_snk_2",
+              title: "Banana tibia caramelizada al microondas (90 seg) con canela + 120g yogur proteico o 1 scoop Whey",
+              emoji: "🍌",
+              baseKcal: 215, baseP: 18, baseC: 32, baseF: 2,
+              tip: "🍫 Calma Antojo Dulce: El calor multiplica el dulzor de la banana y la canela frena el pico de insulina.",
+              shop: { "Fruta de estación (banana/frutilla)": { qty: 110, unit: "g" }, "Yogur griego / natural": { qty: 120, unit: "g" } }
+            }
+          ]
+        },
+        tired: {
+          breakfast: [
+            {
+              id: "trd_bf_1",
+              title: "Desayuno en 60 segundos (Cero Cocción): Café con leche proteica + 2 tostadas integrales con 35g queso untable + 1 fruta",
+              emoji: "⚡",
+              baseKcal: 375, baseP: 22, baseC: 42, baseF: 11,
+              tip: "😴 Modo Cansado: Listo en 1 minuto sin prender hornallas ni ensuciar sartenes.",
+              shop: { "Pan integral / Tostadas": { qty: 60, unit: "g" }, "Queso untable / cremoso": { qty: 35, unit: "g" }, "Leche descremada/proteica": { qty: 200, unit: "ml" } }
+            }
+          ],
+          main: [
+            {
+              id: "trd_main_1",
+              title: "2 Rapiditas/Wraps integrales armadas en 2 min: 1 lata grande de atún al natural (150g) + 35g queso + tomate en rodajas",
+              emoji: "🌯",
+              baseKcal: 410, baseP: 45, baseC: 34, baseF: 9,
+              tip: "😴 Modo Cansado: Almuerzo o cena completa con 45g de proteína en 90 segundos, sin lavar ollas ni pedir delivery.",
+              shop: { "Rapiditas / Fajitas": { qty: 65, unit: "g" }, "Pescado / Atún al natural": { qty: 150, unit: "g" }, "Queso untable / cremoso": { qty: 35, unit: "g" } }
+            },
+            {
+              id: "trd_main_2",
+              title: "Plato Express 3 Minutos: 3 huevos revueltos rápidos + 2 fetas jamón cocido magro + 30g queso port salut + 1 tostada integral",
+              emoji: "🍳",
+              baseKcal: 405, baseP: 35, baseC: 18, baseF: 21,
+              tip: "😴 Modo Cansado: Comida caliente y súper saciante lista en menos de 3 minutos.",
+              shop: { "Huevos": { qty: 3, unit: "u" }, "Queso untable / cremoso": { qty: 30, unit: "g" } }
+            },
+            {
+              id: "trd_main_3",
+              title: "Picada Fit Sin Cocinar: 4 rollitos de jamón magro y queso + 2 huevos duros/poché + tomatitos cherry y ½ palta",
+              emoji: "🧀",
+              baseKcal: 390, baseP: 34, baseC: 10, baseF: 22,
+              tip: "😴 Modo Cansado: Cero cocción: abrir la heladera, emplatar y cumplir tu meta de proteína.",
+              shop: { "Huevos": { qty: 2, unit: "u" }, "Palta": { qty: 60, unit: "g" } }
+            }
+          ],
+          snack: [
+            {
+              id: "trd_snk_1",
+              title: "Colación Directa del Pote: 200g Yogur Griego/Proteico + 20g almendras/nueces (sin ensuciar vajilla)",
+              emoji: "🥣",
+              baseKcal: 220, baseP: 19, baseC: 14, baseF: 9,
+              tip: "😴 Modo Cansado: Cero preparación, máxima practicidad.",
+              shop: { "Yogur griego / natural": { qty: 200, unit: "g" } }
+            }
+          ]
+        },
+        starving: {
+          breakfast: [
+            {
+              id: "stv_bf_1",
+              title: "Desayuno Blindado Anti-Hambre: Revuelto de 3 huevos + 40g avena cocida espesa + 1 manzana entera con cáscara",
+              emoji: "🍳",
+              baseKcal: 455, baseP: 27, baseC: 44, baseF: 17,
+              tip: "🐺 Hambre Voraz: Proteína sólida + fibra pectina y beta-glucanos que frenan el vaciamiento gástrico toda la mañana.",
+              shop: { "Huevos": { qty: 3, unit: "u" }, "Avena / Granola": { qty: 40, unit: "g" }, "Fruta de estación (banana/frutilla)": { qty: 140, unit: "g" } }
+            }
+          ],
+          main: [
+            {
+              id: "stv_main_1",
+              title: "Super-Plato Saciante Holt #1: 210g Pechuga de pollo a la plancha + 240g Papa cocida/horneada con piel + ensalada grande de hojas verdes",
+              emoji: "🥔",
+              baseKcal: 475, baseP: 55, baseC: 44, baseF: 7,
+              tip: "🐺 Hambre Voraz: La papa cocida al horno tiene el Índice de Saciedad #1 científicamente medido (323%); combinada con 55g de proteína apaga el hambre por horas.",
+              shop: { "Pechuga de Pollo": { qty: 210, unit: "g" }, "Papa / Batata": { qty: 240, unit: "g" }, "Espinaca y Rúcula": { qty: 150, unit: "g" } }
+            },
+            {
+              id: "stv_main_2",
+              title: "Cazuela Densa de 180g Lentejas/Garbanzos cocidos + 160g Bife magro en cubos + calabaza, morrón y cebolla",
+              emoji: "🫘",
+              baseKcal: 465, baseP: 48, baseC: 38, baseF: 12,
+              tip: "🐺 Hambre Voraz: Legumbres + carne magra forman un bloque de digestión lenta que mantiene el estómago lleno toda la tarde/noche.",
+              shop: { "Legumbres (lentejas/garbanzos)": { qty: 90, unit: "g" }, "Carne vacuna magra (lomo/cuadril/bife)": { qty: 160, unit: "g" } }
+            }
+          ],
+          snack: [
+            {
+              id: "stv_snk_1",
+              title: "Merienda Sólida Anti-Hambre: 2 huevos duros/revueltos + 2 rollitos de jamón magro y queso + 1 fruta entera",
+              emoji: "🧀",
+              baseKcal: 265, baseP: 25, baseC: 18, baseF: 11,
+              tip: "🐺 Hambre Voraz: Proteína sólida masticable que sacia mucho más que un líquido.",
+              shop: { "Huevos": { qty: 2, unit: "u" } }
+            }
+          ]
+        },
+        focused: {
+          breakfast: [
+            {
+              id: "foc_bf_1",
+              title: "Tostón Power Pre/Post Entreno: 2 tostadas integrales + 2 huevos y 1 clara revueltos + ½ palta + café con leche",
+              emoji: "🥑",
+              baseKcal: 435, baseP: 28, baseC: 34, baseF: 19,
+              tip: "⚡ Modo En Foco: Aminoácidos esenciales + energía sostenida para rendir al máximo.",
+              shop: { "Huevos": { qty: 3, unit: "u" }, "Pan integral / Tostadas": { qty: 60, unit: "g" }, "Palta": { qty: 70, unit: "g" } }
+            }
+          ],
+          main: [
+            {
+              id: "foc_main_1",
+              title: "Bowl Anabólico de Rendimiento: 200g Pechuga de pollo o Lomo magro + 150g Arroz cocido + 1 huevo a la plancha y vegetales",
+              emoji: "💪",
+              baseKcal: 470, baseP: 56, baseC: 40, baseF: 9,
+              tip: "⚡ Modo En Foco: Máxima síntesis proteica (leucina) + reposición limpia de glucógeno muscular.",
+              shop: { "Pechuga de Pollo": { qty: 200, unit: "g" }, "Arroz (en crudo)": { qty: 60, unit: "g" }, "Huevos": { qty: 1, unit: "u" } }
+            }
+          ],
+          snack: [
+            {
+              id: "foc_snk_1",
+              title: "Licuado Recuperador: 1 scoop Proteína Whey (o 200g yogur proteico) + 1 banana + 30g avena",
+              emoji: "🥤",
+              baseKcal: 260, baseP: 26, baseC: 34, baseF: 3,
+              tip: "⚡ Modo En Foco: Absorción rápida ideal alrededor del entrenamiento.",
+              shop: { "Yogur griego / natural": { qty: 200, unit: "g" }, "Fruta de estación (banana/frutilla)": { qty: 110, unit: "g" } }
+            }
+          ]
+        }
       };
 
       function getTimeSlotLabel(hour) {
@@ -14799,16 +15039,41 @@
         };
       }
 
+      function sortPoolByLearnedHistory(poolList, dishStats) {
+        if (!Array.isArray(poolList) || !dishStats) return poolList;
+        return [...poolList]
+          .map((item, idx) => {
+            const st = item.id && dishStats[item.id] ? dishStats[item.id] : { count: 0, deficitSuccessCount: 0 };
+            const score = st.count * 2 + st.deficitSuccessCount * 3;
+            return { ...item, chosenCount: st.count, successCount: st.deficitSuccessCount, learnedScore: score, origIdx: idx };
+          })
+          .sort((a, b) => (b.learnedScore - a.learnedScore) || (a.origIdx - b.origIdx));
+      }
+
       function generateWeeklyMenuPlan() {
         const prefs = ensureMenuPrefs();
         const targets = computeNutritionTargets();
         const isSurplus = Boolean(targets.isSurplus);
         const isLowCarb = (appData.profile && appData.profile.macroPreset) === "low_carb";
         const mealsCount = Number(prefs.mealsPerDay) || 4;
+        const activeMoodId = sugMenuState.selectedMoodId || "normal";
+        const moodPoolObj = activeMoodId !== "normal" ? MOOD_MENU_POOLS[activeMoodId] : null;
+        const insights = computeMoodLearningInsights();
 
-        const bfPool = buildBreakfastTemplates(prefs, isSurplus, isLowCarb);
-        const mainPool = buildMainMealPool(prefs, isSurplus, isLowCarb);
-        const snackPool = buildSnackPool(prefs);
+        const rawBfPool = moodPoolObj && moodPoolObj.breakfast
+          ? [...moodPoolObj.breakfast, ...buildBreakfastTemplates(prefs, isSurplus, isLowCarb)]
+          : buildBreakfastTemplates(prefs, isSurplus, isLowCarb);
+        const rawMainPool = moodPoolObj && moodPoolObj.main
+          ? [...moodPoolObj.main, ...buildMainMealPool(prefs, isSurplus, isLowCarb)]
+          : buildMainMealPool(prefs, isSurplus, isLowCarb);
+        const rawSnackPool = moodPoolObj && moodPoolObj.snack
+          ? [...moodPoolObj.snack, ...buildSnackPool(prefs)]
+          : buildSnackPool(prefs);
+
+        const bfPool = sortPoolByLearnedHistory(rawBfPool, insights.dishStats);
+        const mainPool = sortPoolByLearnedHistory(rawMainPool, insights.dishStats);
+        const snackPool = sortPoolByLearnedHistory(rawSnackPool, insights.dishStats);
+        const meriendaPool = moodPoolObj ? snackPool.concat(bfPool) : bfPool.concat(snackPool);
 
         // Distribución porcentual óptima según cantidad de comidas del usuario
         let slotShares = [];
@@ -14822,7 +15087,7 @@
           slotShares = [
             { key: "breakfast", title: "🌅 Desayuno", share: 0.22, pool: bfPool },
             { key: "lunch", title: "☀️ Almuerzo", share: 0.32, pool: mainPool, isMain: true, offsetBase: 0 },
-            { key: "merienda", title: "🧉 Merienda", share: 0.16, pool: bfPool },
+            { key: "merienda", title: "🧉 Merienda", share: 0.16, pool: meriendaPool },
             { key: "dinner", title: "🌙 Cena", share: 0.22, pool: mainPool, isMain: true, offsetBase: 1 },
             { key: "snack", title: "🍿 Colación / Snack", share: 0.08, pool: snackPool }
           ];
@@ -14830,7 +15095,7 @@
           slotShares = [
             { key: "breakfast", title: "🌅 Desayuno", share: 0.24, pool: bfPool },
             { key: "lunch", title: "☀️ Almuerzo", share: 0.35, pool: mainPool, isMain: true, offsetBase: 0 },
-            { key: "merienda", title: "🧉 Merienda", share: 0.16, pool: bfPool.concat(snackPool) },
+            { key: "merienda", title: "🧉 Merienda", share: 0.16, pool: meriendaPool },
             { key: "dinner", title: "🌙 Cena", share: 0.25, pool: mainPool, isMain: true, offsetBase: 1 }
           ];
         }
@@ -14843,9 +15108,11 @@
           for (let sIdx = 0; sIdx < slotShares.length; sIdx++) {
             const slot = slotShares[sIdx];
             const varOffset = Number(sugMenuState.variantOffsets[`${dIdx}_${slot.key}`]) || 0;
-            const poolIdx = slot.isMain
-              ? (dIdx * 2 + (slot.offsetBase || 0) + varOffset) % slot.pool.length
-              : (dIdx + sIdx + varOffset) % slot.pool.length;
+            const poolIdx = moodPoolObj
+              ? (varOffset + (slot.offsetBase || 0)) % slot.pool.length
+              : (slot.isMain
+                  ? (dIdx * 2 + (slot.offsetBase || 0) + varOffset) % slot.pool.length
+                  : (dIdx + sIdx + varOffset) % slot.pool.length);
             const rawDish = slot.pool[poolIdx];
             const slotTargetKcal = Math.round(targets.targetKcal * slot.share);
             const scaled = scaleDishToTarget(rawDish, slotTargetKcal);
@@ -15126,140 +15393,10 @@
           return;
         }
 
-        // MODO 2b: PSICONUTRICIÓN, ESTADO DE ÁNIMO Y APRENDIZAJE ADAPTATIVO
-        if (sugMenuState.mode === "mood") {
-          const insights = computeMoodLearningInsights();
-          const dayTot = getDayTotals(selectedDate || todayStr());
-          const remKcal = Math.max(0, (t.targetKcal + (dayTot.exerciseKcal || 0)) - dayTot.kcal);
-          const curMood = MOOD_STATES.find(m => m.id === sugMenuState.selectedMoodId) || MOOD_STATES[0];
-
-          // Ordenar las opciones de este estado priorizando las que mejor resultado real le dieron al usuario
-          const rankedOptions = [...curMood.options]
-            .map(opt => {
-              const st = insights.dishStats[opt.id] || { count: 0, deficitSuccessCount: 0 };
-              const score = st.count * 2 + st.deficitSuccessCount * 3;
-              return { ...opt, chosenCount: st.count, successCount: st.deficitSuccessCount, score };
-            })
-            .sort((a, b) => b.score - a.score);
-
-          const patternBannerHtml = insights.totalLogs > 0
-            ? `
-              <div style="background:linear-gradient(135deg, rgba(56,189,248,0.14), rgba(34,197,94,0.12));border:1.5px solid rgba(56,189,248,0.45);border-radius:12px;padding:10px 13px;font-size:0.79rem;display:flex;flex-direction:column;gap:4px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-                  <strong style="color:#0284c7;font-size:0.84rem;">🧠 Lo que Michu aprendió de vos (${insights.totalLogs} ${insights.totalLogs === 1 ? "registro" : "registros"}):</strong>
-                  ${insights.topMoodObj ? `<span class="chip" style="font-weight:800;font-size:0.72rem;background:var(--bg-elev);">${insights.topMoodObj.shortLabel} (${insights.topMoodCount}x) • ${insights.topWindowLabel}</span>` : ""}
-                </div>
-                <div style="color:var(--text);">
-                  ${insights.needsAfternoonSatietyBoost
-                    ? `💡 <strong>Adaptación automática activa:</strong> Detecté que solés sentir ansiedad o antojo dulce por la tardecita/noche. Prioricé arriba las opciones que mejor cuidaron tu déficit y reforcé la saciedad de tu Merienda.`
-                    : `💡 Tus elecciones se ordenan automáticamente poniendo primero los platos que más elegiste y con los que cerraste el día dentro de tu meta calórica.`}
-                </div>
-              </div>
-            `
-            : `
-              <div style="background:var(--bg-card);border:1px dashed var(--border);border-radius:12px;padding:10px 13px;font-size:0.78rem;color:var(--text-muted);">
-                🧠 <strong>Aprendizaje inteligente activo:</strong> Cada vez que elijas cómo te sentís y cargues una opción, Michu guardará qué te funcionó mejor y a qué hora te da más hambre o ansiedad para mejorar tus sugerencias futuras.
-              </div>
-            `;
-
-          root.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-card);border:1.5px solid var(--border);border-radius:13px;padding:10px 13px;">
-              <div>
-                <strong style="font-size:0.92rem;">🧠 ¿Cómo te sentís ahora? — Recomendador Saciante</strong>
-                <div style="font-size:0.75rem;color:var(--text-muted);">
-                  Te quedan <strong style="color:var(--accent);">${remKcal} kcal disponibles hoy</strong> • Elegí tu estado para ver qué comer sin romper tu plan
-                </div>
-              </div>
-              <button type="button" class="btn btn-sm" id="btnBackToSugMenuFromMood">⬅️ Volver al Menú Semanal</button>
-            </div>
-
-            <!-- Píldoras de Estado de Ánimo -->
-            <div style="display:flex;flex-wrap:wrap;gap:7px;">
-              ${MOOD_STATES.map(ms => {
-                const isSel = ms.id === curMood.id;
-                return `
-                  <button type="button" class="btn btn-sm" data-select-mood="${ms.id}" style="flex:1;min-width:135px;justify-content:center;padding:9px 10px;font-weight:800;border:2px solid ${isSel ? ms.color : "var(--border)"};background:${isSel ? ms.bgSoft : "var(--bg-card)"};color:${isSel ? ms.color : "var(--text)"};">
-                    ${ms.emoji} ${ms.label}
-                  </button>
-                `;
-              }).join("")}
-            </div>
-
-            ${patternBannerHtml}
-
-            <!-- Explicación fisiológica del estado seleccionado -->
-            <div style="background:${curMood.bgSoft};border:1.5px solid ${curMood.color};border-radius:13px;padding:11px 13px;">
-              <strong style="color:${curMood.color};font-size:0.86rem;display:block;margin-bottom:3px;">
-                ${curMood.emoji} Estrategia Nutricional: ${curMood.strategyTitle}
-              </strong>
-              <div style="font-size:0.78rem;color:var(--text);line-height:1.4;">
-                ${curMood.strategyDesc}
-              </div>
-            </div>
-
-            <!-- Opciones ordenadas por aprendizaje adaptativo -->
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              ${rankedOptions.map((opt, idx) => {
-                const fitsRemaining = opt.kcal <= remKcal + 80;
-                const learnedBadge = opt.chosenCount > 0
-                  ? `<span style="font-size:0.7rem;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:800;">⭐ Elegido ${opt.chosenCount}x${opt.successCount > 0 ? ` • ${opt.successCount}x en déficit ✅` : ""}</span>`
-                  : (idx === 0 ? `<span style="font-size:0.7rem;padding:2px 8px;border-radius:999px;background:var(--purple-soft);color:var(--purple);font-weight:800;">🔥 Top Saciedad</span>` : "");
-                return `
-                  <div style="background:var(--bg-card);border:1.5px solid ${opt.chosenCount > 0 && idx === 0 ? "var(--accent)" : "var(--border)"};border-radius:12px;padding:11px 13px;display:flex;flex-direction:column;gap:6px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                        <span style="font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--border);font-weight:800;">
-                          ${opt.kcal} kcal • 🥩 ${opt.p}g P • ${opt.c}g C • ${opt.f}g G
-                        </span>
-                        ${learnedBadge}
-                        ${fitsRemaining ? `<span style="font-size:0.7rem;color:var(--accent);font-weight:700;">✓ Entra en tus kcal de hoy</span>` : ""}
-                      </div>
-                      <button type="button" class="btn btn-sm btn-primary" data-pick-mood-dish="${opt.id}" style="padding:5px 11px;font-size:0.75rem;">
-                        ➕ Elegir y Cargar hoy
-                      </button>
-                    </div>
-                    <div style="font-size:0.87rem;font-weight:800;color:var(--text);line-height:1.35;">
-                      ${opt.emoji} ${opt.title}
-                    </div>
-                    <div style="font-size:0.75rem;color:var(--text-muted);">
-                      🧬 <strong>Por qué funciona:</strong> ${opt.why}
-                    </div>
-                  </div>
-                `;
-              }).join("")}
-            </div>
-          `;
-
-          document.getElementById("btnBackToSugMenuFromMood")?.addEventListener("click", () => {
-            sugMenuState.mode = "menu";
-            renderSuggestedMenuModal();
-          });
-
-          root.querySelectorAll("[data-select-mood]").forEach(btn => {
-            btn.addEventListener("click", () => {
-              sugMenuState.selectedMoodId = btn.getAttribute("data-select-mood") || "anxious";
-              renderSuggestedMenuModal();
-            });
-          });
-
-          root.querySelectorAll("[data-pick-mood-dish]").forEach(btn => {
-            btn.addEventListener("click", () => {
-              const dishId = btn.getAttribute("data-pick-mood-dish");
-              const dishObj = curMood.options.find(x => x.id === dishId);
-              if (!dishObj) return;
-              recordMoodFoodChoice(curMood, dishObj);
-              btn.textContent = "✅ ¡Cargado y aprendido!";
-              setTimeout(() => {
-                renderSuggestedMenuModal();
-              }, 700);
-              setRaccoonSpeech(`"🧠 ¡Excelente decisión para ${curMood.shortLabel}! Sumaste '${dishObj.title}' (${dishObj.kcal} kcal, ${dishObj.p}g P) y ya aprendí tu preferencia para la próxima 🐱💚."`, { forceShow: true });
-            });
-          });
-          return;
-        }
-
-        // MODO 3: VISTA PRINCIPAL DEL MENÚ SEMANAL PERSONALIZADO
+        // MODO 3: VISTA PRINCIPAL DEL MENÚ SEMANAL PERSONALIZADO (CON ADAPTACIÓN EN VIVO SEGÚN ESTADO DE ÁNIMO)
         const moodInsights = computeMoodLearningInsights();
+        const activeMoodId = sugMenuState.selectedMoodId || "normal";
+        const activeMoodObj = MOOD_STATES.find(m => m.id === activeMoodId) || null;
         const activeDay = plan.weekDays[sugMenuState.activeDayIdx] || plan.weekDays[0];
         const curDefType = (appData.profile && appData.profile.deficitType) || "recommended";
         const curWeight = Number(appData.profile && appData.profile.weight) || 78;
@@ -15274,27 +15411,6 @@
               : `💪 Ganancia estimada: <strong>+${wkChangeKg.toFixed(2)} kg/semana</strong> • En 21 días: <strong>+${days21ChangeKg.toFixed(1)} kg</strong> (de ${curWeight} kg → <strong>~${estWeight21} kg</strong>)`);
 
         root.innerHTML = `
-          <!-- Barra rápida: ¿Cómo te sentís hoy? (Psiconutrición y Saciedad) -->
-          <div style="background:linear-gradient(135deg, rgba(56,189,248,0.14), rgba(168,85,247,0.12));border:1.5px solid rgba(56,189,248,0.45);border-radius:13px;padding:10px 12px;display:flex;flex-direction:column;gap:7px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-              <strong style="font-size:0.83rem;color:var(--text);">
-                🧠 ¿Tenés ansiedad, antojo o cansancio ahora? Elegí cómo te sentís:
-              </strong>
-              ${moodInsights.totalLogs > 0 && moodInsights.topMoodObj ? `
-                <span style="font-size:0.72rem;color:#0284c7;font-weight:800;">
-                  📊 Patrón aprendido: ${moodInsights.topMoodObj.shortLabel} en ${moodInsights.topWindowLabel}
-                </span>
-              ` : ""}
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;">
-              ${MOOD_STATES.map(ms => `
-                <button type="button" class="btn btn-sm" data-quick-open-mood="${ms.id}" style="padding:5px 10px;font-size:0.75rem;font-weight:800;border-color:${ms.color};color:${ms.color};background:var(--bg-elev);">
-                  ${ms.shortLabel}
-                </button>
-              `).join("")}
-            </div>
-          </div>
-
           <!-- Barra superior: Selector de Intensidad según tu peso/TDEE + Proyección de Peso + Gustos -->
           <div style="display:flex;flex-direction:column;gap:8px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:14px;padding:11px 13px;">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -15330,6 +15446,39 @@
             </div>
           </div>
 
+          <!-- Selector de Estado de Ánimo que transforma las propuestas de abajo en la misma pantalla -->
+          <div style="background:linear-gradient(135deg, rgba(56,189,248,0.12), rgba(168,85,247,0.1));border:1.5px solid ${activeMoodObj ? activeMoodObj.color : "rgba(56,189,248,0.4)"};border-radius:13px;padding:10px 12px;display:flex;flex-direction:column;gap:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+              <strong style="font-size:0.83rem;color:var(--text);">
+                🧠 ¿Cómo te sentís hoy? (Tocá para adaptar tu Desayuno, Almuerzo, Merienda y Cena):
+              </strong>
+              ${moodInsights.totalLogs > 0 && moodInsights.topMoodObj ? `
+                <span style="font-size:0.72rem;color:#0284c7;font-weight:800;">
+                  📊 Aprendido (${moodInsights.totalLogs}): ${moodInsights.topMoodObj.shortLabel} en ${moodInsights.topWindowLabel}
+                </span>
+              ` : ""}
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <button type="button" class="btn btn-sm ${activeMoodId === "normal" ? "btn-primary" : ""}" data-quick-open-mood="normal" style="padding:5px 10px;font-size:0.75rem;font-weight:800;">
+                😌 Normal (Hábitos)
+              </button>
+              ${MOOD_STATES.map(ms => {
+                const isSel = activeMoodId === ms.id;
+                return `
+                  <button type="button" class="btn btn-sm" data-quick-open-mood="${ms.id}" style="padding:5px 10px;font-size:0.75rem;font-weight:800;border:2px solid ${isSel ? ms.color : "var(--border)"};background:${isSel ? ms.bgSoft : "var(--bg-elev)"};color:${isSel ? ms.color : "var(--text)"};">
+                    ${ms.shortLabel}
+                  </button>
+                `;
+              }).join("")}
+            </div>
+            ${activeMoodObj ? `
+              <div style="font-size:0.76rem;color:var(--text);background:var(--bg-elev);border-left:3px solid ${activeMoodObj.color};padding:6px 10px;border-radius:7px;">
+                <strong style="color:${activeMoodObj.color};">${activeMoodObj.emoji} Menú adaptado a "${activeMoodObj.label}" (${activeMoodObj.strategyTitle}):</strong>
+                ${activeMoodObj.strategyDesc}
+              </div>
+            ` : ""}
+          </div>
+
           <!-- Selector de día de la semana (Lun a Dom) -->
           <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;">
             ${plan.weekDays.map((wd, idx) => `
@@ -15343,21 +15492,28 @@
           <!-- Platos del día seleccionado -->
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;padding:0 2px;">
-              <strong style="font-size:0.9rem;">📅 Menú de referencia — ${activeDay.dayName}</strong>
+              <strong style="font-size:0.9rem;">📅 Menú de referencia — ${activeDay.dayName} ${activeMoodObj ? `<span style="color:${activeMoodObj.color};">(${activeMoodObj.shortLabel})</span>` : ""}</strong>
               <span style="font-size:0.77rem;color:var(--text-muted);">
                 Total día: <strong style="color:var(--accent);">${activeDay.totals.kcal} kcal</strong> (${activeDay.totals.p}g P • ${activeDay.totals.c}g C • ${activeDay.totals.f}g G)
               </span>
             </div>
 
-            ${activeDay.meals.map(m => `
-              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
+            ${activeDay.meals.map(m => {
+              const learnedPill = m.chosenCount > 0
+                ? `<span style="font-size:0.69rem;padding:2px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:800;">⭐ Elegido ${m.chosenCount}x${m.successCount > 0 ? ` • ${m.successCount}x en déficit ✅` : ""}</span>`
+                : "";
+              return `
+              <div style="background:var(--bg-card);border:1.5px solid ${activeMoodObj ? activeMoodObj.color : "var(--border)"};border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-                  <strong style="font-size:0.84rem;color:var(--accent);">${m.slotTitle}</strong>
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                    <strong style="font-size:0.84rem;color:${activeMoodObj ? activeMoodObj.color : "var(--accent)"};">${m.slotTitle}</strong>
+                    ${learnedPill}
+                  </div>
                   <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;">
                     <span style="padding:2px 7px;border-radius:999px;background:var(--bg);border:1px solid var(--border);font-weight:700;">
                       ${m.kcal} kcal • ${m.p}g P • ${m.c}g C • ${m.f}g G
                     </span>
-                    <button type="button" class="btn btn-sm" data-swap-slot="${m.slotKey}" title="Cambiar por otra opción acorde a tus gustos" style="padding:3px 8px;font-size:0.72rem;">
+                    <button type="button" class="btn btn-sm" data-swap-slot="${m.slotKey}" title="Cambiar por otra opción acorde a tus gustos y estado de ánimo" style="padding:3px 8px;font-size:0.72rem;">
                       🔄 Otra opción
                     </button>
                     <button type="button" class="btn btn-sm btn-primary" data-add-sug-meal="${m.slotKey}" title="Agregar este plato al Diario de hoy" style="padding:3px 8px;font-size:0.72rem;">
@@ -15372,7 +15528,8 @@
                   💡 ${m.tip}
                 </div>
               </div>
-            `).join("")}
+            `;
+            }).join("")}
           </div>
 
           <!-- Botonera inferior para aplicar el día o toda la semana al Diario -->
@@ -15422,8 +15579,9 @@
 
         root.querySelectorAll("[data-quick-open-mood]").forEach(btn => {
           btn.addEventListener("click", () => {
-            sugMenuState.selectedMoodId = btn.getAttribute("data-quick-open-mood") || "anxious";
-            sugMenuState.mode = "mood";
+            const clickedMood = btn.getAttribute("data-quick-open-mood") || "normal";
+            sugMenuState.selectedMoodId = (sugMenuState.selectedMoodId === clickedMood && clickedMood !== "normal") ? "normal" : clickedMood;
+            sugMenuState.variantOffsets = {};
             renderSuggestedMenuModal();
           });
         });
@@ -15433,17 +15591,30 @@
             const sk = btn.getAttribute("data-add-sug-meal");
             const mealObj = activeDay.meals.find(x => x.slotKey === sk);
             if (!mealObj) return;
-            addFoodItemToDay(selectedDate || todayStr(), {
-              mealType: mealObj.slotKey,
-              name: mealObj.title,
-              kcal: mealObj.kcal,
-              p: mealObj.p,
-              c: mealObj.c,
-              f: mealObj.f,
-              emoji: mealObj.emoji || "🍽️"
-            });
+            if (activeMoodObj) {
+              recordMoodFoodChoice(activeMoodObj, {
+                id: mealObj.id || `${activeMoodObj.id}_${sk}`,
+                title: mealObj.title,
+                kcal: mealObj.kcal,
+                p: mealObj.p,
+                c: mealObj.c,
+                f: mealObj.f,
+                emoji: mealObj.emoji || "🍽️",
+                slotKey: mealObj.slotKey
+              });
+            } else {
+              addFoodItemToDay(selectedDate || todayStr(), {
+                mealType: mealObj.slotKey,
+                name: mealObj.title,
+                kcal: mealObj.kcal,
+                p: mealObj.p,
+                c: mealObj.c,
+                f: mealObj.f,
+                emoji: mealObj.emoji || "🍽️"
+              });
+            }
             btn.textContent = "✅ Cargado";
-            setTimeout(() => { btn.textContent = "➕ Cargar hoy"; }, 1400);
+            setTimeout(() => { renderSuggestedMenuModal(); }, 900);
           });
         });
 
