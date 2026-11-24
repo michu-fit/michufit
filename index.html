@@ -4482,33 +4482,44 @@
         const fechaHoraStr = newUser.createdAt || new Date().toLocaleString("es-AR");
 
         // 1. Si hay URL de Google Apps Script configurada, sale directo con remitente "🐱 Michu Fit" y diseño 100% en español
+        let gasPermissionError = false;
         if (webhookUrl && webhookUrl.startsWith("https://script.google.com/")) {
-          const gasPayload = {
-            to: targetEmail,
-            isTest: Boolean(isTest),
-            nombre: newUser.name || "Usuario",
-            emailUsuario: newUser.email || newUser.username || "-",
-            rol: roleLabel,
-            pesoMeta: pesoMetaStr,
-            codigoNutri: codigoNutriStr,
-            fechaHora: fechaHoraStr,
-            linkAdmin: "https://michu-fit.github.io/michufit/"
-          };
-          const res = await _nativeFetch(webhookUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "text/plain;charset=utf-8"
-            },
-            body: JSON.stringify(gasPayload)
-          });
-          return { ok: true, via: "google-script", status: res.status, targetEmail };
+          try {
+            const gasPayload = {
+              to: targetEmail,
+              isTest: Boolean(isTest),
+              nombre: newUser.name || "Usuario",
+              emailUsuario: newUser.email || newUser.username || "-",
+              rol: roleLabel,
+              pesoMeta: pesoMetaStr,
+              codigoNutri: codigoNutriStr,
+              fechaHora: fechaHoraStr,
+              linkAdmin: "https://michu-fit.github.io/michufit/"
+            };
+            const res = await _nativeFetch(webhookUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+              },
+              body: JSON.stringify(gasPayload)
+            });
+            const resTxt = await res.text().catch(() => "");
+            if (res.ok && resTxt.includes('"ok":true')) {
+              return { ok: true, via: "google-script", status: res.status, targetEmail };
+            }
+            gasPermissionError = true;
+            console.warn("Google Apps Script devolvió acceso restringido (falta elegir 'Cualquier persona'):", res.status);
+          } catch (gasErr) {
+            gasPermissionError = true;
+            console.warn("Error contactando Google Apps Script, usando respaldo:", gasErr);
+          }
         }
 
-        // 2. Fallback a FormSubmit si todavía no pegó la URL de Google Apps Script
-        if (!targetEmail || !targetEmail.includes("@")) return { ok: false, error: "Email inválido" };
+        // 2. Respaldo automático si Google Apps Script aún tiene "Quién tiene acceso: Solo yo"
+        const fallbackEmail = (targetEmail && targetEmail.includes("@")) ? targetEmail : "ali.gourmet.ar@gmail.com";
         const payload = {
           _subject: isTest
-            ? `🐱 [Prueba] Notificaciones de Michu Fit activas (${targetEmail})`
+            ? `🐱 [Prueba] Notificaciones de Michu Fit activas (${fallbackEmail})`
             : `🐱 Nuevo usuario pendiente en Michu Fit: ${newUser.name} (${roleLabel})`,
           _template: "table",
           _captcha: "false",
@@ -4522,7 +4533,7 @@
           Panel_Admin_Michu_Fit: "https://michu-fit.github.io/michufit/"
         };
 
-        const res = await _nativeFetch(`https://formsubmit.co/ajax/${encodeURIComponent(targetEmail)}`, {
+        const res = await _nativeFetch(`https://formsubmit.co/ajax/${encodeURIComponent(fallbackEmail)}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -4531,7 +4542,7 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json().catch(() => ({}));
-        return { ok: res.ok, via: "formsubmit", data, targetEmail };
+        return { ok: res.ok, via: "formsubmit", gasPermissionError, data, targetEmail: fallbackEmail };
       } catch (err) {
         console.warn("Aviso por email:", err);
         return { ok: false, error: String(err) };
@@ -10934,12 +10945,22 @@
               );
               if (emailStatusMsg) {
                 emailStatusMsg.style.display = "block";
-                emailStatusMsg.style.background = "var(--accent-soft)";
-                emailStatusMsg.style.color = "var(--accent)";
-                emailStatusMsg.style.border = "1px solid var(--accent)";
-                emailStatusMsg.innerHTML = mailRes && mailRes.via === "google-script"
-                  ? `✅ ¡Listo! Se envió el correo de prueba vía tu <strong>Google Apps Script</strong> con remitente <strong>"🐱 Michu Fit"</strong>.`
-                  : `✅ Configuración guardada.`;
+                if (mailRes && mailRes.via === "google-script") {
+                  emailStatusMsg.style.background = "var(--accent-soft)";
+                  emailStatusMsg.style.color = "var(--accent)";
+                  emailStatusMsg.style.border = "1px solid var(--accent)";
+                  emailStatusMsg.innerHTML = `✅ ¡Listo! Se envió el correo vía tu <strong>Google Apps Script</strong> con remitente <strong>"🐱 Michu Fit"</strong>.`;
+                } else if (mailRes && mailRes.gasPermissionError) {
+                  emailStatusMsg.style.background = "var(--warn-soft)";
+                  emailStatusMsg.style.color = "var(--warn)";
+                  emailStatusMsg.style.border = "1px solid var(--warn)";
+                  emailStatusMsg.innerHTML = `⚠️ Tu Google Script devolvió <strong>"Necesitas acceso (403)"</strong> porque quedó configurado en <em>"Solo yo"</em>.<br/>En Google Apps Script tocá: <strong>Implementar → Administrar implementaciones → Editar (ícono lápiz ✏️) → Quién tiene acceso: "Cualquier persona" → Implementar</strong>. (Mientras tanto se envió por el respaldo automático).`;
+                } else {
+                  emailStatusMsg.style.background = "var(--accent-soft)";
+                  emailStatusMsg.style.color = "var(--accent)";
+                  emailStatusMsg.style.border = "1px solid var(--accent)";
+                  emailStatusMsg.innerHTML = `✅ Configuración guardada.`;
+                }
               }
             } finally {
               btnSaveTestMail.disabled = false;
