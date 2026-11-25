@@ -14366,6 +14366,43 @@
               why: "Energía sostenida con grasas monoinsaturadas y proteína completa."
             }
           ]
+        },
+        {
+          id: "bloated",
+          emoji: "🎈",
+          label: "Inflamado / Pesadez o Retención",
+          shortLabel: "🎈 Inflamado",
+          color: "#0d9488",
+          bgSoft: "rgba(13,148,136,0.14)",
+          strategyTitle: "Protocolo Desinflamante & Drenante (Low-FODMAP Suave + Potasio + Infusiones Carminativas)",
+          strategyDesc: "Evitamos harinas fermentables, crudos fibrosos y exceso de sodio. Priorizamos cocciones tibias de fácil digestión, alimentos ricos en potasio drenante, jengibre/cúrcuma e infusiones digestivas en cada turno:",
+          defaultSlot: "dinner",
+          options: [
+            {
+              id: "blt_opt_fish",
+              title: "210g Filet de merluza/pescado blanco a la plancha con limón y cúrcuma + 220g puré tibio de calabaza y zanahoria + 🌼 Infusión de manzanilla y anís",
+              emoji: "🐟",
+              kcal: 375, p: 45, c: 28, f: 8,
+              slotKey: "dinner",
+              why: "Proteína blanca de rapidísimo vaciamiento gástrico + potasio drenante de la calabaza e infusión carminativa."
+            },
+            {
+              id: "blt_opt_chicken",
+              title: "200g Pechuga de pollo grillada con jengibre, limón y orégano + 120g arroz blanco bien cocido y zucchini tierno al vapor + 🌿 Té de menta peperina o hinojo",
+              emoji: "🍵",
+              kcal: 440, p: 54, c: 38, f: 7.5,
+              slotKey: "lunch",
+              why: "Cero fermentación intestinal (Low-FODMAP): desinflama el abdomen sin perder saciedad ni proteína."
+            },
+            {
+              id: "blt_opt_compote",
+              title: "Compota tibia de manzana o rodajas de ananá/kiwi (enzimas digestivas) + 180g yogur deslactosado/natural + 🍵 Infusión de cedrón y jengibre",
+              emoji: "🍍",
+              kcal: 215, p: 16, c: 30, f: 2.5,
+              slotKey: "merienda",
+              why: "La bromelina del ananá, actinidina del kiwi y pectina cocida alivian la pesadez y eliminan líquido retenido."
+            }
+          ]
         }
       ];
 
@@ -14618,6 +14655,94 @@
               baseKcal: 260, baseP: 26, baseC: 34, baseF: 3,
               tip: "⚡ Modo En Foco: Absorción rápida ideal alrededor del entrenamiento.",
               shop: { "Yogur griego / natural": { qty: 200, unit: "g" }, "Fruta de estación (banana/frutilla)": { qty: 110, unit: "g" } }
+            }
+          ]
+        },
+        bloated: {
+          breakfast: [
+            {
+              id: "blt_bf_1",
+              title: "🍵 Infusión tibia de jengibre fresco y limón (o té verde) + Omelette suave de 2 huevos y 1 clara + 2 galletas de arroz (sin harina/gluten) con ½ palta pisada + 1 kiwi",
+              emoji: "🍵",
+              baseKcal: 365, baseP: 20, baseC: 28, baseF: 18,
+              tip: "🎈 Desinflamante & Drenante: El jengibre estimula el vaciamiento gástrico, el kiwi aporta actinidina (enzima digestiva) y evitamos harinas y lactosa.",
+              shop: { "Huevos": { qty: 3, unit: "u" }, "Palta": { qty: 65, unit: "g" }, "Fruta de estación (banana/frutilla)": { qty: 90, unit: "g" } }
+            },
+            {
+              id: "blt_bf_2",
+              title: "🍵 Té verde o infusión de manzanilla y jengibre + Porridge tibio de 40g avena bien cocida en agua con canela + 100g arándanos/frutillas + 2 claras o ½ scoop proteína aislada",
+              emoji: "🫐",
+              baseKcal: 335, baseP: 21, baseC: 44, baseF: 5,
+              tip: "🎈 Desinflamante: La avena bien cocida y tibia con canela calma la mucosa digestiva sin fermentar, y los frutos rojos aportan polifenoles antiinflamatorios.",
+              shop: { "Avena / Granola": { qty: 40, unit: "g" }, "Fruta de estación (banana/frutilla)": { qty: 100, unit: "g" } }
+            },
+            {
+              id: "blt_bf_3",
+              title: "🍵 Infusión digestiva de cedrón y limón + 180g Yogur sin lactosa/natural + 120g ananá fresco o compota tibia de manzana con canela y 1 cdita semillas de chía hidratadas",
+              emoji: "🍍",
+              baseKcal: 310, baseP: 18, baseC: 38, baseF: 6,
+              tip: "🎈 Efecto Drenante: La bromelina del ananá y la pectina de la manzana cocida reducen la distensión abdominal y favorecen el tránsito suave.",
+              shop: { "Yogur griego / natural": { qty: 180, unit: "g" }, "Fruta de estación (banana/frutilla)": { qty: 120, unit: "g" } }
+            }
+          ],
+          main: [
+            {
+              id: "blt_main_1",
+              title: "200g Pechuga de pollo a la plancha con limón, cúrcuma y jengibre + 220g puré tibio de calabaza y zanahoria con 1 cdita oliva en crudo + 🌿 Infusión post-comida de menta peperina o hinojo",
+              emoji: "🍵",
+              baseKcal: 425, baseP: 54, baseC: 30, baseF: 9,
+              tip: "🎈 Protocolo Desinflamante: Cocción tibia Low-FODMAP rica en potasio (elimina sodio retenido) + cúrcuma antiinflamatoria e infusión carminativa contra gases.",
+              shop: { "Pechuga de Pollo": { qty: 200, unit: "g" }, "Calabaza y Choclo": { qty: 220, unit: "g" }, "Zanahorias": { qty: 100, unit: "g" } }
+            },
+            {
+              id: "blt_main_2",
+              title: "210g Filet de merluza/pescado blanco al horno o vapor con finas hierbas y limón + 110g arroz blanco bien cocido + 180g zucchini pelado y zapallito tierno al vapor + 🌼 Té de manzanilla y anís estrellado",
+              emoji: "🐟",
+              baseKcal: 405, baseP: 46, baseC: 35, baseF: 8,
+              tip: "🎈 Ultra-Liviano Nocturno: El pescado blanco y los vegetales cocidos sin piel ni semillas se digieren en la mitad de tiempo, evitando hinchazón al dormir.",
+              shop: { "Pescado / Atún al natural": { qty: 210, unit: "g" }, "Arroz (en crudo)": { qty: 45, unit: "g" }, "Morrón, Zucchini y Cebolla": { qty: 180, unit: "g" } }
+            },
+            {
+              id: "blt_main_3",
+              title: "150g Lomitos de atún al natural (enjuagados para bajar sodio) + 2 huevos poché/duros + 180g papa hervida/horneada y hojas tiernas de espinaca cocida + 🌿 Infusión de cedrón o boldo",
+              emoji: "🥗",
+              baseKcal: 415, baseP: 50, baseC: 31, baseF: 10,
+              tip: "🎈 Balance Sodio/Potasio: Enjuagar el atún retira el exceso de sal y la papa aporta potasio natural que drena la retención de líquidos.",
+              shop: { "Pescado / Atún al natural": { qty: 150, unit: "g" }, "Huevos": { qty: 2, unit: "u" }, "Papa / Batata": { qty: 180, unit: "g" } }
+            },
+            {
+              id: "blt_main_4",
+              title: "Tazón de caldo casero desgrasado tibio + 180g Suprema/Pollo en tiras suaves al wok con zanahoria en juliana y calabacín tierno + 🌼 Infusión tibia de jengibre, menta y limón",
+              emoji: "🍲",
+              baseKcal: 375, baseP: 49, baseC: 18, baseF: 10,
+              tip: "🎈 Alivio Digestivo: Las preparaciones húmedas y calientes relajan el músculo liso intestinal y desinflaman rápido.",
+              shop: { "Pechuga de Pollo": { qty: 180, unit: "g" }, "Zanahorias": { qty: 140, unit: "g" } }
+            }
+          ],
+          snack: [
+            {
+              id: "blt_snk_1",
+              title: "🍵 Infusión tibia de manzanilla, cedrón o jengibre + Compota casera tibia de 1 manzana al microondas (2 min) con canela + 150g yogur deslactosado (o 2 claras cocidas)",
+              emoji: "🍎",
+              baseKcal: 195, baseP: 14, baseC: 29, baseF: 2,
+              tip: "🎈 Prebiótico Suave: Cocinar la manzana rompe la fibra dura y libera pectina que desinflama el intestino sin producir gases.",
+              shop: { "Fruta de estación (banana/frutilla)": { qty: 150, unit: "g" }, "Yogur griego / natural": { qty: 150, unit: "g" } }
+            },
+            {
+              id: "blt_snk_2",
+              title: "🌿 Té verde con menta y rodajita de limón + 140g rodajas de ananá fresco o kiwi + 10 almendras peladas/activadas",
+              emoji: "🍍",
+              baseKcal: 165, baseP: 4, baseC: 22, baseF: 6.5,
+              tip: "🎈 Drenante Natural: Ananá + té verde con menta ayudan a eliminar retención de líquidos y pesadez de la tarde.",
+              shop: { "Fruta de estación (banana/frutilla)": { qty: 140, unit: "g" }, "Frutos secos / Pasta de maní": { qty: 12, unit: "g" } }
+            },
+            {
+              id: "blt_snk_3",
+              title: "🌼 Infusión caliente de hinojo o anís + Bowl de gelatina sin azúcar + 120g frutillas/arándanos y 120g yogur sin lactosa",
+              emoji: "🍮",
+              baseKcal: 140, baseP: 13, baseC: 16, baseF: 1.5,
+              tip: "🎈 Hidratación Desinflamante: Cero harinas ni sodio, ideal cuando sentís la panza pesada a media tarde o noche.",
+              shop: { "Gelatina light": { qty: 1, unit: "porción" }, "Yogur griego / natural": { qty: 120, unit: "g" } }
             }
           ]
         }
@@ -15404,7 +15529,16 @@
           dishPrefix = "Salteado / Bowl tibio: ";
         }
 
-        const combinedTitle = dishPrefix + chosenParts.map(p => p.name).join(" + ");
+        const isBloatedMode = sugMenuState.selectedMoodId === "bloated";
+        const bloatedInfusionSuffix = isBloatedMode
+          ? (slotKey === "breakfast"
+              ? " + 🍵 Infusión tibia de jengibre y limón"
+              : (slotKey === "lunch"
+                  ? " + 🌿 Té digestivo post-comida de menta peperina o hinojo"
+                  : " + 🌼 Infusión desinflamante de manzanilla, cedrón o anís"))
+          : "";
+
+        const combinedTitle = dishPrefix + chosenParts.map(p => p.name).join(" + ") + bloatedInfusionSuffix;
         const baseKcal = Math.max(90, chosenParts.reduce((a, p) => a + (p.kcal || 0), 0));
         const baseP = Math.max(5, chosenParts.reduce((a, p) => a + (p.p || 0), 0));
         const baseC = chosenParts.reduce((a, p) => a + (p.c || 0), 0);
@@ -15430,7 +15564,9 @@
           baseC,
           baseF,
           shop: mergedShop,
-          tip: `🧊 Armado con lo que tenés / tu antojo ("${cleanQ}") ajustando los gramos exactos para tus ${targetSlotKcal} kcal de este turno.`,
+          tip: isBloatedMode
+            ? `🎈🧊 Adaptado a tu heladera ("${cleanQ}") en Modo Desinflamante: cocinalo bien, con poca sal, toque de cúrcuma/jengibre y acompañalo con la infusión tibia.`
+            : `🧊 Armado con lo que tenés / tu antojo ("${cleanQ}") ajustando los gramos exactos para tus ${targetSlotKcal} kcal de este turno.`,
           isCustomFridge: true,
           customQueryText: cleanQ
         };
@@ -15447,15 +15583,16 @@
         const activeMoodId = sugMenuState.selectedMoodId || "normal";
         const moodPoolObj = activeMoodId !== "normal" ? MOOD_MENU_POOLS[activeMoodId] : null;
         const insights = computeMoodLearningInsights();
+        const strictMoodOnly = activeMoodId === "bloated";
 
         const rawBfPool = moodPoolObj && moodPoolObj.breakfast
-          ? [...moodPoolObj.breakfast, ...buildBreakfastTemplates(prefs, isSurplus, isLowCarb)]
+          ? (strictMoodOnly ? [...moodPoolObj.breakfast] : [...moodPoolObj.breakfast, ...buildBreakfastTemplates(prefs, isSurplus, isLowCarb)])
           : buildBreakfastTemplates(prefs, isSurplus, isLowCarb);
         const rawMainPool = moodPoolObj && moodPoolObj.main
-          ? [...moodPoolObj.main, ...buildMainMealPool(prefs, isSurplus, isLowCarb)]
+          ? (strictMoodOnly ? [...moodPoolObj.main] : [...moodPoolObj.main, ...buildMainMealPool(prefs, isSurplus, isLowCarb)])
           : buildMainMealPool(prefs, isSurplus, isLowCarb);
         const rawSnackPool = moodPoolObj && moodPoolObj.snack
-          ? [...moodPoolObj.snack, ...buildSnackPool(prefs)]
+          ? (strictMoodOnly ? [...moodPoolObj.snack] : [...moodPoolObj.snack, ...buildSnackPool(prefs)])
           : buildSnackPool(prefs);
 
         const bfPool = sortPoolByLearnedHistory(rawBfPool, insights.dishStats);
