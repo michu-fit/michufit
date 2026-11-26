@@ -2368,6 +2368,9 @@
         <button type="button" class="btn btn-sm" id="btnOpenMobileModal" onclick="window.openModal && window.openModal('modalMobileApp')">
           📱 Instalar en Celu / Descargar .APK
         </button>
+        <button type="button" class="btn btn-sm" onclick="window.openLegalModal && window.openLegalModal('privacy')">
+          🛡️ Privacidad y Términos
+        </button>
         <div style="border-top:1px solid var(--border);padding-top:6px;margin-top:2px;">
           <button type="button" class="btn btn-sm btn-danger" id="btnLogoutHamburger" style="justify-content:center;">
             🚪 Cerrar sesión
@@ -3510,6 +3513,16 @@
             🚪 Cerrar Sesión / Cambiar de Usuario
           </button>
         </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--border);font-size:0.76rem;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button type="button" onclick="window.openLegalModal && window.openLegalModal('terms')" style="background:none;border:none;padding:0;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline;font-size:0.76rem;">Términos y Salud</button>
+            <button type="button" onclick="window.openLegalModal && window.openLegalModal('privacy')" style="background:none;border:none;padding:0;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline;font-size:0.76rem;">Política de Privacidad</button>
+          </div>
+          <button type="button" id="btnDeleteMyAccountInProfile" style="background:none;border:none;padding:0;color:var(--danger);font-weight:700;cursor:pointer;text-decoration:underline;font-size:0.76rem;">
+            🗑️ Eliminar mi cuenta y datos
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -3772,8 +3785,11 @@
           <button type="button" class="michu-splash-login-link" id="btnSplashOpenLogin">
             Ya tengo una cuenta
           </button>
-          <div style="font-size:0.7rem;color:#64748b;text-align:center;line-height:1.35;margin-top:2px;">
-            Al continuar, aceptás nuestros <strong style="color:#94a3b8;font-weight:600;">Términos</strong> y <strong style="color:#94a3b8;font-weight:600;">Privacidad</strong>
+          <div style="font-size:0.72rem;color:#94a3b8;text-align:center;line-height:1.45;margin-top:3px;">
+            Al continuar, aceptás nuestros
+            <button type="button" onclick="window.openLegalModal && window.openLegalModal('terms')" style="background:none;border:none;padding:2px 3px;color:#e2e8f0;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-family:inherit;font-size:inherit;">Términos</button>
+            y
+            <button type="button" onclick="window.openLegalModal && window.openLegalModal('privacy')" style="background:none;border:none;padding:2px 3px;color:#e2e8f0;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-family:inherit;font-size:inherit;">Privacidad</button>
           </div>
         </div>
       </div>
@@ -4171,6 +4187,103 @@
         <button type="button" class="btn btn-sm" data-close-modal="modalReto21Dias">✕</button>
       </div>
       <div id="reto21RootContainer" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL LEGAL PLAY STORE: TÉRMINOS, POLÍTICA DE PRIVACIDAD, AVISO DE SALUD Y ELIMINACIÓN DE CUENTA -->
+  <div class="custom-modal-overlay" id="modalLegalDocs" role="dialog" aria-modal="true" style="z-index:100025;">
+    <div class="modal-inner" style="max-width:640px;">
+      <div class="card-header" style="align-items:center;margin-bottom:10px;">
+        <div>
+          <div class="card-title">🛡️ Información Legal, Salud y Privacidad</div>
+          <small style="color:var(--text-muted);font-size:0.75rem;">
+            Michu Fit • Cumplimiento de Seguridad de Datos y Bienestar (Google Play)
+          </small>
+        </div>
+        <button type="button" class="btn btn-sm" data-close-modal="modalLegalDocs">✕</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--bg-card);padding:5px;border-radius:12px;border:1px solid var(--border);margin-bottom:12px;">
+        <button type="button" class="btn btn-sm legal-tab-btn" data-legal-tab="terms" style="justify-content:center;font-size:0.75rem;padding:7px 6px;">📜 Términos y Salud</button>
+        <button type="button" class="btn btn-sm legal-tab-btn" data-legal-tab="privacy" style="justify-content:center;font-size:0.75rem;padding:7px 6px;">🔒 Privacidad</button>
+        <button type="button" class="btn btn-sm legal-tab-btn" data-legal-tab="delete" style="justify-content:center;font-size:0.75rem;padding:7px 6px;">🗑️ Eliminar Cuenta</button>
+      </div>
+
+      <!-- PESTAÑA 1: TÉRMINOS Y DESCARGO MÉDICO -->
+      <div class="legal-tab-pane" id="legalPane_terms" style="display:flex;flex-direction:column;gap:10px;font-size:0.83rem;line-height:1.52;color:var(--text-muted);max-height:60vh;overflow-y:auto;padding-right:4px;">
+        <div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.38);border-radius:12px;padding:11px 13px;color:var(--text);">
+          <strong style="color:var(--warn);display:block;margin-bottom:3px;">⚕️ Aviso Médico y Nutricional Importante</strong>
+          Michu Fit es una herramienta informativa de seguimiento nutricional, organización alimentaria y hábitos saludables. <strong>No brinda consejo médico, diagnóstico clínico ni tratamiento profesional</strong>, y no reemplaza la consulta con un médico o Licenciado/a en Nutrición matriculado.
+        </div>
+        <div>
+          <strong style="color:var(--text);display:block;margin-bottom:2px;">1. Uso Saludable y Contraindicaciones</strong>
+          Los cálculos metabólicos (ecuación Mifflin-St Jeor, TDEE, IMC, macronutrientes, ayuno intermitente y menús sugeridos por IA) están diseñados como guía general para adultos sanos. Consultá siempre a un profesional de la salud antes de iniciar un déficit calórico o ayuno si estás embarazada o en lactancia, sos menor de 18 años, tenés diabetes, patologías renales, cardíacas, hepáticas o antecedentes de trastornos de la conducta alimentaria (TCA).
+        </div>
+        <div>
+          <strong style="color:var(--text);display:block;margin-bottom:2px;">2. Alergias y Valores Nutricionales</strong>
+          Las estimaciones calóricas (bases USDA, SARA, Open Food Facts y análisis por IA) son valores orientativos que pueden variar según marca y preparación. Ante alergias severas o enfermedad celíaca, verificá siempre el envase oficial de cada alimento.
+        </div>
+        <div>
+          <strong style="color:var(--text);display:block;margin-bottom:2px;">3. Cuenta de Usuario y Uso Responsable</strong>
+          Sos responsable de resguardar tu contraseña y cargar datos reales. Si vinculás voluntariamente el código de tu nutricionista, autorizás a dicho profesional a visualizar tu diario y evolución dentro de Michu Fit.
+        </div>
+        <div style="padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <span>Contacto oficial: <a href="mailto:ali.gourmet.ar@gmail.com" style="color:var(--accent);font-weight:700;">ali.gourmet.ar@gmail.com</a></span>
+          <a href="./terminos.html" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:underline;">Abrir versión web completa ↗</a>
+        </div>
+      </div>
+
+      <!-- PESTAÑA 2: POLÍTICA DE PRIVACIDAD -->
+      <div class="legal-tab-pane" id="legalPane_privacy" style="display:none;flex-direction:column;gap:10px;font-size:0.83rem;line-height:1.52;color:var(--text-muted);max-height:60vh;overflow-y:auto;padding-right:4px;">
+        <div style="background:var(--accent-soft);border:1px solid rgba(14,159,119,0.32);border-radius:12px;padding:11px 13px;color:var(--text);">
+          <strong style="color:var(--accent);display:block;margin-bottom:3px;">🔒 Compromiso de Privacidad (Cero Venta de Datos)</strong>
+          Michu Fit utiliza tus datos exclusivamente para calcular tu plan, sincronizar tu diario y mostrarte tu evolución. <strong>Jamás vendemos, alquilamos ni compartimos tus datos personales o de salud con redes publicitarias ni corredores de datos.</strong>
+        </div>
+        <div>
+          <strong style="color:var(--text);display:block;margin-bottom:2px;">1. Qué datos guardamos y para qué</strong>
+          • <strong>Cuenta:</strong> Nombre/apodo, correo o usuario y contraseña cifrada con hash criptográfico (<code>SHA-256</code>; nunca en texto plano).<br/>
+          • <strong>Salud y Nutrición:</strong> Edad, altura, peso, medidas opcionales, comidas, agua, pasos, ayuno y preferencias alimentarias para personalizar tus metas y gráficos.
+        </div>
+        <div>
+          <strong style="color:var(--text);display:block;margin-bottom:2px;">2. Permisos de Cámara y Biometría</strong>
+          • <strong>Cámara / Fotos:</strong> Solo se activan cuando usás manualmente el escáner de código de barras o foto de plato. Nunca en segundo plano.<br/>
+          • <strong>Huella / Biometría:</strong> Procesada localmente por el chip seguro de tu celular (WebAuthn); Michu Fit nunca recibe ni almacena tu huella dactilar.
+        </div>
+        <div>
+          <strong style="color:var(--text);display:block;margin-bottom:2px;">3. Seguridad, Portabilidad y Derechos (Ley 25.326 / GDPR)</strong>
+          Los datos viajan cifrados por <strong>HTTPS/TLS</strong> hacia infraestructura segura en Supabase. Podés descargar copia completa en JSON desde <em>IA & Backup</em> o borrar tu cuenta al instante en la pestaña <em>Eliminar Cuenta</em>.
+        </div>
+        <div style="padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <span>Consultas de privacidad: <a href="mailto:ali.gourmet.ar@gmail.com" style="color:var(--accent);font-weight:700;">ali.gourmet.ar@gmail.com</a></span>
+          <a href="./privacidad.html" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:underline;">Abrir Política Web Oficial ↗</a>
+        </div>
+      </div>
+
+      <!-- PESTAÑA 3: ELIMINACIÓN DE CUENTA Y DATOS -->
+      <div class="legal-tab-pane" id="legalPane_delete" style="display:none;flex-direction:column;gap:11px;font-size:0.83rem;line-height:1.52;color:var(--text-muted);max-height:60vh;overflow-y:auto;padding-right:4px;">
+        <div style="background:var(--danger-soft);border:1px solid rgba(220,38,38,0.32);border-radius:12px;padding:11px 13px;color:var(--text);">
+          <strong style="color:var(--danger);display:block;margin-bottom:3px;">🗑️ Derecho de Supresión Total e Inmediata</strong>
+          Podés eliminar definitivamente tu cuenta y todos tus registros (perfil, comidas, peso, medidas, ayunos y hábitos) en cualquier momento y sin costo. La eliminación es irreversible.
+        </div>
+        <div id="legalDeleteLoggedInBox" style="display:none;flex-direction:column;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;">
+          <strong style="color:var(--text);">Sesión activa detectada:</strong>
+          <span>Tocá el botón inferior para borrar ahora mismo tu cuenta y todos tus datos de la nube y de este dispositivo:</span>
+          <button type="button" class="btn btn-danger" id="btnConfirmDeleteSelfLegal" style="justify-content:center;">
+            🗑️ Eliminar mi cuenta permanentemente ahora
+          </button>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;">
+          <strong style="color:var(--text);display:block;margin-bottom:4px;">🌐 Baja vía Web (incluso sin tener la app instalada):</strong>
+          <span>También podés gestionar la baja automática ingresando usuario y clave en nuestro portal web oficial:</span>
+          <div style="margin-top:6px;">
+            <a href="./eliminar-cuenta.html" target="_blank" rel="noopener" style="color:var(--accent);font-weight:800;text-decoration:underline;">Abrir portal de eliminación de cuenta ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+        <button type="button" class="btn btn-primary btn-sm" data-close-modal="modalLegalDocs">Entendido</button>
+      </div>
     </div>
   </div>
   <script>
@@ -5013,6 +5126,20 @@
 
         // 5. POST /api/auth/logout
         if (method === "POST" && path.endsWith("/api/auth/logout")) {
+          localStorage.removeItem("michufit_auth_uid");
+          return sbJsonResponse({ ok: true });
+        }
+
+        // 5b. POST /api/auth/delete-account (Baja voluntaria de cuenta y datos — Google Play Compliance)
+        if (method === "POST" && path.endsWith("/api/auth/delete-account")) {
+          const actorUid = sbResolveAuthUid(init.headers);
+          if (!actorUid) {
+            return sbJsonResponse({ ok: false, error: "Iniciá sesión primero para eliminar tu cuenta." }, 401);
+          }
+          if (actorUid === "u-owner") {
+            return sbJsonResponse({ ok: false, error: "La cuenta principal de Super-Admin está protegida contra eliminación accidental." }, 400);
+          }
+          await sbDeleteUser(actorUid);
           localStorage.removeItem("michufit_auth_uid");
           return sbJsonResponse({ ok: true });
         }
@@ -13670,6 +13797,12 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
                   <input type="text" id="bpFinalInviteInp" placeholder="🩺 Código de Nutricionista (Opcional)" value="${bpState.inviteCode}" style="text-transform:uppercase;" />
                 </div>
               </div>
+              <div style="font-size:0.71rem;color:var(--text-muted);text-align:center;line-height:1.35;">
+                Al crear tu cuenta aceptás los
+                <button type="button" onclick="window.openLegalModal && window.openLegalModal('terms')" style="background:none;border:none;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer;font-size:inherit;">Términos y Aviso de Salud</button>
+                y la
+                <button type="button" onclick="window.openLegalModal && window.openLegalModal('privacy')" style="background:none;border:none;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer;font-size:inherit;">Política de Privacidad</button>.
+              </div>
             </div>
           `;
 
@@ -13887,6 +14020,78 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
 
       const btnLogoutPend = document.getElementById("btnLogoutFromPending");
       if (btnLogoutPend) btnLogoutPend.addEventListener("click", performLogout);
+
+      function switchLegalModalTab(tabId = "terms") {
+        const cleanTab = ["terms", "privacy", "delete"].includes(tabId) ? tabId : "terms";
+        document.querySelectorAll("#modalLegalDocs .legal-tab-btn").forEach((btn) => {
+          const isAct = btn.getAttribute("data-legal-tab") === cleanTab;
+          btn.style.background = isAct ? "var(--accent)" : "transparent";
+          btn.style.color = isAct ? "#ffffff" : "var(--text-muted)";
+          btn.style.borderColor = isAct ? "var(--accent)" : "transparent";
+          btn.style.fontWeight = isAct ? "800" : "600";
+        });
+        ["terms", "privacy", "delete"].forEach((t) => {
+          const pane = document.getElementById("legalPane_" + t);
+          if (pane) pane.style.display = t === cleanTab ? "flex" : "none";
+        });
+        const loggedBox = document.getElementById("legalDeleteLoggedInBox");
+        if (loggedBox) {
+          loggedBox.style.display = (currentUserInfo && currentUserInfo.id !== "u-owner") ? "flex" : "none";
+        }
+      }
+
+      window.openLegalModal = function (tabId = "terms") {
+        switchLegalModalTab(tabId);
+        const hamb = document.getElementById("topHamburgerDropdown");
+        if (hamb) hamb.classList.remove("open");
+        const el = document.getElementById("modalLegalDocs");
+        if (el) {
+          lastModalOpenTs = Date.now();
+          el.classList.add("active");
+          el.setAttribute("open", "open");
+        }
+      };
+
+      document.querySelectorAll("#modalLegalDocs .legal-tab-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          switchLegalModalTab(btn.getAttribute("data-legal-tab") || "terms");
+        });
+      });
+
+      async function performDeleteMyAccount() {
+        if (!currentUserInfo || !currentAuthToken) {
+          window.openLegalModal("delete");
+          return;
+        }
+        if (currentUserInfo.id === "u-owner") {
+          alert("La cuenta principal de Super-Admin está protegida contra eliminación accidental.");
+          return;
+        }
+        const ok1 = confirm(`¿Seguro que querés eliminar permanentemente tu cuenta (${currentUserInfo.email || currentUserInfo.name}) y TODOS tus registros de comidas, peso, medidas y ayunos? Esta acción es irreversible.`);
+        if (!ok1) return;
+
+        try {
+          const res = await fetch("/api/auth/delete-account", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Michu-Token": currentAuthToken },
+            body: JSON.stringify({})
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            alert((data && data.error) || "No se pudo eliminar la cuenta en este momento.");
+            return;
+          }
+          localStorage.removeItem("michufit_backup_v1");
+          closeModal("modalLegalDocs");
+          await performLogout();
+          alert("Tu cuenta y todos tus datos han sido eliminados permanentemente.");
+        } catch (err) {
+          alert("Error de conexión al eliminar la cuenta. Intentá nuevamente.");
+        }
+      }
+
+      document.getElementById("btnDeleteMyAccountInProfile")?.addEventListener("click", performDeleteMyAccount);
+      document.getElementById("btnConfirmDeleteSelfLegal")?.addEventListener("click", performDeleteMyAccount);
 
       const btnSaveNutriLink = document.getElementById("btnSaveNutriCodeLink");
       if (btnSaveNutriLink) {

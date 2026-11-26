@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eliminación de Cuenta y Datos | Michu Fit</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0c1316;
+      --card: #141f24;
+      --border: rgba(255, 255, 255, 0.10);
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #14bd8e;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 50% 0%, rgba(239, 68, 68, 0.10) 0%, transparent 45%), var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 24px 16px 64px;
+    }
+    .container { max-width: 680px; margin: 0 auto; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+    }
+    .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-weight: 800; font-size: 1.1rem; }
+    .brand img { width: 36px; height: 36px; border-radius: 10px; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-links a {
+      text-decoration: none; font-size: 0.82rem; font-weight: 700; padding: 7px 12px; border-radius: 999px;
+      border: 1px solid var(--border); color: var(--muted); background: rgba(255,255,255,0.03);
+    }
+    .nav-links a.active { color: #fca5a5; border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.14); }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 28px 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    }
+    h1 { font-family: 'Outfit', sans-serif; font-size: 1.75rem; line-height: 1.2; margin-bottom: 10px; }
+    h2 { font-family: 'Outfit', sans-serif; font-size: 1.12rem; color: var(--accent); margin: 22px 0 8px; }
+    p, li { font-size: 0.92rem; color: #cbd5e1; margin-bottom: 10px; }
+    ul { padding-left: 20px; margin-bottom: 12px; }
+    a { color: var(--accent); }
+    .form-box {
+      background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.30);
+      border-radius: 16px; padding: 18px; margin-top: 16px; display: flex; flex-direction: column; gap: 12px;
+    }
+    label { font-size: 0.82rem; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px; }
+    input {
+      width: 100%; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--border);
+      background: #0c1316; color: var(--text); font-size: 0.92rem; font-family: inherit;
+    }
+    button {
+      padding: 13px 18px; border-radius: 12px; border: none; background: var(--danger);
+      color: #fff; font-weight: 800; font-size: 0.92rem; cursor: pointer; font-family: inherit;
+    }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .msg { font-size: 0.86rem; font-weight: 700; padding: 10px 12px; border-radius: 10px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <a class="brand" href="./">
+        <img src="./icon-192.png" alt="Michu Fit" />
+        <span>Michu Fit</span>
+      </a>
+      <nav class="nav-links">
+        <a href="./privacidad.html">Privacidad</a>
+        <a href="./terminos.html">Términos y Salud</a>
+        <a href="./eliminar-cuenta.html" class="active">Eliminar Cuenta</a>
+        <a href="./">Abrir App →</a>
+      </nav>
+    </header>
+
+    <main class="card">
+      <h1>Eliminación de Cuenta y Datos Personales</h1>
+      <p>
+        En cumplimiento con las políticas de seguridad de datos de <strong>Google Play</strong>, podés eliminar de forma inmediata, gratuita y permanente tu cuenta de <strong>Michu Fit</strong> junto con todos tus datos asociados, tanto desde dentro de la app como desde esta página web.
+      </p>
+
+      <h2>¿Qué datos se eliminan de forma permanente?</h2>
+      <ul>
+        <li>Tu perfil de usuario, nombre, correo electrónico, hash de contraseña y credenciales biométricas vinculadas.</li>
+        <li>Todo tu historial de comidas registradas, calorías, macronutrientes, hidratación, pasos y sesiones de ayuno.</li>
+        <li>Tu historial de peso, medidas corporales y preferencias alimentarias almacenadas en la nube de Michu Fit (sin período de retención posterior).</li>
+      </ul>
+
+      <h2>Opción 1: Baja inmediata automática (Autogestión Web)</h2>
+      <p>Ingresá tu usuario/email y contraseña de Michu Fit para borrar tu cuenta de nuestros servidores al instante:</p>
+
+      <form id="delAccountForm" class="form-box">
+        <div>
+          <label for="delIdent">Email o Usuario de tu cuenta</label>
+          <input type="text" id="delIdent" required placeholder="Ej: usuario@gmail.com" autocomplete="username" />
+        </div>
+        <div>
+          <label for="delPwd">Contraseña actual</label>
+          <input type="password" id="delPwd" required placeholder="Tu contraseña" autocomplete="current-password" />
+        </div>
+        <button type="submit" id="delSubmitBtn">🗑️ Eliminar definitivamente mi cuenta y mis datos</button>
+        <div id="delStatusMsg" class="msg"></div>
+      </form>
+
+      <h2>Opción 2: Desde dentro de la App Michu Fit</h2>
+      <p>Abrí Michu Fit → tocá el menú <code>☰</code> arriba a la derecha → <strong>Perfil / Cuenta</strong> → tocá <strong>Eliminar mi cuenta y todos mis datos</strong>.</p>
+
+      <h2>Opción 3: Solicitud por Correo Electrónico (si olvidaste tu clave)</h2>
+      <p>
+        Si no recordás tu contraseña, enviá un correo desde tu casilla registrada a
+        <a href="mailto:ali.gourmet.ar@gmail.com?subject=Solicitud%20de%20eliminacion%20de%20cuenta%20Michu%20Fit">ali.gourmet.ar@gmail.com</a>
+        con el asunto <em>"Eliminar cuenta Michu Fit"</em> y procesaremos la baja total en un plazo máximo de 48 horas hábiles.
+      </p>
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://awnebrgpbxfrcammoiqe.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_rKaJq-0qEzFW0c6WGBjttg_tRtwA1pO";
+    const TABLE_URL = SUPABASE_URL + "/rest/v1/michufit_users";
+
+    function sha256Hex(ascii) {
+      function rightRotate(v, a) { return (v >>> a) | (v << (32 - a)); }
+      const maxWord = Math.pow(2, 32);
+      let result = "", words = [];
+      const utf8 = unescape(encodeURIComponent(ascii));
+      const asciiBitLength = utf8.length * 8;
+      let hash = [], k = [], primeCounter = 0, isComposite = {};
+      for (let candidate = 2; primeCounter < 64; candidate++) {
+        if (!isComposite[candidate]) {
+          for (let i = 0; i < 313; i += candidate) isComposite[i] = candidate;
+          hash[primeCounter] = (Math.pow(candidate, 0.5) * maxWord) | 0;
+          k[primeCounter++] = (Math.pow(candidate, 1 / 3) * maxWord) | 0;
+        }
+      }
+      let str = utf8 + "\x80";
+      while ((str.length % 64) - 56) str += "\x00";
+      for (let i = 0; i < str.length; i++) words[i >> 2] |= str.charCodeAt(i) << ((3 - (i % 4)) * 8);
+      words[words.length] = (asciiBitLength / maxWord) | 0;
+      words[words.length] = asciiBitLength;
+      for (let j = 0; j < words.length;) {
+        const w = words.slice(j, (j += 16)), oldHash = hash.slice(0);
+        for (let i = 0; i < 64; i++) {
+          const w15 = w[i - 15], w2 = w[i - 2], a = hash[0], e = hash[4];
+          const temp1 = hash[7] + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) + ((e & hash[5]) ^ (~e & hash[6])) + k[i] +
+            (w[i] = i < 16 ? w[i] : (w[i - 16] + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))) | 0);
+          const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+          hash = [(temp1 + temp2) | 0].concat(hash);
+          hash[4] = (hash[4] + temp1) | 0;
+          hash.pop();
+        }
+        for (let i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+      }
+      for (let i = 0; i < 8; i++) {
+        for (let j = 3; j + 1; j--) {
+          const b = (hash[i] >> (j * 8)) & 255;
+          result += (b < 16 ? 0 : "") + b.toString(16);
+        }
+      }
+      return result;
+    }
+
+    document.getElementById("delAccountForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const ident = document.getElementById("delIdent").value.trim().toLowerCase();
+      const pwd = document.getElementById("delPwd").value.trim();
+      const btn = document.getElementById("delSubmitBtn");
+      const msg = document.getElementById("delStatusMsg");
+      const showMsg = (txt, ok) => {
+        msg.style.display = "block";
+        msg.style.background = ok ? "rgba(20,189,142,0.16)" : "rgba(239,68,68,0.18)";
+        msg.style.color = ok ? "#34d399" : "#fca5a5";
+        msg.textContent = txt;
+      };
+      if (!ident || !pwd) return;
+      if (!confirm("¿Confirmás eliminar permanentemente tu cuenta de Michu Fit y todos tus datos? Esta acción no se puede deshacer.")) return;
+
+      btn.disabled = true;
+      btn.textContent = "⏳ Verificando y eliminando datos...";
+      try {
+        const res = await fetch(TABLE_URL + "?select=id,payload", {
+          headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY }
+        });
+        const rows = await res.json();
+        const pwdHash = sha256Hex("michufit_salt_v1_" + pwd);
+        const match = (rows || []).find(r => {
+          const u = r.payload || {};
+          return ((u.email || "").toLowerCase() === ident || (u.username || "").toLowerCase() === ident) && u.passwordHash === pwdHash;
+        });
+        if (!match) {
+          showMsg("No encontramos una cuenta con ese usuario/email y contraseña.", false);
+          return;
+        }
+        if (match.id === "u-owner") {
+          showMsg("La cuenta principal de administrador está protegida contra baja accidental.", false);
+          return;
+        }
+        const delRes = await fetch(TABLE_URL + "?id=eq." + encodeURIComponent(match.id), {
+          method: "DELETE",
+          headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY }
+        });
+        if (!delRes.ok) throw new Error("Error al borrar");
+        try {
+          localStorage.removeItem("michufit_auth_token");
+          localStorage.removeItem("michufit_auth_uid");
+          localStorage.removeItem("michufit_backup_v1");
+        } catch (_) {}
+        document.getElementById("delIdent").value = "";
+        document.getElementById("delPwd").value = "";
+        showMsg("✅ Tu cuenta y todos tus datos fueron eliminados permanentemente de Michu Fit.", true);
+      } catch (err) {
+        showMsg("Error de conexión al procesar la solicitud. Intentá nuevamente o escribinos a ali.gourmet.ar@gmail.com.", false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "🗑️ Eliminar definitivamente mi cuenta y mis datos";
+      }
+    });
+  </script>
+</body>
+</html>
