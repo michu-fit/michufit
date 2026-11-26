@@ -5648,6 +5648,7 @@
       { id: "c2", name: "Pechuga de pollo grillada (150g)", kcal: 248, p: 46, c: 0, f: 5.4, emoji: "🍗" },
       { id: "c3", name: "Bife magro vacuno (150g)", kcal: 290, p: 40, c: 0, f: 14, emoji: "🥩" },
       { id: "c4", name: "Lata de atún al natural (120g esc.)", kcal: 130, p: 28, c: 0, f: 1.5, emoji: "🐟" },
+      { id: "c4_jurel", name: "Jurel sin sal al agua (60g esc. / 3 cdas)", kcal: 89, p: 14, c: 0, f: 3.5, emoji: "🐟" },
       { id: "c5", name: "Arroz blanco o integral cocido (150g)", kcal: 195, p: 4, c: 42, f: 0.5, emoji: "🍚" },
       { id: "c6", name: "Tostada de pan integral (1 reb)", kcal: 75, p: 3.2, c: 13.5, f: 1, emoji: "🍞" },
       { id: "c7", name: "Media palta mediana (75g)", kcal: 120, p: 1.5, c: 6, f: 11, emoji: "🥑" },
@@ -7778,7 +7779,11 @@
       // Pescados grasos y atún
       if (/salmon|salmón|caballa|sardina|arenque|trucha/.test(nm)) {
         ui += 480;
-      } else if (/atun|atún|jurel|jaurel/.test(nm)) {
+      } else if (/jurel|jaurel/.test(nm)) {
+        const mG = nm.match(/(\d{2,3})\s*g/);
+        const multJ = mG ? (Number(mG[1]) / 60) : 1;
+        ui += Math.round(160 * multJ);
+      } else if (/atun|atún/.test(nm)) {
         ui += 110;
       }
       return ui;
@@ -8959,7 +8964,8 @@
       { keys: ["solomillo de cerdo", "carre de cerdo", "lomo de cerdo"], name: "Cerdo magro (Solomillo / Carré)", kcal: 165, p: 27, c: 0, f: 5.8, emoji: "🥩", unitG: 150, sliceCmG: 70 },
       { keys: ["bondiola", "costillita de cerdo", "pechito de cerdo", "cerdo"], name: "Carne de cerdo / Bondiola", kcal: 235, p: 24, c: 0, f: 15, emoji: "🥩", unitG: 150, sliceCmG: 70 },
       { keys: ["atun al natural", "lata de atun", "atun"], name: "Atún al natural (porción/lata)", kcal: 125, p: 27, c: 0, f: 1.2, emoji: "🐟", isUnit: true, unitG: 120 },
-      { keys: ["atun en aceite", "caballa", "sardina", "sardinas", "jurel"], name: "Pescado en conserva (Caballa/Sardinas/Atún aceite)", kcal: 195, p: 24, c: 0, f: 10.5, emoji: "🐟", isUnit: true, unitG: 120 },
+      { keys: ["jurel sin sal", "jurel al agua", "jurel al natural", "lata de jurel", "jurel"], name: "Jurel sin sal al agua (escurrido)", kcal: 89, p: 14, c: 0, f: 3.5, emoji: "🐟", isUnit: true, unitG: 60 },
+      { keys: ["atun en aceite", "caballa", "sardina", "sardinas"], name: "Pescado en conserva (Caballa/Sardinas/Atún aceite)", kcal: 195, p: 24, c: 0, f: 10.5, emoji: "🐟", isUnit: true, unitG: 120 },
       { keys: ["salmon", "trucha"], name: "Salmón / Trucha", kcal: 208, p: 22, c: 0, f: 13, emoji: "🐟", unitG: 150 },
       { keys: ["merluza", "lenguado", "abadejo", "tilapia", "pejerrey", "surubi", "pacu", "boga", "pescado", "filet de merluza"], name: "Filet de pescado blanco", kcal: 120, p: 22, c: 0, f: 3.0, emoji: "🐟", unitG: 160 },
       { keys: ["camaron", "camarones", "langostino", "langostinos", "mariscos", "calamar", "mejillones"], name: "Langostinos / Mariscos", kcal: 115, p: 24, c: 1, f: 1.5, emoji: "🦐", isUnit: true, unitG: 120 },
