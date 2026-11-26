@@ -7012,7 +7012,8 @@
     // =========================================================================
     let _vitDTickInterval = null;
     let _vitDWakeLock = null;
-    let _vitDLiveUvCache = { ts: 0, uvNow: null, cloudPct: null, hourlyUv: null, lat: -34.60, lon: -58.38, isGps: false };
+    let _vitDLiveUvCache = { ts: 0, uvNow: null, cloudPct: null, hourlyUv: null, lat: -34.60, lon: -58.38, isGps: false, cityName: "" };
+    let _vitDShowCityBox = false;
 
     window.toggleVitDCard = function () {
       const body = document.getElementById("vitDCollapsibleBody");
@@ -7084,13 +7085,45 @@
           _vitDLiveUvCache.lat = Number(savedGeo.lat);
           _vitDLiveUvCache.lon = Number(savedGeo.lon);
           _vitDLiveUvCache.isGps = Boolean(savedGeo.isGps);
+          _vitDLiveUvCache.cityName = savedGeo.cityName || "";
         }
       } catch (_) {}
       if (forceCoords) {
-        _vitDLiveUvCache.lat = forceCoords.lat;
-        _vitDLiveUvCache.lon = forceCoords.lon;
+        _vitDLiveUvCache.lat = Number(forceCoords.lat);
+        _vitDLiveUvCache.lon = Number(forceCoords.lon);
         _vitDLiveUvCache.isGps = true;
-        try { localStorage.setItem("michufit_solar_coords", JSON.stringify({ lat: forceCoords.lat, lon: forceCoords.lon, isGps: true })); } catch (_) {}
+        _vitDLiveUvCache.cityName = forceCoords.cityName || _vitDLiveUvCache.cityName || "Tu zona";
+        try {
+          localStorage.setItem("michufit_solar_coords", JSON.stringify({
+            lat: _vitDLiveUvCache.lat,
+            lon: _vitDLiveUvCache.lon,
+            isGps: true,
+            cityName: _vitDLiveUvCache.cityName
+          }));
+        } catch (_) {}
+      }
+      // Si aún no tiene zona detectada, detectar ciudad automáticamente por red sin pedir permisos invasivos
+      if (!_vitDLiveUvCache.isGps && !forceCoords) {
+        try {
+          const ipRes = await _nativeFetch("https://get.geojs.io/v1/ip/geo.json");
+          if (ipRes.ok) {
+            const ipData = await ipRes.json();
+            if (ipData && ipData.latitude && ipData.longitude) {
+              _vitDLiveUvCache.lat = Number(ipData.latitude);
+              _vitDLiveUvCache.lon = Number(ipData.longitude);
+              _vitDLiveUvCache.cityName = ipData.city || ipData.region || "Tu zona";
+              _vitDLiveUvCache.isGps = true;
+              try {
+                localStorage.setItem("michufit_solar_coords", JSON.stringify({
+                  lat: _vitDLiveUvCache.lat,
+                  lon: _vitDLiveUvCache.lon,
+                  isGps: true,
+                  cityName: _vitDLiveUvCache.cityName
+                }));
+              } catch (_) {}
+            }
+          }
+        } catch (_) {}
       }
       try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${_vitDLiveUvCache.lat.toFixed(3)}&longitude=${_vitDLiveUvCache.lon.toFixed(3)}&current=uv_index,cloud_cover&timezone=auto`;
@@ -7107,16 +7140,81 @@
       } catch (_) {}
     }
 
+    async function resolveSolarLocationSmart() {
+      // 1. Intentar GPS del navegador rápido (3.5s); si falla o no tiene permiso en WebView/APK, resolver por IP/Red automáticamente
+      const tryBrowserGps = () => new Promise((resolve) => {
+        if (!navigator.geolocation) { resolve(null); return; }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, cityName: "GPS activo" }),
+          () => resolve(null),
+          { enableHighAccuracy: false, timeout: 3500, maximumAge: 600000 }
+        );
+      });
+      let loc = await tryBrowserGps();
+      if (!loc) {
+        try {
+          const r1 = await _nativeFetch("https://get.geojs.io/v1/ip/geo.json");
+          if (r1.ok) {
+            const d1 = await r1.json();
+            if (d1 && d1.latitude && d1.longitude) {
+              loc = { lat: Number(d1.latitude), lon: Number(d1.longitude), cityName: d1.city || d1.region || "Zona detectada" };
+            }
+          }
+        } catch (_) {}
+      }
+      if (!loc) {
+        try {
+          const r2 = await _nativeFetch("https://ipwho.is/");
+          if (r2.ok) {
+            const d2 = await r2.json();
+            if (d2 && d2.latitude && d2.longitude) {
+              loc = { lat: Number(d2.latitude), lon: Number(d2.longitude), cityName: d2.city || d2.region || "Zona detectada" };
+            }
+          }
+        } catch (_) {}
+      }
+      if (loc) {
+        await fetchLiveSolarUvIfNeeded(loc);
+        return true;
+      }
+      return false;
+    }
+
+    async function searchSolarCityByName(cityQuery) {
+      const q = String(cityQuery || "").trim();
+      if (!q) return false;
+      try {
+        const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=es&format=json`;
+        const res = await _nativeFetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          const hit = data && Array.isArray(data.results) && data.results[0];
+          if (hit && typeof hit.latitude === "number" && typeof hit.longitude === "number") {
+            _vitDShowCityBox = false;
+            await fetchLiveSolarUvIfNeeded({
+              lat: hit.latitude,
+              lon: hit.longitude,
+              cityName: hit.name
+            });
+            return true;
+          }
+        }
+      } catch (_) {}
+      return false;
+    }
+
     function computeSafeVitDMinutes(uvVal, skinTone = 2, exposureMode = "arms") {
       // Escala Fitzpatrick simplificada: 1=Clara(I-II), 2=Intermedia(III-IV), 3=Morena(V-VI)
       const effUv = Math.max(2.2, Number(uvVal) || 5.0);
       const skinMult = skinTone === 1 ? 0.72 : (skinTone === 3 ? 1.65 : 1.0);
-      const areaMult = exposureMode === "shorts" ? 0.62 : 1.0;
+      // Superficie corporal expuesta: arms (~25%)=1.0, shorts (~45%)=0.62, swimwear/cuerpo entero (~80%)=0.40
+      const areaMult = exposureMode === "swimwear" ? 0.40 : (exposureMode === "shorts" ? 0.62 : 1.0);
       // Base ~14 min a UV 6 para fototipo III en remera (~1000-1500 UI sin eritema)
       const rawMins = (14 * (6.0 / effUv)) * skinMult * areaMult;
-      // Tope dermatológico seguro según UV para jamás quemarse
-      const maxSafeCap = effUv >= 9 ? (skinTone === 1 ? 8 : 14) : (effUv >= 7 ? (skinTone === 1 ? 11 : 18) : 35);
-      return Math.max(5, Math.min(maxSafeCap, Math.round(rawMins)));
+      // Tope dermatológico seguro según UV (más conservador en cuerpo entero porque torso/espalda son más sensibles)
+      const bodySensCap = exposureMode === "swimwear" ? 0.78 : 1.0;
+      const maxSafeCap = Math.round((effUv >= 9 ? (skinTone === 1 ? 8 : 14) : (effUv >= 7 ? (skinTone === 1 ? 11 : 18) : 35)) * bodySensCap);
+      return Math.max(4, Math.min(maxSafeCap, Math.round(rawMins)));
     }
 
     function playSolarAlarmSound(type = "complete") {
@@ -7204,7 +7302,9 @@
       const dRec = ensureDayRecord(tKey);
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-      const uiEst = Math.round(Math.min(2000, Math.max(400, minsDone * (Math.max(2, uvUsed || 4) * 18))));
+      const expModeUsed = (appData.profile && appData.profile.vitDExposure) || "arms";
+      const surfBoost = expModeUsed === "swimwear" ? 2.5 : (expModeUsed === "shorts" ? 1.6 : 1.0);
+      const uiEst = Math.round(Math.min(3000, Math.max(400, minsDone * (Math.max(2, uvUsed || 4) * 18 * surfBoost))));
       dRec.vitD = {
         done: true,
         minutes: minsDone,
@@ -7367,15 +7467,25 @@
               <span style="color:var(--text-muted);"> • Ventana óptima UVB: </span>
               <strong style="color:var(--accent);">${solarModel.windowStr}</strong>
             </div>
-            <div style="display:inline-flex;align-items:center;gap:6px;">
+            <div style="display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;">
               <span style="padding:3px 8px;border-radius:999px;font-size:0.72rem;font-weight:800;background:${currentUv >= 7 ? 'rgba(239,68,68,0.15)' : (currentUv >= 2.5 ? 'rgba(245,158,11,0.16)' : 'var(--bg-elev)')};color:${currentUv >= 7 ? 'var(--danger)' : (currentUv >= 2.5 ? 'var(--warn)' : 'var(--text-muted)')};">
                 ☀️ UV actual: ${currentUv}${_vitDLiveUvCache.cloudPct !== null ? ` • ☁️ ${_vitDLiveUvCache.cloudPct}%` : ""}
               </span>
-              <button type="button" id="btnVitDRefreshGps" title="Usar índice UV exacto de mi ubicación" style="background:var(--bg-elev);border:1px solid var(--border);border-radius:8px;padding:3px 7px;font-size:0.71rem;font-weight:700;color:var(--text-muted);cursor:pointer;">
-                📍 ${_vitDLiveUvCache.isGps ? "GPS OK" : "Mi UV local"}
+              <button type="button" id="btnVitDRefreshGps" title="Detectar mi ubicación o actualizar UV local" style="background:var(--bg-elev);border:1px solid var(--border);border-radius:8px;padding:3px 7px;font-size:0.71rem;font-weight:700;color:var(--text-muted);cursor:pointer;">
+                📍 ${_vitDLiveUvCache.cityName ? _vitDLiveUvCache.cityName : (_vitDLiveUvCache.isGps ? "Zona activa" : "Detectar mi UV")}
+              </button>
+              <button type="button" id="btnVitDToggleCityInp" title="Elegir mi ciudad manualmente" style="background:var(--bg-elev);border:1px solid var(--border);border-radius:8px;padding:3px 7px;font-size:0.71rem;font-weight:700;color:var(--accent);cursor:pointer;">
+                ✏️ Ciudad
               </button>
             </div>
           </div>
+
+          ${_vitDShowCityBox ? `
+            <div style="display:flex;gap:6px;align-items:center;background:var(--bg-card);border:1px solid var(--accent);border-radius:11px;padding:7px 9px;">
+              <input type="text" id="inpVitDCityManual" placeholder="Escribí tu ciudad (ej: Buenos Aires, Córdoba, Rosario...)" style="flex:1;padding:6px 9px;font-size:0.78rem;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);" />
+              <button type="button" id="btnVitDSaveCityManual" class="btn btn-primary btn-sm" style="padding:6px 10px;font-size:0.75rem;">Buscar UV</button>
+            </div>
+          ` : ""}
 
           ${lowUvbNow ? `
             <div style="background:var(--info-soft);border:1px solid rgba(56,189,248,0.3);border-radius:11px;padding:8px 11px;font-size:0.75rem;color:var(--text);line-height:1.38;">
@@ -7403,11 +7513,14 @@
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
               <span style="font-size:0.74rem;font-weight:700;color:var(--text-muted);">Exposición:</span>
               <div style="display:inline-flex;gap:5px;flex-wrap:wrap;">
-                <button type="button" data-vitd-exp="arms" style="padding:4px 9px;border-radius:999px;font-size:0.73rem;font-weight:800;cursor:pointer;border:1px solid ${exposureMode === 'arms' ? 'var(--accent)' : 'var(--border)'};background:${exposureMode === 'arms' ? 'var(--accent-soft)' : 'var(--bg-card)'};color:${exposureMode === 'arms' ? 'var(--accent)' : 'var(--text-muted)'};">
+                <button type="button" data-vitd-exp="arms" style="padding:4px 9px;border-radius:999px;font-size:0.72rem;font-weight:800;cursor:pointer;border:1px solid ${exposureMode === 'arms' ? 'var(--accent)' : 'var(--border)'};background:${exposureMode === 'arms' ? 'var(--accent-soft)' : 'var(--bg-card)'};color:${exposureMode === 'arms' ? 'var(--accent)' : 'var(--text-muted)'};">
                   👕 Cara y brazos
                 </button>
-                <button type="button" data-vitd-exp="shorts" style="padding:4px 9px;border-radius:999px;font-size:0.73rem;font-weight:800;cursor:pointer;border:1px solid ${exposureMode === 'shorts' ? 'var(--accent)' : 'var(--border)'};background:${exposureMode === 'shorts' ? 'var(--accent-soft)' : 'var(--bg-card)'};color:${exposureMode === 'shorts' ? 'var(--accent)' : 'var(--text-muted)'};">
+                <button type="button" data-vitd-exp="shorts" style="padding:4px 9px;border-radius:999px;font-size:0.72rem;font-weight:800;cursor:pointer;border:1px solid ${exposureMode === 'shorts' ? 'var(--accent)' : 'var(--border)'};background:${exposureMode === 'shorts' ? 'var(--accent-soft)' : 'var(--bg-card)'};color:${exposureMode === 'shorts' ? 'var(--accent)' : 'var(--text-muted)'};">
                   🩳 Brazos y piernas
+                </button>
+                <button type="button" data-vitd-exp="swimwear" style="padding:4px 9px;border-radius:999px;font-size:0.72rem;font-weight:800;cursor:pointer;border:1px solid ${exposureMode === 'swimwear' ? 'var(--accent)' : 'var(--border)'};background:${exposureMode === 'swimwear' ? 'var(--accent-soft)' : 'var(--bg-card)'};color:${exposureMode === 'swimwear' ? 'var(--accent)' : 'var(--text-muted)'};">
+                  🩱 Traje de baño / Cuerpo entero
                 </button>
               </div>
             </div>
@@ -7520,22 +7633,40 @@
         appData.profile.vitDMinOffset = (Number(appData.profile.vitDMinOffset) || 0) + 1;
         renderVitDTracker();
       });
-      document.getElementById("btnVitDRefreshGps")?.addEventListener("click", () => {
-        if (!navigator.geolocation) {
-          alert("Tu navegador no soporta geolocalización.");
-          return;
-        }
+      document.getElementById("btnVitDRefreshGps")?.addEventListener("click", async () => {
         const gBtn = document.getElementById("btnVitDRefreshGps");
-        if (gBtn) gBtn.textContent = "⏳...";
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            fetchLiveSolarUvIfNeeded({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-          },
-          () => {
-            if (gBtn) gBtn.textContent = "📍 Sin permiso";
-          },
-          { timeout: 8000 }
-        );
+        if (gBtn) gBtn.textContent = "⏳ Buscando UV...";
+        const ok = await resolveSolarLocationSmart();
+        if (!ok) {
+          _vitDShowCityBox = true;
+          renderVitDTracker();
+          document.getElementById("inpVitDCityManual")?.focus();
+        }
+      });
+      document.getElementById("btnVitDToggleCityInp")?.addEventListener("click", () => {
+        _vitDShowCityBox = !_vitDShowCityBox;
+        renderVitDTracker();
+        if (_vitDShowCityBox) {
+          setTimeout(() => document.getElementById("inpVitDCityManual")?.focus(), 40);
+        }
+      });
+      const runManualCitySearch = async () => {
+        const inp = document.getElementById("inpVitDCityManual");
+        const b = document.getElementById("btnVitDSaveCityManual");
+        if (!inp || !inp.value.trim()) return;
+        if (b) b.textContent = "⏳...";
+        const ok = await searchSolarCityByName(inp.value);
+        if (!ok && b) {
+          b.textContent = "No hallada";
+          setTimeout(() => { if (b) b.textContent = "Buscar UV"; }, 1800);
+        }
+      };
+      document.getElementById("btnVitDSaveCityManual")?.addEventListener("click", runManualCitySearch);
+      document.getElementById("inpVitDCityManual")?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          runManualCitySearch();
+        }
       });
       document.getElementById("btnStartVitDTimer")?.addEventListener("click", () => {
         startVitDTimerCountdown(targetMins, currentUv, appData.profile.vitDHalfAlert !== false);
