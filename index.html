@@ -598,8 +598,8 @@
     }
 
     .tab-btn {
-      flex: 1 1 150px;
-      padding: 10px 14px;
+      flex: 1 1 115px;
+      padding: 10px 12px;
       border-radius: 12px;
       border: 1px solid transparent;
       background: transparent;
@@ -623,16 +623,16 @@
     @media (max-width: 768px) {
       .nav-tabs {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 4px;
         padding: 4px;
       }
       .nav-tabs .tab-btn {
         min-width: 0;
         width: 100%;
-        padding: 8px 5px;
-        font-size: 0.72rem;
-        line-height: 1.22;
+        padding: 8px 4px;
+        font-size: 0.7rem;
+        line-height: 1.2;
         flex-direction: column;
         gap: 4px;
         overflow: hidden;
@@ -2619,7 +2619,7 @@
     <!-- NAVIGATION TABS -->
     <nav class="nav-tabs" aria-label="Secciones principales">
       <button type="button" class="tab-btn active" data-tab="tab-diary">
-        🍽️ Diario & Macros
+        <span>🍽️ Diario</span>
       </button>
       <button type="button" class="tab-btn" data-tab="tab-fasting" id="navTabFasting">
         <span>⏳ Ayuno</span>
@@ -2632,7 +2632,10 @@
         </span>
       </button>
       <button type="button" class="tab-btn" data-tab="tab-progress">
-        📈 Progreso & Físico
+        <span>📈 Progreso</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-report" id="navTabReport">
+        <span>📋 Reporte</span>
       </button>
     </nav>
 
@@ -2658,9 +2661,6 @@
               <button type="button" class="btn btn-sm" id="btnToday">Hoy</button>
               <button type="button" class="btn btn-sm btn-primary" id="btnOpenSuggestedMenuDiary" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" title="Ver menú semanal personalizado según tus gustos y objetivo">
                 🥗 Menú IA
-              </button>
-              <button type="button" class="btn btn-sm" id="btnJumpWeeklyReportDiary" onclick="window.openWeeklyExecutiveReport && window.openWeeklyExecutiveReport()" style="border-color:rgba(14,159,119,0.45);color:var(--accent);font-weight:800;" title="Abrir tu Reporte Ejecutivo Semanal con valoración, hallazgos y plan para la semana">
-                📋 Reporte Semanal
               </button>
               <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnOpenReto21Diary" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;" title="Programa interactivo Reto 21 Días (Comidas + Entrenamiento Gym/Casa)">
                 🔥 Reto 21 Días
@@ -3007,11 +3007,6 @@
     <!-- TAB 4: SEGUIMIENTO DE PESO Y GRÁFICOS -->
     <section class="tab-panel" id="tab-progress">
       <div class="dashboard-grid">
-        <!-- CARD 0: REPORTE EJECUTIVO SEMANAL INTELIGENTE DE MICHU -->
-        <div class="card" id="weeklyExecutiveReportCard" style="grid-column: 1 / -1; border: 1.5px solid rgba(14, 159, 119, 0.38);">
-          <div id="weeklyExecutiveReportContainer"></div>
-        </div>
-
         <div class="card">
           <div class="card-header">
             <div class="card-title">📉 Curva de Peso y Tendencia (Promedio 7d)</div>
@@ -3180,6 +3175,15 @@
               <div id="measurementsHistoryList" style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;"></div>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4B: REPORTE EJECUTIVO SEMANAL -->
+    <section class="tab-panel" id="tab-report">
+      <div class="dashboard-grid">
+        <div class="card" id="weeklyExecutiveReportCard" style="grid-column: 1 / -1; border: 1.5px solid rgba(14, 159, 119, 0.38);">
+          <div id="weeklyExecutiveReportContainer"></div>
         </div>
       </div>
     </section>
@@ -10180,11 +10184,9 @@
     }
 
     let _weeklyExecOffset = 0;
-    let _weeklyExecCollapsed = false;
 
     window.openWeeklyExecutiveReport = function() {
-      _weeklyExecCollapsed = false;
-      if (typeof switchTab === "function") switchTab("tab-progress");
+      if (typeof switchTab === "function") switchTab("tab-report");
       renderWeeklyExecutiveReport();
       setTimeout(() => {
         const card = document.getElementById("weeklyExecutiveReportCard");
@@ -10729,13 +10731,9 @@
             <button type="button" class="btn btn-sm" id="btnWkExecShare" title="Copiar o compartir resumen semanal" style="padding:4px 9px;font-size:0.73rem;font-weight:800;">
               📤 Compartir
             </button>
-            <button type="button" class="btn btn-sm" id="btnWkExecToggle" title="Mostrar/ocultar reporte" style="padding:4px 8px;font-size:0.74rem;">
-              ${_weeklyExecCollapsed ? "🔽 Expandir" : "🔼"}
-            </button>
           </div>
         </div>
 
-        ${_weeklyExecCollapsed ? "" : `
           <div style="margin-top:14px;display:flex;flex-direction:column;gap:14px;">
             <!-- BLOQUE 1: NOTA GLOBAL + VEREDICTO DE MICHU + 4 KPIs -->
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:13px 14px;display:flex;flex-direction:column;gap:12px;">
@@ -10874,7 +10872,6 @@
               </div>
             ` : ""}
           </div>
-        `}
       `;
 
       document.getElementById("btnWkExecPrev")?.addEventListener("click", () => {
@@ -10889,16 +10886,10 @@
       });
       document.getElementById("btnWkExecLastClosed")?.addEventListener("click", () => {
         _weeklyExecOffset = -1;
-        _weeklyExecCollapsed = false;
         renderWeeklyExecutiveReport();
       });
       document.getElementById("btnWkExecCurrent")?.addEventListener("click", () => {
         _weeklyExecOffset = 0;
-        _weeklyExecCollapsed = false;
-        renderWeeklyExecutiveReport();
-      });
-      document.getElementById("btnWkExecToggle")?.addEventListener("click", () => {
-        _weeklyExecCollapsed = !_weeklyExecCollapsed;
         renderWeeklyExecutiveReport();
       });
       document.getElementById("btnWkExecShare")?.addEventListener("click", async () => {
@@ -11876,6 +11867,10 @@
             ? "🩺 Pacientes"
             : "👑 Admin";
         }
+      }
+
+      if (tabId === "tab-report" && typeof renderWeeklyExecutiveReport === "function") {
+        renderWeeklyExecutiveReport();
       }
 
       if (isAdminMode) {
