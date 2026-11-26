@@ -2914,6 +2914,16 @@
                 <option value="1.9">Muy Activo (Doble turno o trabajo físico pesado - 1.9x)</option>
               </select>
             </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="profMetabolicMode">🧬 Velocidad Metabólica / TDEE Adaptativo (vs. media poblacional)</label>
+              <select id="profMetabolicMode">
+                <option value="standard">⚖️ Estándar / Promedio poblacional (0% ajuste sobre fórmula)</option>
+                <option value="thrifty_mild">🐢 Metabolismo ahorrador leve (-9% TDEE • Subo más fácil que otros)</option>
+                <option value="thrifty_strong">🧬 Metabolismo muy ahorrador (-15% TDEE • Gano peso rápido comiendo igual que otros)</option>
+                <option value="adaptive">🧠 TDEE Adaptativo Real con IA (Calcula tu gasto real cruzando comidas + curva de peso)</option>
+                <option value="fast">🔥 Metabolismo rápido / Alto NEAT (+9% TDEE • Gasto más que el promedio)</option>
+              </select>
+            </div>
             <div class="field">
               <label for="profDeficitType">Estrategia Calórica (Déficit / Superávit)</label>
               <select id="profDeficitType">
@@ -4715,6 +4725,7 @@
           goalWeight: gwVal,
           height: Number(height) || 172,
           activity: Number(extra.activity) || 1.375,
+          metabolicMode: extra.metabolicMode || "standard",
           deficitType: extra.deficitType || "recommended",
           customDeficit: Number(extra.customDeficit) || 500,
           macroPreset: extra.macroPreset || "high_protein",
@@ -5739,16 +5750,115 @@
       return null;
     }
 
+    function computeAdaptiveTdeeReal(prof, formulaTdee, bmr) {
+      const daysMap = (appData && appData.days) || {};
+      const wLogsRaw = Array.isArray(appData && appData.weightLog) ? [...appData.weightLog] : [];
+      const nowMs = Date.now();
+      const maxWindowDays = 21;
+
+      // 1. Filtrar pesajes válidos ordenados por fecha y calcular tendencia suavizada EMA (alfa=0.35)
+      const validWeights = wLogsRaw
+        .filter(x => x && x.date && Number(x.weight) > 30)
+        .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+      let ema = null;
+      const trendPoints = validWeights.map(pt => {
+        const wNum = Number(pt.weight);
+        ema = ema === null ? wNum : (0.35 * wNum + 0.65 * ema);
+        return { date: pt.date, ms: Date.parse(pt.date + "T12:00:00"), rawW: wNum, trendW: ema };
+      }).filter(pt => !isNaN(pt.ms) && (nowMs - pt.ms) <= (maxWindowDays + 7) * 86400000);
+
+      // 2. Filtrar días de comida suficientemente completos (>= 750 kcal) en los últimos 21 días
+      const validFoodDays = [];
+      for (const [dKey, dRec] of Object.entries(daysMap)) {
+        const dMs = Date.parse(dKey + "T12:00:00");
+        if (isNaN(dMs) || (nowMs - dMs) > maxWindowDays * 86400000 || dMs > nowMs + 86400000) continue;
+        const meals = Array.isArray(dRec && dRec.meals) ? dRec.meals : [];
+        let kcalSum = 0;
+        for (const m of meals) {
+          if (m && m.planned && !m.consumed) continue;
+          kcalSum += Number(m.kcal) || 0;
+        }
+        if (kcalSum >= 750) {
+          const exKcal = Number(dRec.exerciseKcal) || 0;
+          validFoodDays.push({ date: dKey, ms: dMs, foodKcal: kcalSum, exKcal, netKcal: kcalSum - exKcal });
+        }
+      }
+
+      const foodDaysCount = validFoodDays.length;
+      const firstW = trendPoints.length >= 2 ? trendPoints[0] : null;
+      const lastW = trendPoints.length >= 2 ? trendPoints[trendPoints.length - 1] : null;
+      const weightSpanDays = (firstW && lastW) ? Math.max(0, Math.round((lastW.ms - firstW.ms) / 86400000)) : 0;
+
+      if (foodDaysCount < 5 || trendPoints.length < 2 || weightSpanDays < 5) {
+        return {
+          ready: false,
+          foodDaysCount,
+          needFoodDays: 5,
+          weightLogsCount: trendPoints.length,
+          weightSpanDays,
+          needSpanDays: 5,
+          formulaTdee
+        };
+      }
+
+      const avgFoodKcal = Math.round(validFoodDays.reduce((a, x) => a + x.foodKcal, 0) / foodDaysCount);
+      const avgNetKcal = validFoodDays.reduce((a, x) => a + x.netKcal, 0) / foodDaysCount;
+      const deltaTrendKg = lastW.trendW - firstW.trendW;
+      const deltaKgPerDay = deltaTrendKg / weightSpanDays;
+      const weeklyTrendKg = Math.round(deltaKgPerDay * 7 * 100) / 100;
+
+      // Balance energético real: TDEE_basal_actividad = Ingesta_Neta - (Cambio_Peso_kg_dia * 7700)
+      const rawEmpiricalTdee = Math.round(avgNetKcal - (deltaKgPerDay * 7700));
+      const confidence = Math.min(0.85, Math.max(0.45, foodDaysCount / 14));
+      const minPhysio = Math.round(bmr * 0.78);
+      const maxPhysio = Math.round(formulaTdee * 1.35);
+      const clampedEmpirical = Math.max(minPhysio, Math.min(maxPhysio, rawEmpiricalTdee));
+      const blendedTdee = Math.round(clampedEmpirical * confidence + formulaTdee * (1 - confidence));
+      const diffVsFormula = blendedTdee - formulaTdee;
+      const diffPct = Math.round((diffVsFormula / Math.max(1, formulaTdee)) * 100);
+
+      return {
+        ready: true,
+        foodDaysCount,
+        weightLogsCount: trendPoints.length,
+        weightSpanDays,
+        avgFoodKcal,
+        weeklyTrendKg,
+        rawEmpiricalTdee: clampedEmpirical,
+        blendedTdee,
+        formulaTdee,
+        diffVsFormula,
+        diffPct,
+        confidencePct: Math.round(confidence * 100)
+      };
+    }
+
     function computeNutritionTargets(prof = appData.profile) {
       const w = Number(prof.weight) || 75;
       const h = Number(prof.height) || 170;
       const age = Number(prof.age) || 30;
       const act = Number(prof.activity) || 1.375;
+      const metMode = prof.metabolicMode || "standard";
 
-      // Ecuación Mifflin-St Jeor
+      // Ecuación Mifflin-St Jeor (media poblacional)
       const sexOffset = prof.sex === "female" ? -161 : 5;
       const bmr = Math.round(10 * w + 6.25 * h - 5 * age + sexOffset);
-      const tdee = Math.round(bmr * act);
+      const formulaTdee = Math.round(bmr * act);
+      const adaptiveInfo = computeAdaptiveTdeeReal(prof, formulaTdee, bmr);
+
+      let tdee = formulaTdee;
+      if (metMode === "thrifty_mild") {
+        tdee = Math.round(formulaTdee * 0.91);
+      } else if (metMode === "thrifty_strong") {
+        tdee = Math.round(formulaTdee * 0.85);
+      } else if (metMode === "fast") {
+        tdee = Math.round(formulaTdee * 1.09);
+      } else if (metMode === "adaptive") {
+        tdee = adaptiveInfo.ready ? adaptiveInfo.blendedTdee : Math.round(formulaTdee * 0.92);
+      }
+      const metabolicDeltaKcal = tdee - formulaTdee;
+      const metabolicDeltaPct = Math.round((metabolicDeltaKcal / Math.max(1, formulaTdee)) * 100);
 
       let deficit = 500;
       if (prof.deficitType === "light") deficit = 300;
@@ -5761,8 +5871,11 @@
       else if (prof.deficitType === "custom_surplus") deficit = -Math.abs(Number(prof.customDeficit) || 350);
       else if (prof.deficitType === "custom") deficit = Number(prof.customDeficit) || 500;
 
-      // Límite mínimo seguro de calorías
-      const minSafe = prof.sex === "female" ? 1200 : 1450;
+      // Límite mínimo seguro de calorías (adaptado con seguridad si tiene fenotipo ahorrador)
+      const isThriftyActive = tdee < formulaTdee - 80;
+      const minSafe = prof.sex === "female"
+        ? (isThriftyActive ? 1150 : 1200)
+        : (isThriftyActive ? 1350 : 1450);
       const targetKcal = Math.max(minSafe, tdee - deficit);
       const effectiveDeficit = tdee - targetKcal;
       const surplus = effectiveDeficit < 0 ? Math.abs(effectiveDeficit) : 0;
@@ -5831,6 +5944,11 @@
       return {
         bmr,
         tdee,
+        formulaTdee,
+        metabolicMode: metMode,
+        metabolicDeltaKcal,
+        metabolicDeltaPct,
+        adaptiveInfo,
         deficit: effectiveDeficit,
         surplus,
         isSurplus,
@@ -8297,6 +8415,8 @@
       document.getElementById("profWeight").value = p.weight || 82.5;
       document.getElementById("profGoalWeight").value = p.goalWeight || 75.0;
       document.getElementById("profActivity").value = String(p.activity || 1.375);
+      const metSelEl = document.getElementById("profMetabolicMode");
+      if (metSelEl) metSelEl.value = p.metabolicMode || "standard";
       document.getElementById("profDeficitType").value = p.deficitType || "recommended";
       document.getElementById("profCustomDeficit").value = Math.abs(Number(p.customDeficit) || 500);
       document.getElementById("profMacroPreset").value = p.macroPreset || "high_protein";
@@ -8326,9 +8446,13 @@
             <small style="color:var(--text-muted);font-size:0.73rem;display:block;">Lo que gasta tu cuerpo en reposo</small>
           </div>
           <div class="stat-box">
-            <span class="label">⚡ Mantenimiento (TDEE)</span>
+            <span class="label">⚡ Mantenimiento Activo (TDEE)</span>
             <span class="val">${t.tdee.toLocaleString("es-AR")} kcal</span>
-            <small style="color:var(--text-muted);font-size:0.73rem;display:block;">Con tu actividad física actual</small>
+            <small style="color:var(--text-muted);font-size:0.73rem;display:block;">
+              ${t.metabolicDeltaKcal !== 0
+                ? `Media fórmula: ${t.formulaTdee.toLocaleString("es-AR")} kcal (${t.metabolicDeltaKcal > 0 ? "+" : ""}${t.metabolicDeltaPct}%)`
+                : "Según tu actividad física actual"}
+            </small>
           </div>
           <div class="stat-box" style="border-color:var(--accent);background:var(--accent-soft);">
             <span class="label" style="color:var(--accent);">${t.isSurplus ? "💪 Tu Meta en Superávit" : (t.isMaintain ? "⚖️ Tu Meta Mantenimiento" : "🎯 Tu Meta Diaria en Déficit")}</span>
@@ -8340,6 +8464,35 @@
             <span class="val">${t.isSurplus ? "+" : ""}~${t.weeklyLossKg} kg / semana</span>
             <small style="color:var(--text-muted);font-size:0.73rem;display:block;">${t.isSurplus ? `+${(t.surplus * 7).toLocaleString("es-AR")} kcal por semana` : `-${(t.deficit * 7).toLocaleString("es-AR")} kcal por semana`}</small>
           </div>
+        </div>
+
+        <div style="background:var(--bg-card);border:1.5px solid ${t.adaptiveInfo && t.adaptiveInfo.ready ? 'var(--accent)' : 'var(--border)'};border-radius:12px;padding:13px 14px;margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+            <strong style="font-size:0.88rem;color:var(--text);">🧬 Tu Metabolismo Real vs. Media Poblacional</strong>
+            <span style="font-size:0.71rem;font-weight:800;padding:3px 9px;border-radius:999px;background:${t.metabolicDeltaKcal < 0 ? 'rgba(245,158,11,0.16)' : 'var(--accent-soft)'};color:${t.metabolicDeltaKcal < 0 ? 'var(--warn)' : 'var(--accent)'};">
+              ${t.metabolicMode === "adaptive"
+                ? (t.adaptiveInfo.ready ? `🧠 IA Adaptativa Activa (${t.adaptiveInfo.confidencePct}% conf.)` : "🧠 IA Adaptativa (Calibrando -8% provisorio)")
+                : (t.metabolicDeltaKcal < 0 ? `🐢 Modo Ahorrador (${t.metabolicDeltaPct}% • ${t.metabolicDeltaKcal} kcal)` : (t.metabolicDeltaKcal > 0 ? `🔥 Modo Rápido (+${t.metabolicDeltaPct}%)` : "⚖️ Promedio Estándar"))}
+            </span>
+          </div>
+          ${t.adaptiveInfo && t.adaptiveInfo.ready ? `
+            <div style="font-size:0.8rem;color:var(--text-muted);line-height:1.45;">
+              Analizando tus <strong>${t.adaptiveInfo.foodDaysCount} días completos</strong> (promedio <strong>${t.adaptiveInfo.avgFoodKcal} kcal/día</strong>) y tu tendencia de peso en <strong>${t.adaptiveInfo.weightSpanDays} días</strong> (${t.adaptiveInfo.weeklyTrendKg > 0 ? "+" : ""}${t.adaptiveInfo.weeklyTrendKg} kg/sem), tu mantenimiento biológico real es <strong>${t.adaptiveInfo.blendedTdee.toLocaleString("es-AR")} kcal/día</strong>
+              (${t.adaptiveInfo.diffVsFormula >= 0 ? "+" : ""}${t.adaptiveInfo.diffVsFormula} kcal / ${t.adaptiveInfo.diffPct >= 0 ? "+" : ""}${t.adaptiveInfo.diffPct}% frente a las ${t.formulaTdee.toLocaleString("es-AR")} kcal de la fórmula estándar).
+            </div>
+            ${t.metabolicMode !== "adaptive" ? `
+              <button type="button" id="btnSwitchToAdaptiveTdeeNow" class="btn btn-sm btn-primary" style="margin-top:8px;">
+                ⚡ Usar mi TDEE Adaptativo Real (${t.adaptiveInfo.blendedTdee} kcal/día)
+              </button>
+            ` : ""}
+          ` : `
+            <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.42;">
+              Si ganás peso más rápido comiendo lo mismo que otros, seleccioná arriba <strong>🐢 Ahorrador leve (-9%)</strong> o <strong>🧬 Muy ahorrador (-15%)</strong> hoy mismo.
+              <div style="margin-top:6px;padding:7px 9px;border-radius:9px;background:var(--bg-elev);border:1px solid var(--border);font-size:0.74rem;">
+                🧠 <strong>Auto-calibración biológica con IA:</strong> registrá <strong>${Math.min(5, t.adaptiveInfo ? t.adaptiveInfo.foodDaysCount : 0)}/5 días completos</strong> de comidas y al menos <strong>2 pesajes separados por 5+ días</strong> (actual: ${t.adaptiveInfo ? t.adaptiveInfo.weightSpanDays : 0}/5 días) para descubrir tu gasto exacto sin depender de promedios.
+              </div>
+            </div>
+          `}
         </div>
 
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
@@ -8380,6 +8533,14 @@
           </p>
         </div>
       `;
+
+      document.getElementById("btnSwitchToAdaptiveTdeeNow")?.addEventListener("click", () => {
+        appData.profile.metabolicMode = "adaptive";
+        const mSel = document.getElementById("profMetabolicMode");
+        if (mSel) mSel.value = "adaptive";
+        saveToServer();
+        renderAll();
+      });
     }
 
     // =========================================================================
@@ -10536,6 +10697,7 @@
       appData.profile.weight = Number(document.getElementById("profWeight").value) || 80;
       appData.profile.goalWeight = Number(document.getElementById("profGoalWeight").value) || 75;
       appData.profile.activity = Number(document.getElementById("profActivity").value) || 1.375;
+      appData.profile.metabolicMode = document.getElementById("profMetabolicMode")?.value || "standard";
       appData.profile.deficitType = document.getElementById("profDeficitType").value;
       appData.profile.customDeficit = Number(document.getElementById("profCustomDeficit").value) || 500;
       appData.profile.macroPreset = document.getElementById("profMacroPreset").value;
@@ -10558,6 +10720,12 @@
     document.getElementById("profTheme")?.addEventListener("change", (e) => {
       const nextTheme = e.target.value === "dark" ? "dark" : "light";
       applyAppTheme(nextTheme, { persist: true });
+    });
+
+    document.getElementById("profMetabolicMode")?.addEventListener("change", (e) => {
+      appData.profile.metabolicMode = e.target.value || "standard";
+      saveToServer();
+      renderAll();
     });
 
     document.getElementById("profMichuPopup")?.addEventListener("change", (e) => {
@@ -12356,6 +12524,7 @@
         sex: "male",
         age: 35,
         activity: 1.375,
+        metabolicMode: "standard",
         height: 173,
         weightInt: 84,
         weightDec: 5,
@@ -12581,8 +12750,11 @@
 
         const sexOffset = sex === "female" ? -161 : 5;
         const bmr = Math.round(10 * curW + 6.25 * hCm - 5 * age + sexOffset);
-        const tdee = Math.round(bmr * act);
-        const minSafe = sex === "female" ? 1250 : 1500;
+        const rawFormulaTdee = Math.round(bmr * act);
+        const metM = bpState.metabolicMode || "standard";
+        const metMult = metM === "thrifty_mild" ? 0.91 : (metM === "thrifty_strong" ? 0.85 : (metM === "fast" ? 1.09 : 1.0));
+        const tdee = Math.round(rawFormulaTdee * metMult);
+        const minSafe = sex === "female" ? (metMult < 1 ? 1150 : 1250) : (metMult < 1 ? 1350 : 1500);
 
         const r = Number(bpState.weeklyRateKg) || (isGain ? 0.3 : 0.5);
         const rFmt = r.toFixed(2).replace(".00", ",0").replace(/(\.\d)0$/, "$1").replace(".", ",");
@@ -13489,14 +13661,20 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           return;
         }
 
-        // 18. ACTIVITY LEVEL WITH SIGNAL BARS (01:31)
+        // 18. ACTIVITY LEVEL WITH SIGNAL BARS + VELOCIDAD METABÓLICA PERSONAL (01:31)
         if (scr.id === "activity_level") {
-          setHeaderBubble("¿Cuál es tu nivel de actividad?");
+          setHeaderBubble("¿Cuál es tu nivel de actividad y cómo sentís tu metabolismo?");
           const aOpts = [
             { val: 1.2, bars: 1, title: "No activo(a)", sub: "Me quedo sin aliento rápidamente al subir escaleras" },
             { val: 1.375, bars: 2, title: "Ligeramente activo(a)", sub: "A veces hago entrenamientos cortos para mantenerme en movimiento" },
             { val: 1.55, bars: 3, title: "Moderadamente activo(a)", sub: "Mantengo una rutina de ejercicio regular de 1 a 2 veces por semana" },
             { val: 1.725, bars: 4, title: "Muy activo(a)", sub: "El fitness es una parte fundamental de mi estilo de vida" }
+          ];
+          const metOpts = [
+            { val: "standard", label: "⚖️ Promedio" },
+            { val: "thrifty_mild", label: "🐢 Subo fácil (-9%)" },
+            { val: "thrifty_strong", label: "🧬 Muy ahorrador (-15%)" },
+            { val: "fast", label: "🔥 Rápido (+9%)" }
           ];
           const barsHtml = (n) => `
             <span class="bp-sig-bars">
@@ -13518,11 +13696,29 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
                 </div>
               `).join("")}
             </div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:10px 12px;margin-top:8px;">
+              <div style="font-size:0.76rem;font-weight:800;color:var(--text);margin-bottom:6px;">
+                🧬 ¿Ganás peso más rápido comiendo lo mismo que otros?
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
+                ${metOpts.map(m => `
+                  <button type="button" class="bp-allergy-pill ${(bpState.metabolicMode || 'standard') === m.val ? 'selected' : ''}" data-metmode="${m.val}" style="padding:7px 8px;font-size:0.74rem;justify-content:center;">
+                    ${m.label}
+                  </button>
+                `).join("")}
+              </div>
+            </div>
           `;
           stage.querySelectorAll("[data-act]").forEach(c => {
             c.addEventListener("click", () => {
               bpState.activity = Number(c.getAttribute("data-act"));
               stage.querySelectorAll("[data-act]").forEach(x => x.classList.toggle("selected", x === c));
+            });
+          });
+          stage.querySelectorAll("[data-metmode]").forEach(b => {
+            b.addEventListener("click", () => {
+              bpState.metabolicMode = b.getAttribute("data-metmode") || "standard";
+              stage.querySelectorAll("[data-metmode]").forEach(x => x.classList.toggle("selected", x === b));
             });
           });
           return;
@@ -14103,6 +14299,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             weight: curW,
             goalWeight: goalW,
             activity: ev.act,
+            metabolicMode: bpState.metabolicMode || "standard",
             deficitType: defTypeVal,
             customDeficit: customKcalAdj,
             macroPreset
@@ -14272,6 +14469,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             weight: curW,
             goalWeight: goalW,
             activity: ev.act,
+            metabolicMode: bpState.metabolicMode || "standard",
             deficitType: defTypeVal,
             customDeficit: customKcalAdj,
             macroPreset,
