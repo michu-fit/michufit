@@ -3460,6 +3460,20 @@
         </div>
       </div>
 
+      <!-- Panel de Estadísticas de Bajas y Motivos de Salida (Solo Super-Admin) -->
+      <div class="card" id="adminChurnAnalyticsCard" style="display:none;margin-bottom:18px;">
+        <div class="card-header" style="margin-bottom:10px;align-items:center;">
+          <div>
+            <div class="card-title">📊 Estadísticas de Bajas y Motivos de Salida</div>
+            <small style="color:var(--text-muted);font-size:0.76rem;">
+              Métricas anónimas estandarizadas según motivo de cancelación (App + Web)
+            </small>
+          </div>
+          <button type="button" class="btn btn-sm" id="btnExportChurnCsv">📥 Exportar CSV</button>
+        </div>
+        <div id="adminChurnAnalyticsBody" style="display:flex;flex-direction:column;gap:12px;"></div>
+      </div>
+
       <!-- Listado de Usuarios / Pacientes y su Avance en Tiempo Real -->
       <div class="card">
         <div class="card-header">
@@ -3553,7 +3567,7 @@
             <button type="button" onclick="window.openLegalModal && window.openLegalModal('privacy')" style="background:none;border:none;padding:0;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline;font-size:0.76rem;">Política de Privacidad</button>
           </div>
           <button type="button" id="btnDeleteMyAccountInProfile" style="background:none;border:none;padding:0;color:var(--danger);font-weight:700;cursor:pointer;text-decoration:underline;font-size:0.76rem;">
-            🗑️ Eliminar mi cuenta y datos
+            🚪 Dar de baja mi cuenta
           </button>
         </div>
       </div>
@@ -4322,6 +4336,44 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL DE BAJA DE CUENTA CON ENCUESTA SIMPLE DE 1 TOQUE (CHURN ANALYTICS + RETENCIÓN) -->
+  <div class="custom-modal-overlay" id="modalCancelAccountFlow" role="dialog" aria-modal="true" style="z-index:100030;">
+    <div class="modal-inner" style="max-width:480px;">
+      <div class="card-header" style="align-items:center;margin-bottom:8px;">
+        <div>
+          <div class="card-title">🐾 Dar de baja mi cuenta</div>
+          <small style="color:var(--text-muted);font-size:0.76rem;">
+            Contanos con 1 toque por qué te vas para ayudarnos a mejorar
+          </small>
+        </div>
+        <button type="button" class="btn btn-sm" data-close-modal="modalCancelAccountFlow">✕</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div id="cancelSurveyOptionsList" style="display:flex;flex-direction:column;gap:6px;"></div>
+
+        <div id="cancelRetentionTipBox" style="display:none;background:var(--accent-soft);border:1px solid rgba(14,159,119,0.35);border-radius:12px;padding:10px 12px;font-size:0.79rem;color:var(--text);line-height:1.4;"></div>
+
+        <div class="field" style="margin-top:2px;">
+          <input type="text" id="cancelOptionalCommentInput" maxlength="200" placeholder="Comentario opcional (ej: qué te gustaría que sumemos)" style="font-size:0.83rem;padding:9px 11px;" />
+        </div>
+
+        <div style="background:var(--danger-soft);border:1px solid rgba(220,38,38,0.28);border-radius:11px;padding:9px 11px;font-size:0.75rem;color:var(--text-muted);line-height:1.38;">
+          ⚠️ <strong>Baja permanente:</strong> se borrarán tu perfil, comidas, peso, medidas y ayunos. Tu respuesta al motivo se guarda de forma <strong>100% anónima</strong> con fines estadísticos.
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">
+          <button type="button" class="btn" id="btnCancelFlowPauseOnly" style="flex:1;justify-content:center;font-size:0.81rem;">
+            ⏸️ Solo cerrar sesión
+          </button>
+          <button type="button" class="btn btn-danger" id="btnConfirmFinalAccountDeletion" style="flex:1.25;justify-content:center;font-size:0.82rem;font-weight:800;">
+            🗑️ Confirmar baja definitiva
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>
     // =========================================================================
     // MOTOR CLOUD SERVERLESS CON SUPABASE (SINCRONIZACIÓN EN TIEMPO REAL 24/7)
@@ -4430,8 +4482,12 @@
           window._pendingCloudLearnedFoods = sysFoodRow.user_doc.learnedFoods;
         }
       }
+      const sysChurnRow = (rows || []).find(r => r.id === "sys-churn-stats");
+      if (sysChurnRow && sysChurnRow.user_doc && Array.isArray(sysChurnRow.user_doc.events)) {
+        window._cachedCloudChurnEvents = sysChurnRow.user_doc.events;
+      }
       const mapped = (rows || [])
-        .filter(r => r.id !== "sys-food-catalog" && r.status !== "system_catalog" && r.role !== "system")
+        .filter(r => r.id !== "sys-food-catalog" && r.id !== "sys-churn-stats" && r.status !== "system_catalog" && r.role !== "system")
         .map(r => {
           const doc = r.user_doc || {};
           doc.id = r.id || doc.id;
@@ -4544,6 +4600,67 @@
       }
     }
     window.sbSaveLearnedFoodCatalog = sbSaveLearnedFoodCatalog;
+
+    async function sbRecordAnonymousChurnEvent(evData) {
+      try {
+        let existingEvents = Array.isArray(window._cachedCloudChurnEvents) ? [...window._cachedCloudChurnEvents] : [];
+        try {
+          const rGet = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.sys-churn-stats&select=*`, {
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`,
+              "Cache-Control": "no-store"
+            }
+          }, 15000);
+          if (rGet.ok) {
+            const arr = await rGet.json();
+            if (arr && arr[0] && arr[0].user_doc && Array.isArray(arr[0].user_doc.events)) {
+              existingEvents = arr[0].user_doc.events;
+            }
+          }
+        } catch (_) {}
+
+        existingEvents.unshift({
+          id: "ch-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
+          reasonCode: evData.reasonCode || "other",
+          reasonLabel: evData.reasonLabel || "Otro motivo",
+          comment: String(evData.comment || "").trim().slice(0, 200),
+          daysActive: Math.max(0, Number(evData.daysActive) || 0),
+          role: evData.role || "patient",
+          source: evData.source || "app",
+          date: new Date().toISOString().slice(0, 10),
+          ts: Date.now()
+        });
+        const trimmed = existingEvents.slice(0, 1000);
+        window._cachedCloudChurnEvents = trimmed;
+
+        const row = {
+          id: "sys-churn-stats",
+          username: "_sys_churn_stats",
+          email: "churn@michufit.system",
+          name: "Estadísticas Anónimas de Bajas",
+          role: "system",
+          status: "system_catalog",
+          user_doc: {
+            id: "sys-churn-stats",
+            events: trimmed
+          },
+          updated_at: new Date().toISOString()
+        };
+        await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=minimal"
+          },
+          body: JSON.stringify([row])
+        }, 20000);
+      } catch (e) {
+        console.warn("No se pudo guardar estadística de baja:", e);
+      }
+    }
 
     async function sbUpsertUser(u) {
       const row = {
@@ -4980,7 +5097,8 @@
             ok: true,
             actor: sbSanitizeUser(users, actor),
             users: visibleUsers,
-            nutritionists
+            nutritionists,
+            churnEvents: actor.role === "superadmin" ? (window._cachedCloudChurnEvents || []) : []
           });
         }
 
@@ -5166,7 +5284,7 @@
           return sbJsonResponse({ ok: true });
         }
 
-        // 5b. POST /api/auth/delete-account (Baja voluntaria de cuenta y datos — Google Play Compliance)
+        // 5b. POST /api/auth/delete-account (Baja voluntaria de cuenta y datos + encuesta anónima — Google Play Compliance)
         if (method === "POST" && path.endsWith("/api/auth/delete-account")) {
           const actorUid = sbResolveAuthUid(init.headers);
           if (!actorUid) {
@@ -5175,6 +5293,33 @@
           if (actorUid === "u-owner") {
             return sbJsonResponse({ ok: false, error: "La cuenta principal de Super-Admin está protegida contra eliminación accidental." }, 400);
           }
+          let daysActive = 0;
+          let userRole = "patient";
+          try {
+            const uArr = await sbFetchUsersByIds([actorUid]);
+            const uObj = uArr.find(x => x.id === actorUid);
+            if (uObj) {
+              userRole = uObj.role || "patient";
+              const dayKeys = Object.keys((uObj.trackerData && uObj.trackerData.days) || {});
+              daysActive = dayKeys.length;
+              if (!daysActive && uObj.createdAt) {
+                const createdMs = Date.parse(String(uObj.createdAt).replace(" ", "T"));
+                if (!isNaN(createdMs)) daysActive = Math.max(1, Math.round((Date.now() - createdMs) / 86400000));
+              }
+            }
+          } catch (_) {}
+
+          if (body && body.reasonCode) {
+            await sbRecordAnonymousChurnEvent({
+              reasonCode: body.reasonCode,
+              reasonLabel: body.reasonLabel,
+              comment: body.comment,
+              daysActive,
+              role: userRole,
+              source: body.source || "app"
+            });
+          }
+
           await sbDeleteUser(actorUid);
           localStorage.removeItem("michufit_auth_uid");
           return sbJsonResponse({ ok: true });
@@ -11230,6 +11375,9 @@
 
         cachedAdminUsersList = payload.users || [];
         cachedNutritionistsList = payload.nutritionists || [];
+        if (Array.isArray(payload.churnEvents)) {
+          window._cachedCloudChurnEvents = payload.churnEvents;
+        }
         if (payload.actor) {
           currentUserInfo = payload.actor;
         }
@@ -11282,6 +11430,119 @@
       }
       if (codeTxt) {
         codeTxt.textContent = currentUserInfo.inviteCode || "NUTRI-PRO";
+      }
+
+      // Renderizar Estadísticas de Bajas (Churn Analytics) para el Super-Admin
+      const churnCard = document.getElementById("adminChurnAnalyticsCard");
+      const churnBody = document.getElementById("adminChurnAnalyticsBody");
+      const btnExportCsv = document.getElementById("btnExportChurnCsv");
+      if (churnCard && churnBody) {
+        churnCard.style.display = isSuper ? "block" : "none";
+        if (isSuper) {
+          const CHURN_TAXONOMY = [
+            { code: "goal_reached", label: "🎯 Ya alcancé mi meta física / peso", color: "#0e9f77" },
+            { code: "too_time_consuming", label: "⏱️ Lleva mucho tiempo registrar", color: "#f59e0b" },
+            { code: "too_hard", label: "📉 Plan o déficit difícil de sostener", color: "#ef4444" },
+            { code: "taking_break", label: "⏸️ Descanso temporal", color: "#3b82f6" },
+            { code: "missing_feature", label: "🧩 Faltó alguna función o alimento", color: "#8b5cf6" },
+            { code: "competitor_app", label: "🔄 Uso otra app o método", color: "#64748b" },
+            { code: "other", label: "💬 Otro motivo", color: "#94a3b8" }
+          ];
+          const evList = Array.isArray(window._cachedCloudChurnEvents) ? window._cachedCloudChurnEvents : [];
+          const total = evList.length;
+
+          if (btnExportCsv && !btnExportCsv.dataset.bound) {
+            btnExportCsv.dataset.bound = "1";
+            btnExportCsv.addEventListener("click", () => {
+              const currEvs = Array.isArray(window._cachedCloudChurnEvents) ? window._cachedCloudChurnEvents : [];
+              if (!currEvs.length) {
+                alert("Todavía no hay bajas registradas para exportar.");
+                return;
+              }
+              const header = "Fecha,Codigo_Motivo,Motivo,Dias_Activo,Rol,Origen,Comentario\n";
+              const rowsCsv = currEvs.map(x => {
+                const esc = (s) => `"${String(s || "").replace(/"/g, '""')}"`;
+                return [esc(x.date), esc(x.reasonCode), esc(x.reasonLabel), Number(x.daysActive) || 0, esc(x.role), esc(x.source), esc(x.comment)].join(",");
+              }).join("\n");
+              const blob = new Blob(["\uFEFF" + header + rowsCsv], { type: "text/csv;charset=utf-8;" });
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = `michufit_estadisticas_bajas_${new Date().toISOString().slice(0, 10)}.csv`;
+              a.click();
+            });
+          }
+
+          if (total === 0) {
+            churnBody.innerHTML = `
+              <div style="padding:12px 14px;border-radius:12px;background:var(--bg-card);border:1px dashed var(--border);font-size:0.81rem;color:var(--text-muted);text-align:center;">
+                🎉 <strong>0 bajas registradas hasta ahora.</strong> Cuando un usuario dé de baja su cuenta desde la app o la web, acá verás el desglose porcentual por motivo y sus sugerencias anónimas.
+              </div>
+            `;
+          } else {
+            const counts = {};
+            CHURN_TAXONOMY.forEach(t => { counts[t.code] = 0; });
+            let sumDays = 0;
+            evList.forEach(ev => {
+              const k = counts[ev.reasonCode] !== undefined ? ev.reasonCode : "other";
+              counts[k] = (counts[k] || 0) + 1;
+              sumDays += Number(ev.daysActive) || 0;
+            });
+            const avgDays = Math.round((sumDays / total) * 10) / 10;
+            const sortedTax = [...CHURN_TAXONOMY].sort((a, b) => (counts[b.code] || 0) - (counts[a.code] || 0));
+            const topReason = sortedTax[0];
+            const topPct = Math.round(((counts[topReason.code] || 0) / total) * 100);
+            const positivePct = Math.round(((counts.goal_reached || 0) / total) * 100);
+            const withComments = evList.filter(x => x.comment && String(x.comment).trim().length > 0).slice(0, 5);
+
+            churnBody.innerHTML = `
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;">
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:9px 11px;">
+                  <div style="font-size:0.69rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Total Bajas</div>
+                  <div style="font-family:'Outfit',sans-serif;font-size:1.3rem;font-weight:800;color:var(--text);">${total}</div>
+                </div>
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:9px 11px;">
+                  <div style="font-size:0.69rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Motivo #1 (${topPct}%)</div>
+                  <div style="font-size:0.78rem;font-weight:800;color:var(--text);margin-top:2px;line-height:1.25;">${topReason.label}</div>
+                </div>
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:9px 11px;">
+                  <div style="font-size:0.69rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Uso Promedio / Éxito</div>
+                  <div style="font-family:'Outfit',sans-serif;font-size:1.02rem;font-weight:800;color:var(--accent);margin-top:2px;">${avgDays} días • ${positivePct}% meta</div>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:7px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:11px 13px;">
+                ${sortedTax.map(t => {
+                  const c = counts[t.code] || 0;
+                  const pct = Math.round((c / total) * 100);
+                  return `
+                    <div>
+                      <div style="display:flex;justify-content:space-between;font-size:0.76rem;margin-bottom:3px;">
+                        <span style="font-weight:700;color:var(--text);">${t.label}</span>
+                        <span style="font-weight:800;color:var(--text-muted);">${c} (${pct}%)</span>
+                      </div>
+                      <div style="height:7px;border-radius:999px;background:var(--border);overflow:hidden;">
+                        <div style="width:${pct}%;height:100%;background:${t.color};border-radius:999px;"></div>
+                      </div>
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+
+              ${withComments.length > 0 ? `
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
+                  <strong style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">💬 Últimos comentarios anónimos:</strong>
+                  ${withComments.map(cm => `
+                    <div style="font-size:0.77rem;padding:6px 8px;border-radius:8px;background:var(--bg-elev);border:1px solid var(--border);">
+                      <span style="font-weight:800;color:var(--accent);">${cm.reasonLabel}</span>
+                      <span style="color:var(--text-muted);font-size:0.7rem;"> • ${cm.date || ""} (${cm.daysActive || 0}d)</span>
+                      <div style="color:var(--text);margin-top:2px;">"${String(cm.comment).replace(/</g, "&lt;")}"</div>
+                    </div>
+                  `).join("")}
+                </div>
+              ` : ""}
+            `;
+          }
+        }
       }
 
       const emailNotifySec = document.getElementById("adminEmailNotifySection");
@@ -14194,7 +14455,50 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         });
       });
 
-      async function performDeleteMyAccount() {
+      const CHURN_SURVEY_OPTIONS = [
+        { code: "goal_reached", label: "🎯 Ya alcancé mi objetivo de peso / físico", tip: "🎉 ¡Felicitaciones por lograr tu objetivo! Si querés conservar tu historial para etapa de mantenimiento, podés simplemente cerrar sesión." },
+        { code: "too_time_consuming", label: "⏱️ Me lleva mucho tiempo cargar las comidas", tip: "💡 Tip rápido: desde Carga Rápida o el Escáner IA podés sumar tus comidas frecuentes en 1 solo toque." },
+        { code: "too_hard", label: "📉 El déficit o plan me resultó difícil de sostener", tip: "💡 Sabías que podés suavizar tu meta a -300 kcal o Mantenimiento desde Calculadora TDEE sin perder tu progreso." },
+        { code: "taking_break", label: "⏸️ Solo quiero tomarme un descanso temporal", tip: "⏸️ Si es una pausa temporal, tocá 'Solo cerrar sesión': tu cuenta y tu progreso te esperarán intactos cuando vuelvas." },
+        { code: "missing_feature", label: "🧩 Me faltó alguna función o alimento", tip: "" },
+        { code: "competitor_app", label: "🔄 Estoy usando otra aplicación o método", tip: "" },
+        { code: "other", label: "💬 Otro motivo", tip: "" }
+      ];
+      let selectedCancelReasonCode = "taking_break";
+
+      function renderCancelSurveyOptions() {
+        const listEl = document.getElementById("cancelSurveyOptionsList");
+        const tipBox = document.getElementById("cancelRetentionTipBox");
+        if (!listEl) return;
+        listEl.innerHTML = CHURN_SURVEY_OPTIONS.map((opt) => {
+          const sel = opt.code === selectedCancelReasonCode;
+          return `
+            <button type="button" data-cancel-reason="${opt.code}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;padding:9px 12px;border-radius:11px;border:1.5px solid ${sel ? 'var(--accent)' : 'var(--border)'};background:${sel ? 'var(--accent-soft)' : 'var(--bg-card)'};color:var(--text);font-size:0.82rem;font-weight:${sel ? '800' : '600'};cursor:pointer;transition:all 0.12s ease;">
+              <span>${opt.label}</span>
+              <span style="width:18px;height:18px;border-radius:999px;border:1.5px solid ${sel ? 'var(--accent)' : 'var(--text-muted)'};background:${sel ? 'var(--accent)' : 'transparent'};color:#fff;font-size:0.68rem;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${sel ? "✓" : ""}</span>
+            </button>
+          `;
+        }).join("");
+
+        const activeOpt = CHURN_SURVEY_OPTIONS.find(o => o.code === selectedCancelReasonCode);
+        if (tipBox) {
+          if (activeOpt && activeOpt.tip) {
+            tipBox.style.display = "block";
+            tipBox.textContent = activeOpt.tip;
+          } else {
+            tipBox.style.display = "none";
+          }
+        }
+
+        listEl.querySelectorAll("[data-cancel-reason]").forEach((b) => {
+          b.addEventListener("click", () => {
+            selectedCancelReasonCode = b.getAttribute("data-cancel-reason") || "other";
+            renderCancelSurveyOptions();
+          });
+        });
+      }
+
+      function openCancelAccountModal() {
         if (!currentUserInfo || !currentAuthToken) {
           window.openLegalModal("delete");
           return;
@@ -14203,31 +14507,67 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           alert("La cuenta principal de Super-Admin está protegida contra eliminación accidental.");
           return;
         }
-        const ok1 = confirm(`¿Seguro que querés eliminar permanentemente tu cuenta (${currentUserInfo.email || currentUserInfo.name}) y TODOS tus registros de comidas, peso, medidas y ayunos? Esta acción es irreversible.`);
-        if (!ok1) return;
+        selectedCancelReasonCode = "taking_break";
+        const cmInp = document.getElementById("cancelOptionalCommentInput");
+        if (cmInp) cmInp.value = "";
+        renderCancelSurveyOptions();
+        closeModal("modalAccount");
+        closeModal("modalLegalDocs");
+        const el = document.getElementById("modalCancelAccountFlow");
+        if (el) {
+          lastModalOpenTs = Date.now();
+          el.classList.add("active");
+          el.setAttribute("open", "open");
+        }
+      }
 
+      document.getElementById("btnCancelFlowPauseOnly")?.addEventListener("click", async () => {
+        closeModal("modalCancelAccountFlow");
+        await performLogout();
+      });
+
+      document.getElementById("btnConfirmFinalAccountDeletion")?.addEventListener("click", async () => {
+        if (!currentUserInfo || !currentAuthToken) return;
+        const chosen = CHURN_SURVEY_OPTIONS.find(o => o.code === selectedCancelReasonCode) || CHURN_SURVEY_OPTIONS[CHURN_SURVEY_OPTIONS.length - 1];
+        const comment = (document.getElementById("cancelOptionalCommentInput")?.value || "").trim();
+        const btn = document.getElementById("btnConfirmFinalAccountDeletion");
+        const prevTxt = btn ? btn.innerHTML : "🗑️ Confirmar baja definitiva";
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "⏳ Procesando baja...";
+        }
         try {
           const res = await fetch("/api/auth/delete-account", {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-Michu-Token": currentAuthToken },
-            body: JSON.stringify({})
+            body: JSON.stringify({
+              reasonCode: chosen.code,
+              reasonLabel: chosen.label,
+              comment,
+              source: "app"
+            })
           });
           const data = await res.json();
           if (!res.ok || !data.ok) {
-            alert((data && data.error) || "No se pudo eliminar la cuenta en este momento.");
+            alert((data && data.error) || "No se pudo completar la baja en este momento.");
             return;
           }
           localStorage.removeItem("michufit_backup_v1");
-          closeModal("modalLegalDocs");
+          closeModal("modalCancelAccountFlow");
           await performLogout();
-          alert("Tu cuenta y todos tus datos han sido eliminados permanentemente.");
+          alert("Tu cuenta y tus datos fueron dados de baja correctamente. ¡Gracias por habernos ayudado a mejorar!");
         } catch (err) {
-          alert("Error de conexión al eliminar la cuenta. Intentá nuevamente.");
+          alert("Error de conexión al procesar la baja. Intentá nuevamente.");
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = prevTxt;
+          }
         }
-      }
+      });
 
-      document.getElementById("btnDeleteMyAccountInProfile")?.addEventListener("click", performDeleteMyAccount);
-      document.getElementById("btnConfirmDeleteSelfLegal")?.addEventListener("click", performDeleteMyAccount);
+      document.getElementById("btnDeleteMyAccountInProfile")?.addEventListener("click", openCancelAccountModal);
+      document.getElementById("btnConfirmDeleteSelfLegal")?.addEventListener("click", openCancelAccountModal);
 
       const btnSaveNutriLink = document.getElementById("btnSaveNutriCodeLink");
       if (btnSaveNutriLink) {

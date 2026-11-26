@@ -53,7 +53,7 @@
       border-radius: 16px; padding: 18px; margin-top: 16px; display: flex; flex-direction: column; gap: 12px;
     }
     label { font-size: 0.82rem; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px; }
-    input {
+    input, select {
       width: 100%; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--border);
       background: #0c1316; color: var(--text); font-size: 0.92rem; font-family: inherit;
     }
@@ -105,12 +105,28 @@
           <label for="delPwd">Contraseña actual</label>
           <input type="password" id="delPwd" required placeholder="Tu contraseña" autocomplete="current-password" />
         </div>
+        <div>
+          <label for="delReason">¿Por qué decidís darte de baja? (Anónimo para mejorar)</label>
+          <select id="delReason">
+            <option value="goal_reached">🎯 Ya alcancé mi objetivo de peso / físico</option>
+            <option value="taking_break" selected>⏸️ Solo quiero tomarme un descanso temporal</option>
+            <option value="too_time_consuming">⏱️ Me lleva mucho tiempo cargar las comidas</option>
+            <option value="too_hard">📉 El déficit o plan me resultó difícil de sostener</option>
+            <option value="missing_feature">🧩 Me faltó alguna función o alimento</option>
+            <option value="competitor_app">🔄 Estoy usando otra aplicación o método</option>
+            <option value="other">💬 Otro motivo</option>
+          </select>
+        </div>
+        <div>
+          <label for="delComment">Comentario breve (Opcional)</label>
+          <input type="text" id="delComment" maxlength="200" placeholder="Ej: qué te gustaría que mejoremos" />
+        </div>
         <button type="submit" id="delSubmitBtn">🗑️ Eliminar definitivamente mi cuenta y mis datos</button>
         <div id="delStatusMsg" class="msg"></div>
       </form>
 
       <h2>Opción 2: Desde dentro de la App Michu Fit</h2>
-      <p>Abrí Michu Fit → tocá el menú <code>☰</code> arriba a la derecha → <strong>Perfil / Cuenta</strong> → tocá <strong>Eliminar mi cuenta y todos mis datos</strong>.</p>
+      <p>Abrí Michu Fit → tocá el menú <code>☰</code> arriba a la derecha → <strong>Perfil / Cuenta</strong> → tocá <strong>Dar de baja mi cuenta</strong>.</p>
 
       <h2>Opción 3: Solicitud por Correo Electrónico (si olvidaste tu clave)</h2>
       <p>
@@ -185,14 +201,17 @@
       btn.disabled = true;
       btn.textContent = "⏳ Verificando y eliminando datos...";
       try {
-        const res = await fetch(TABLE_URL + "?select=id,payload", {
+        const res = await fetch(TABLE_URL + "?select=*", {
           headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY }
         });
         const rows = await res.json();
         const pwdHash = sha256Hex("michufit_salt_v1_" + pwd);
         const match = (rows || []).find(r => {
-          const u = r.payload || {};
-          return ((u.email || "").toLowerCase() === ident || (u.username || "").toLowerCase() === ident) && u.passwordHash === pwdHash;
+          if (r.role === "system" || r.id === "sys-food-catalog" || r.id === "sys-churn-stats") return false;
+          const u = r.user_doc || r.payload || {};
+          const em = (r.email || u.email || "").toLowerCase();
+          const un = (r.username || u.username || "").toLowerCase();
+          return (em === ident || un === ident) && u.passwordHash === pwdHash;
         });
         if (!match) {
           showMsg("No encontramos una cuenta con ese usuario/email y contraseña.", false);
@@ -202,6 +221,49 @@
           showMsg("La cuenta principal de administrador está protegida contra baja accidental.", false);
           return;
         }
+
+        // Registrar motivo estadístico de forma 100% anónima antes de borrar el usuario
+        try {
+          const rSel = document.getElementById("delReason");
+          const reasonCode = rSel ? rSel.value : "other";
+          const reasonLabel = rSel && rSel.options[rSel.selectedIndex] ? rSel.options[rSel.selectedIndex].text : "Otro motivo";
+          const comment = (document.getElementById("delComment").value || "").trim().slice(0, 200);
+          const uDoc = match.user_doc || {};
+          const daysActive = Object.keys((uDoc.trackerData && uDoc.trackerData.days) || {}).length;
+          const churnRow = (rows || []).find(x => x.id === "sys-churn-stats");
+          const prevEvents = (churnRow && churnRow.user_doc && Array.isArray(churnRow.user_doc.events)) ? churnRow.user_doc.events : [];
+          prevEvents.unshift({
+            id: "ch-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
+            reasonCode,
+            reasonLabel,
+            comment,
+            daysActive,
+            role: match.role || uDoc.role || "patient",
+            source: "web",
+            date: new Date().toISOString().slice(0, 10),
+            ts: Date.now()
+          });
+          await fetch(TABLE_URL, {
+            method: "POST",
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: "Bearer " + SUPABASE_KEY,
+              "Content-Type": "application/json",
+              Prefer: "resolution=merge-duplicates,return=minimal"
+            },
+            body: JSON.stringify([{
+              id: "sys-churn-stats",
+              username: "_sys_churn_stats",
+              email: "churn@michufit.system",
+              name: "Estadísticas Anónimas de Bajas",
+              role: "system",
+              status: "system_catalog",
+              user_doc: { id: "sys-churn-stats", events: prevEvents.slice(0, 1000) },
+              updated_at: new Date().toISOString()
+            }])
+          });
+        } catch (_) {}
+
         const delRes = await fetch(TABLE_URL + "?id=eq." + encodeURIComponent(match.id), {
           method: "DELETE",
           headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY }
@@ -214,7 +276,8 @@
         } catch (_) {}
         document.getElementById("delIdent").value = "";
         document.getElementById("delPwd").value = "";
-        showMsg("✅ Tu cuenta y todos tus datos fueron eliminados permanentemente de Michu Fit.", true);
+        document.getElementById("delComment").value = "";
+        showMsg("✅ Tu cuenta y todos tus datos fueron dados de baja permanentemente. ¡Gracias por tu respuesta!", true);
       } catch (err) {
         showMsg("Error de conexión al procesar la solicitud. Intentá nuevamente o escribinos a michufitapp@gmail.com.", false);
       } finally {
