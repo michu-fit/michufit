@@ -2659,6 +2659,9 @@
               <button type="button" class="btn btn-sm btn-primary" id="btnOpenSuggestedMenuDiary" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" title="Ver menú semanal personalizado según tus gustos y objetivo">
                 🥗 Menú IA
               </button>
+              <button type="button" class="btn btn-sm" id="btnJumpWeeklyReportDiary" onclick="window.openWeeklyExecutiveReport && window.openWeeklyExecutiveReport()" style="border-color:rgba(14,159,119,0.45);color:var(--accent);font-weight:800;" title="Abrir tu Reporte Ejecutivo Semanal con valoración, hallazgos y plan para la semana">
+                📋 Reporte Semanal
+              </button>
               <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnOpenReto21Diary" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;" title="Programa interactivo Reto 21 Días (Comidas + Entrenamiento Gym/Casa)">
                 🔥 Reto 21 Días
               </button>
@@ -3004,6 +3007,11 @@
     <!-- TAB 4: SEGUIMIENTO DE PESO Y GRÁFICOS -->
     <section class="tab-panel" id="tab-progress">
       <div class="dashboard-grid">
+        <!-- CARD 0: REPORTE EJECUTIVO SEMANAL INTELIGENTE DE MICHU -->
+        <div class="card" id="weeklyExecutiveReportCard" style="grid-column: 1 / -1; border: 1.5px solid rgba(14, 159, 119, 0.38);">
+          <div id="weeklyExecutiveReportContainer"></div>
+        </div>
+
         <div class="card">
           <div class="card-header">
             <div class="card-title">📉 Curva de Peso y Tendencia (Promedio 7d)</div>
@@ -10167,7 +10175,765 @@
         </div>
       `;
 
+      renderWeeklyExecutiveReport();
       renderBodyMeasurementsSection();
+    }
+
+    let _weeklyExecOffset = 0;
+    let _weeklyExecCollapsed = false;
+
+    window.openWeeklyExecutiveReport = function() {
+      _weeklyExecCollapsed = false;
+      if (typeof switchTab === "function") switchTab("tab-progress");
+      renderWeeklyExecutiveReport();
+      setTimeout(() => {
+        const card = document.getElementById("weeklyExecutiveReportCard");
+        if (card && card.scrollIntoView) {
+          card.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 60);
+    };
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function computeWeeklyExecutiveData(weekOffset = 0) {
+      const targets = computeNutritionTargets();
+      const todayKey = todayStr();
+      const todayNoon = new Date(todayKey + "T12:00:00");
+      const dow = todayNoon.getDay(); // 0=Dom, 1=Lun..6=Sab
+      const diffToMon = dow === 0 ? -6 : (1 - dow);
+
+      const mondayDate = new Date(todayNoon);
+      mondayDate.setDate(todayNoon.getDate() + diffToMon + (weekOffset * 7));
+
+      const dayNamesShort = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+      const mealSlotLabels = {
+        breakfast: "el Desayuno",
+        lunch: "el Almuerzo",
+        merienda: "la Merienda",
+        dinner: "la Cena",
+        snack: "los Snacks"
+      };
+
+      const fastingObj = (appData && appData.fasting) || {};
+      const fastingHist = Array.isArray(fastingObj.history) ? fastingObj.history : [];
+      const checkIsFastDay = (dk) => {
+        if (fastingHist.some(h => h && h.date === dk && (h.completed || Number(h.hours) >= Number(h.targetHours || 16)))) return true;
+        if (fastingObj.activeStart && dk === todayKey) {
+          const hrs = (Date.now() - new Date(fastingObj.activeStart).getTime()) / 3600000;
+          if (hrs >= Number(fastingObj.targetHours || 16)) return true;
+        }
+        return false;
+      };
+
+      const fmtKey = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+      const fmtShort = (dk) => `${dk.slice(8, 10)}/${dk.slice(5, 7)}`;
+
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const cur = new Date(mondayDate);
+        cur.setDate(mondayDate.getDate() + i);
+        const dk = fmtKey(cur);
+        const isFuture = dk > todayKey;
+        const tot = getDayTotals(dk);
+        const rawRec = (appData.days && appData.days[dk]) || {};
+        const consumedMeals = (Array.isArray(rawRec.meals) ? rawRec.meals : []).filter(m => isMealConsumed(m));
+        const isFast = checkIsFastDay(dk);
+        const isLogged = !isFuture && (tot.kcal > 0 || isFast);
+
+        // Proteína temprana (desayuno) vs calorías nocturnas (cena + snacks)
+        let morningProt = 0;
+        let nightKcal = 0;
+        const bySlot = { breakfast: 0, lunch: 0, merienda: 0, dinner: 0, snack: 0 };
+        for (const m of consumedMeals) {
+          const mt = m.mealType || "snack";
+          const mk = Number(m.kcal) || 0;
+          const mp = Number(m.p) || 0;
+          bySlot[mt] = (bySlot[mt] || 0) + mk;
+          if (mt === "breakfast") morningProt += mp;
+          if (mt === "dinner" || mt === "snack") nightKcal += mk;
+        }
+
+        // Pasos estimados del día
+        let stepsDay = Number(rawRec.manualStepsOverride) || 0;
+        if (!stepsDay && Array.isArray(rawRec.exercises)) {
+          for (const ex of rawRec.exercises) {
+            const mSt = String((ex && ex.name) || "").match(/([\d.]+)\s*pasos/i);
+            if (mSt) stepsDay += Number(mSt[1].replace(/\./g, "")) || 0;
+          }
+        }
+
+        days.push({
+          idx: i,
+          dayName: dayNamesShort[i],
+          dateKey: dk,
+          shortDate: fmtShort(dk),
+          isFuture,
+          isLogged,
+          isFast,
+          kcal: tot.kcal,
+          p: tot.p,
+          c: tot.c,
+          f: tot.f,
+          exerciseKcal: tot.exerciseKcal,
+          water: Number(rawRec.water) || 0,
+          steps: stepsDay,
+          consumedMeals,
+          morningProt,
+          nightKcal,
+          bySlot
+        });
+      }
+
+      const startKey = days[0].dateKey;
+      const endKey = days[6].dateKey;
+      const elapsedDays = days.filter(d => !d.isFuture);
+      const loggedDays = elapsedDays.filter(d => d.isLogged);
+      const unloggedElapsed = elapsedDays.filter(d => !d.isLogged);
+
+      const nLogged = loggedDays.length;
+      const nElapsed = Math.max(1, elapsedDays.length);
+
+      const avgKcal = nLogged > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.kcal, 0) / nLogged) : 0;
+      const avgProt = nLogged > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.p, 0) / nLogged) : 0;
+      const avgWater = nLogged > 0 ? Math.round((loggedDays.reduce((s, d) => s + d.water, 0) / nLogged) * 10) / 10 : 0;
+      const totalSteps = elapsedDays.reduce((s, d) => s + d.steps, 0);
+      const avgSteps = elapsedDays.length > 0 ? Math.round(totalSteps / elapsedDays.length) : 0;
+      const fastDaysCount = elapsedDays.filter(d => d.isFast).length;
+
+      const sedentaryTdee = Math.round((Number(targets.bmr) || 1700) * 1.2);
+      const tdeeIncludedExPerDay = Math.max(0, targets.tdee - sedentaryTdee);
+      const foodDeficitTotal = Math.round(loggedDays.reduce((s, d) => s + (targets.tdee - d.kcal), 0));
+      const extraExBurnTotal = Math.round(loggedDays.reduce((s, d) => s + Math.max(0, d.exerciseKcal - tdeeIncludedExPerDay), 0));
+      const totalRawExKcal = Math.round(elapsedDays.reduce((s, d) => s + d.exerciseKcal, 0));
+      const netCombinedDeficit = foodDeficitTotal + extraExBurnTotal;
+      const netFatGrams = Math.round((Math.abs(netCombinedDeficit) / 7700) * 1000);
+      const netFatKg = (Math.abs(netCombinedDeficit) / 7700).toFixed(2);
+      const isNetFatBurn = netCombinedDeficit >= 0;
+
+      const protGoal = Math.max(50, Number(targets.proteinG) || 120);
+      const protPct = nLogged > 0 ? Math.round((avgProt / protGoal) * 100) : 0;
+      const protHitDays = loggedDays.filter(d => d.p >= protGoal * 0.88).length;
+
+      // Vitamina D semanal para esa semana
+      const vitDStats = typeof computeWeeklyVitDStats === "function"
+        ? computeWeeklyVitDStats(days[2].dateKey)
+        : { pctWeek: 0, solarDaysDone: 0, totalWeekUi: 0, targetWeekUi: 7000 };
+
+      // Lun-Jue vs Vie-Dom
+      const monThuLogged = loggedDays.filter(d => d.idx <= 3);
+      const friSunLogged = loggedDays.filter(d => d.idx >= 4);
+      const avgMonThuKcal = monThuLogged.length > 0 ? Math.round(monThuLogged.reduce((s, d) => s + d.kcal, 0) / monThuLogged.length) : 0;
+      const avgFriSunKcal = friSunLogged.length > 0 ? Math.round(friSunLogged.reduce((s, d) => s + d.kcal, 0) / friSunLogged.length) : 0;
+      const avgMonThuProt = monThuLogged.length > 0 ? Math.round(monThuLogged.reduce((s, d) => s + d.p, 0) / monThuLogged.length) : 0;
+      const avgFriSunProt = friSunLogged.length > 0 ? Math.round(friSunLogged.reduce((s, d) => s + d.p, 0) / friSunLogged.length) : 0;
+      const monThuDeficit = Math.round(monThuLogged.reduce((s, d) => s + (targets.tdee - d.kcal) + Math.max(0, d.exerciseKcal - tdeeIncludedExPerDay), 0));
+      const friSunDeficit = Math.round(friSunLogged.reduce((s, d) => s + (targets.tdee - d.kcal) + Math.max(0, d.exerciseKcal - tdeeIncludedExPerDay), 0));
+
+      // Pesajes de balanza dentro o alrededor de la semana
+      const wLogs = Array.isArray(appData.weightLog)
+        ? [...appData.weightLog].filter(w => w && w.date && Number(w.weight) > 0).sort((a, b) => a.date.localeCompare(b.date))
+        : [];
+      const weekWeights = wLogs.filter(w => w.date >= startKey && w.date <= endKey);
+      let scaleDeltaKg = null;
+      let firstWObj = null;
+      let lastWObj = null;
+      if (weekWeights.length >= 2) {
+        firstWObj = weekWeights[0];
+        lastWObj = weekWeights[weekWeights.length - 1];
+        scaleDeltaKg = Math.round((Number(lastWObj.weight) - Number(firstWObj.weight)) * 100) / 100;
+      } else if (weekWeights.length === 1) {
+        const prevBeforeWeek = [...wLogs].reverse().find(w => w.date < startKey);
+        if (prevBeforeWeek) {
+          firstWObj = prevBeforeWeek;
+          lastWObj = weekWeights[0];
+          scaleDeltaKg = Math.round((Number(lastWObj.weight) - Number(firstWObj.weight)) * 100) / 100;
+        }
+      }
+
+      // Cálculo de Nota Ejecutiva de la Semana (0 a 100)
+      let score = 0;
+      if (nLogged > 0) {
+        // 1) Adherencia calórica neta (hasta 38 pts)
+        const avgExExtra = extraExBurnTotal / nLogged;
+        const effectiveDailyTarget = targets.targetKcal + avgExExtra;
+        const kcalDiff = avgKcal - effectiveDailyTarget;
+        let calPts = 38;
+        if (targets.isSurplus) {
+          const absErr = Math.abs(kcalDiff);
+          calPts = Math.max(8, Math.round(38 - (absErr / 28)));
+        } else {
+          // En déficit/mantenimiento: pasarse hacia arriba penaliza; leve ahorro suma bien, déficit extremo (>750 bajo meta) avisa moderación
+          if (kcalDiff > 0) {
+            calPts = Math.max(5, Math.round(38 - (kcalDiff / 22)));
+          } else if (kcalDiff < -650) {
+            calPts = 28;
+          } else {
+            calPts = 38;
+          }
+        }
+        // 2) Proteína (hasta 26 pts)
+        const protPts = Math.min(26, Math.round(Math.min(1.08, avgProt / protGoal) * 24.5));
+        // 3) Constancia de registro (hasta 20 pts)
+        const logPts = Math.min(20, Math.round((nLogged / nElapsed) * 20));
+        // 4) Hábitos integrales: movimiento + agua + Vit D (hasta 16 pts)
+        const waterGoal = Math.max(6, Number(appData.profile && appData.profile.waterGoal) || 8);
+        const moveRatio = Math.min(1, (totalRawExKcal / Math.max(1, nElapsed * 150)));
+        const waterRatio = Math.min(1, avgWater / waterGoal);
+        const vitRatio = Math.min(1, (vitDStats.pctWeek || 0) / 80);
+        const habitPts = Math.round(moveRatio * 7 + waterRatio * 5 + vitRatio * 4);
+
+        score = Math.max(12, Math.min(100, calPts + protPts + logPts + habitPts));
+      }
+
+      // Plato estrella de la semana (mayor eficiencia proteica con >= 160 kcal y >= 20g P)
+      let starMeal = null;
+      let bestProtScore = -1;
+      for (const d of loggedDays) {
+        for (const m of d.consumedMeals) {
+          const mk = Number(m.kcal) || 0;
+          const mp = Number(m.p) || 0;
+          if (mk >= 160 && mp >= 20) {
+            const density = (mp * 4) / mk; // % kcal de proteína
+            const composite = density * 100 + Math.min(25, mp * 0.35);
+            if (composite > bestProtScore) {
+              bestProtScore = composite;
+              starMeal = { name: m.name, kcal: Math.round(mk), p: Math.round(mp * 10) / 10, dayName: d.dayName };
+            }
+          }
+        }
+      }
+
+      // Mejor día de la semana
+      let bestDay = null;
+      let bestDayScore = -9999;
+      for (const d of loggedDays) {
+        const errKcal = Math.abs(d.kcal - (targets.targetKcal + d.exerciseKcal));
+        const pBonus = Math.min(1.1, d.p / protGoal) * 250;
+        const s = pBonus - errKcal * 0.55;
+        if (s > bestDayScore) {
+          bestDayScore = s;
+          bestDay = d;
+        }
+      }
+
+      // Victorias (Puntos a destacar)
+      const wins = [];
+      if (nLogged > 0) {
+        if (isNetFatBurn && netFatGrams >= 60) {
+          wins.push(`🔥 <strong>Quema real acumulada:</strong> cerraste un balance a favor de <strong>${netCombinedDeficit.toLocaleString("es-AR")} kcal</strong> (~<strong>${netFatGrams} g</strong> de tejido graso oxidado).`);
+        }
+        if (protPct >= 88) {
+          wins.push(`🥩 <strong>Músculo protegido:</strong> promediaste <strong>${avgProt} g/día de proteína</strong> (${protPct}% de tu meta), cumpliendo en <strong>${protHitDays} de ${nLogged} días</strong>.`);
+        } else if (protHitDays >= 1) {
+          wins.push(`🥩 <strong>Días de buena proteína:</strong> alcanzaste tu bloque proteico en <strong>${protHitDays} ${protHitDays === 1 ? "día" : "días"}</strong> (máximo ${Math.round(Math.max(...loggedDays.map(d => d.p)))} g).`);
+        }
+        if (starMeal) {
+          wins.push(`🍽️ <strong>Tu plato estrella de la semana:</strong> <em>"${escapeHtml(starMeal.name.slice(0, 68))}${starMeal.name.length > 68 ? "…" : ""}"</em> (${starMeal.p}g P en ${starMeal.kcal} kcal el ${starMeal.dayName}).`);
+        }
+        if (totalRawExKcal >= 120 || totalSteps >= 6000) {
+          wins.push(`🏃 <strong>Movimiento que suma margen:</strong> quemaste <strong>${totalRawExKcal.toLocaleString("es-AR")} kcal activas</strong>${totalSteps > 0 ? ` (${totalSteps.toLocaleString("es-AR")} pasos acumulados)` : ""}.`);
+        }
+        if (vitDStats.pctWeek >= 35 || fastDaysCount > 0) {
+          const extras = [];
+          if (vitDStats.pctWeek >= 35) extras.push(`☀️ Reservorio Vitamina D al <strong>${vitDStats.pctWeek}%</strong> (${vitDStats.solarDaysDone} días de sol)`);
+          if (fastDaysCount > 0) extras.push(`⏳ <strong>${fastDaysCount} ${fastDaysCount === 1 ? "ayuno cumplido" : "ayunos cumplidos"}</strong>`);
+          wins.push(extras.join(" • ") + ".");
+        }
+        if (wins.length === 0 && bestDay) {
+          wins.push(`✅ <strong>Mejor día registrado:</strong> ${bestDay.dayName} ${bestDay.shortDate} con ${bestDay.kcal} kcal y ${Math.round(bestDay.p)} g de proteína.`);
+        }
+      }
+
+      // Cuellos de botella / Puntos de atención (máx 3 hallazgos respaldados en datos)
+      const bottlenecks = [];
+      if (nLogged > 0) {
+        if (unloggedElapsed.length > 0) {
+          const missNames = unloggedElapsed.map(d => `${d.dayName} ${d.shortDate}`).join(", ");
+          bottlenecks.push(`📝 <strong>Huecos de registro (${unloggedElapsed.length}):</strong> sin datos en <em>${missNames}</em>. Incluso un registro rápido de 20 seg mantiene calibrado tu TDEE real.`);
+        }
+
+        // Detector de hambre nocturna por poca proteína matutina
+        const lowMornDays = loggedDays.filter(d => d.morningProt < 22 && d.nightKcal > 0);
+        const goodMornDays = loggedDays.filter(d => d.morningProt >= 22 && d.nightKcal > 0);
+        if (lowMornDays.length >= 1 && goodMornDays.length >= 1) {
+          const avgNightLow = Math.round(lowMornDays.reduce((s, d) => s + d.nightKcal, 0) / lowMornDays.length);
+          const avgNightGood = Math.round(goodMornDays.reduce((s, d) => s + d.nightKcal, 0) / goodMornDays.length);
+          if (avgNightLow - avgNightGood >= 200) {
+            bottlenecks.push(`🌙 <strong>Efecto rebote nocturno:</strong> los días con poca proteína a la mañana (< 22g) sumaste <strong>+${avgNightLow - avgNightGood} kcal extra</strong> a la noche (${avgNightLow} vs ${avgNightGood} kcal).`);
+          }
+        }
+
+        // Franja horaria con mayor concentración en días pasados de meta
+        const overDays = loggedDays.filter(d => d.kcal > targets.targetKcal + d.exerciseKcal + 180);
+        if (overDays.length > 0) {
+          const slotTotals = { breakfast: 0, lunch: 0, merienda: 0, dinner: 0, snack: 0 };
+          for (const od of overDays) {
+            for (const k of Object.keys(slotTotals)) slotTotals[k] += (od.bySlot[k] || 0);
+          }
+          const topSlot = Object.entries(slotTotals).sort((a, b) => b[1] - a[1])[0];
+          const avgTopSlot = Math.round(topSlot[1] / overDays.length);
+          if (avgTopSlot > 0) {
+            bottlenecks.push(`📊 <strong>Pico calórico concentrado:</strong> en los ${overDays.length} ${overDays.length === 1 ? "día que superaste" : "días que superaste"} la meta, el mayor volumen estuvo en <strong>${mealSlotLabels[topSlot[0]] || "la Cena"}</strong> (~${avgTopSlot} kcal promedio).`);
+          }
+        }
+
+        if (protPct < 80 && bottlenecks.length < 3) {
+          bottlenecks.push(`🥩 <strong>Brecha de proteína (-${Math.max(1, protGoal - avgProt)} g/día):</strong> quedaste al ${protPct}% de los ${protGoal} g que blindan tu masa muscular y saciedad.`);
+        }
+
+        const waterGoal = Math.max(6, Number(appData.profile && appData.profile.waterGoal) || 8);
+        if (avgWater < waterGoal * 0.55 && bottlenecks.length < 3) {
+          bottlenecks.push(`💧 <strong>Hidratación baja (${avgWater} de ${waterGoal} vasos/día):</strong> tomar poca agua suele disfrazarse de hambre a media tarde y retiene más líquido en balanza.`);
+        }
+      }
+
+      // 3 Recomendaciones Accionables para la Semana que Arranca
+      const recs = [];
+      const weekendSpill = friSunLogged.length > 0 && monThuLogged.length > 0 && (avgFriSunKcal - avgMonThuKcal >= 280);
+      if (weekendSpill) {
+        const weekdayBankTarget = Math.max(1250, Math.round(targets.targetKcal - 120));
+        const weekendBonus = 120 * 4;
+        recs.push({
+          title: "Activar táctica «Colchón Lun–Jue»",
+          desc: `Apuntá a <strong>${weekdayBankTarget.toLocaleString("es-AR")} kcal/día de lunes a jueves</strong> (-120 kcal suaves). Así llegás al viernes con <strong>+${weekendBonus} kcal libres</strong> para disfrutar una comida social sin perder tu quema de grasa semanal.`
+        });
+      } else if (!isNetFatBurn && !targets.isSurplus && nLogged > 0) {
+        recs.push({
+          title: `Volver a tu zona limpia de ${targets.targetKcal.toLocaleString("es-AR")} kcal/día (sin castigo)`,
+          desc: `No compenses con ayunos extremos: recortá apenas <strong>~200–250 kcal</strong> de tu comida más grande (guarniciones densas, salsas o extras) y el déficit vuelve solo.`
+        });
+      } else {
+        recs.push({
+          title: `Sostener tu objetivo de ${targets.targetKcal.toLocaleString("es-AR")} kcal/día`,
+          desc: `Tu calibración metabólica está funcionando. Mantené este rango calórico otra semana completa antes de tocar calorías para consolidar pérdida de grasa sin fatiga.`
+        });
+      }
+
+      if (protPct < 88) {
+        const missingP = Math.max(15, protGoal - avgProt);
+        recs.push({
+          title: `Asegurar +${missingP} g/día de proteína magra temprano`,
+          desc: starMeal
+            ? `Repetí 2 o 3 veces tu plato ganador (<em>${escapeHtml(starMeal.name.slice(0, 48))}</em>) o sumá 1 vaso de leche proteica / claras / atún antes de las 16:00 hs para llegar sin hambre a la noche.`
+            : `Sumá una base fija de <strong>35 g+ de proteína en desayuno o almuerzo</strong> (huevos + claras, yogur proteico o carne magra) para blindar músculo y apagar antojos.`
+        });
+      } else {
+        recs.push({
+          title: "Mantener tu ancla de +30 g de proteína por comida",
+          desc: `Tu nivel proteico (${avgProt} g/día) es de atleta. Acompañá las 2 comidas principales con <strong>verduras de volumen</strong> (zapallito, coliflor, hojas verdes) para máxima saciedad.`
+        });
+      }
+
+      const waterGoalRec = Math.max(6, Number(appData.profile && appData.profile.waterGoal) || 8);
+      if (avgSteps > 0 && avgSteps < 6500) {
+        const nextStepsGoal = Math.min(8500, Math.round((avgSteps + 1800) / 500) * 500);
+        recs.push({
+          title: `Subir tu piso de pasos a ${nextStepsGoal.toLocaleString("es-AR")}/día`,
+          desc: `Sumar una caminata de <strong>15–20 min al sol</strong> después de almorzar quema ~700 kcal extra en la semana, aplana el pico de glucosa y recarga tu Vitamina D a la vez.`
+        });
+      } else if (vitDStats.pctWeek < 75) {
+        recs.push({
+          title: "Completar 3 bloques cortos de Sol + Hidratación",
+          desc: `Usá el cronómetro de <strong>☀️ Vitamina D</strong> 3 veces esta semana y apuntá a <strong>${waterGoalRec} vasos de agua/día</strong> para optimizar energía tiroidea y desinflamación.`
+        });
+      } else {
+        recs.push({
+          title: `Consolidar NEAT + ${waterGoalRec} vasos de agua`,
+          desc: `Sostené tu ritmo de actividad física y agregá 2 vasos grandes de agua antes del almuerzo y la cena para mantener el metabolismo encendido.`
+        });
+      }
+
+      return {
+        weekOffset,
+        startKey,
+        endKey,
+        rangeLabel: `${fmtShort(startKey)} al ${fmtShort(endKey)}`,
+        days,
+        elapsedDays,
+        loggedDays,
+        unloggedElapsed,
+        nLogged,
+        nElapsed,
+        targets,
+        avgKcal,
+        avgProt,
+        protGoal,
+        protPct,
+        protHitDays,
+        avgWater,
+        totalSteps,
+        avgSteps,
+        totalRawExKcal,
+        extraExBurnTotal,
+        foodDeficitTotal,
+        netCombinedDeficit,
+        netFatGrams,
+        netFatKg,
+        isNetFatBurn,
+        vitDStats,
+        monThuLogged,
+        friSunLogged,
+        avgMonThuKcal,
+        avgFriSunKcal,
+        avgMonThuProt,
+        avgFriSunProt,
+        monThuDeficit,
+        friSunDeficit,
+        scaleDeltaKg,
+        firstWObj,
+        lastWObj,
+        score,
+        starMeal,
+        bestDay,
+        wins: wins.slice(0, 4),
+        bottlenecks: bottlenecks.slice(0, 3),
+        recs
+      };
+    }
+
+    function buildMichuWeeklyVerdictSpeech(rep) {
+      const style = (appData.profile && appData.profile.talkStyle) || "direct";
+      const name = (appData.profile && appData.profile.name) || "crack";
+      if (rep.nLogged === 0) {
+        return `Todavía no hay comidas ni ayunos cargados en esta semana (${rep.rangeLabel}). Podés tocar «🏁 Semana Cerrada» arriba para revisar la semana anterior completa o empezar a registrar hoy.`;
+      }
+      const fatPhrase = rep.isNetFatBurn
+        ? `quemaste ~${rep.netFatGrams} g de grasa real (${rep.netCombinedDeficit.toLocaleString("es-AR")} kcal netas a favor)`
+        : `quedaste con un excedente neto de +${Math.abs(rep.netCombinedDeficit).toLocaleString("es-AR")} kcal (~+${rep.netFatGrams} g de grasa)`;
+
+      if (style === "cheerleader" || style === "hype") {
+        return rep.score >= 75
+          ? `¡Semana tremenda, ${escapeHtml(name)}! Sacaste ${rep.score}/100, ${fatPhrase} y promediaste ${rep.avgProt} g de proteína. ¡Con los 3 ajustes de abajo la semana que arranca va a volar! 🚀🐱`
+          : `¡Cada dato suma, ${escapeHtml(name)}! Cerraste en ${rep.score}/100 (${fatPhrase}). Ya detectamos exactamente dónde ajustar para que esta semana nueva demos vuelta el marcador con todo 💪🐱.`;
+      }
+      if (style === "warm" || style === "friendly") {
+        return rep.score >= 75
+          ? `Muy buen trabajo esta semana, ${escapeHtml(name)} 💚. Lograste ${rep.score}/100, ${fatPhrase} y cuidaste tu proteína (${rep.avgProt} g/día). Vamos paso a paso sosteniendo lo que te funcionó.`
+          : `Semana de aprendizaje real, ${escapeHtml(name)} (${rep.score}/100): ${fatPhrase}. Cero culpa: mirá el plan simple de 3 puntos abajo para arrancar lunes con calma y foco 🌿.`;
+      }
+      if (style === "mindful") {
+        return `Balance consciente (${rep.score}/100): en ${rep.nLogged} días registrados ${fatPhrase}, con ${rep.avgProt} g/día de proteína. Observá el patrón entre semana y finde como información útil para diseñar tus próximos 7 días con equilibrio.`;
+      }
+      // Directo / honesto (por defecto)
+      return rep.score >= 75
+        ? `Números claros, ${escapeHtml(name)}: ${rep.score}/100 de ejecución. Promediaste ${rep.avgKcal.toLocaleString("es-AR")} kcal/día, ${fatPhrase} y metiste ${rep.avgProt} g/día de proteína. Sostené la base y afiná el detalle de abajo.`
+        : `Diagnóstico honesto, ${escapeHtml(name)} (${rep.score}/100): promediaste ${rep.avgKcal.toLocaleString("es-AR")} kcal/día y ${fatPhrase}. El cuello de botella está identificado abajo; aplicá los 3 puntos esta semana y volvés a terreno de quema.`;
+    }
+
+    function renderWeeklyExecutiveReport() {
+      const box = document.getElementById("weeklyExecutiveReportContainer");
+      if (!box) return;
+
+      const rep = computeWeeklyExecutiveData(_weeklyExecOffset);
+      const prevRep = computeWeeklyExecutiveData(_weeklyExecOffset - 1);
+
+      const scoreColor = rep.score >= 82 ? "#10b981" : (rep.score >= 68 ? "#0ea5e9" : (rep.score >= 50 ? "#f59e0b" : "#ef4444"));
+      const verdictBadge = rep.nLogged === 0
+        ? "📭 Sin registros aún"
+        : (rep.score >= 85
+          ? "🏆 Semana Sobresaliente"
+          : (rep.score >= 70
+            ? "✅ Semana Sólida en Rumbo"
+            : (rep.score >= 52
+              ? "⚖️ Semana Mixta / Meseta"
+              : "🔄 Semana para Reencauzar")));
+
+      const scoreDeltaHtml = (rep.nLogged > 0 && prevRep.nLogged > 0)
+        ? (() => {
+            const diff = rep.score - prevRep.score;
+            if (diff === 0) return `<span style="font-size:0.72rem;color:var(--text-muted);font-weight:700;">(= que sem. previa)</span>`;
+            return diff > 0
+              ? `<span style="font-size:0.72rem;color:var(--accent);font-weight:800;">▲ +${diff} pts vs sem. ant.</span>`
+              : `<span style="font-size:0.72rem;color:var(--warn);font-weight:800;">▼ ${diff} pts vs sem. ant.</span>`;
+          })()
+        : "";
+
+      // Interpretación Balanza vs Realidad
+      let scaleVsRealHtml = "";
+      if (rep.nLogged > 0) {
+        if (rep.scaleDeltaKg !== null) {
+          const signStr = rep.scaleDeltaKg > 0 ? `+${rep.scaleDeltaKg} kg` : `${rep.scaleDeltaKg} kg`;
+          if (rep.isNetFatBurn && rep.netFatGrams >= 80 && rep.scaleDeltaKg >= 0) {
+            scaleVsRealHtml = `💧 <strong>Balanza (${signStr}) vs. Realidad:</strong> tu balance real quemó <strong>${rep.netFatGrams} g de grasa</strong>; la diferencia en balanza es retención transitoria de agua/glucógeno/sodio, no grasa ganada.`;
+          } else if (rep.isNetFatBurn && rep.scaleDeltaKg < 0) {
+            scaleVsRealHtml = `🎯 <strong>Balanza (${signStr}) alineada:</strong> el descenso en balanza acompaña tus <strong>${rep.netFatGrams} g de quema de grasa real</strong> (${rep.firstWObj.weight} → ${rep.lastWObj.weight} kg).`;
+          } else if (!rep.isNetFatBurn && rep.scaleDeltaKg > 0) {
+            scaleVsRealHtml = `⚖️ <strong>Balanza (${signStr}) vs. Excedente:</strong> parte de la suba refleja los <strong>+${rep.netFatGrams} g</strong> de superávit energético y el resto glucógeno/líquido; bajá sodio y volvé a meta 3 días para desinflamar rápido.`;
+          } else {
+            scaleVsRealHtml = `⚖️ <strong>Variación en balanza (${signStr}):</strong> de ${rep.firstWObj.weight} kg a ${rep.lastWObj.weight} kg frente a un balance metabólico de ${rep.isNetFatBurn ? `${rep.netFatGrams} g quemados` : `+${rep.netFatGrams} g de aumento`}.`;
+          }
+        } else {
+          scaleVsRealHtml = `💡 <strong>Tip de precisión:</strong> registrá 2 pesajes en ayunas por semana (ej. lunes y viernes) para que este reporte separe retención de líquido de cambio real de grasa.`;
+        }
+      }
+
+      // Barras comparativas Lunes-Jueves vs Viernes-Domingo
+      const maxBarRef = Math.max(rep.targets.tdee * 1.25, rep.avgMonThuKcal, rep.avgFriSunKcal, 2200);
+      const monThuPct = Math.min(100, Math.round((rep.avgMonThuKcal / maxBarRef) * 100));
+      const friSunPct = Math.min(100, Math.round((rep.avgFriSunKcal / maxBarRef) * 100));
+      let weekendVerdictHtml = "";
+      if (rep.monThuLogged.length === 0 && rep.friSunLogged.length === 0) {
+        weekendVerdictHtml = `<span style="color:var(--text-muted);">Cargá comidas para desbloquear la comparativa Lunes–Jueves vs. Fin de Semana.</span>`;
+      } else if (rep.friSunLogged.length === 0) {
+        const bankTxt = rep.monThuDeficit >= 0
+          ? `venís acumulando <strong>${rep.monThuDeficit.toLocaleString("es-AR")} kcal de déficit a favor</strong> para llegar blindado al finde.`
+          : `llevás un excedente de <strong>+${Math.abs(rep.monThuDeficit).toLocaleString("es-AR")} kcal</strong> antes del finde; cuidá porciones de viernes a domingo.`;
+        weekendVerdictHtml = `⏳ <strong>Tramo Vie–Dom aún sin registros en esta semana:</strong> de Lunes a Jueves (${rep.monThuLogged.length}d) ${bankTxt}`;
+      } else if (rep.monThuLogged.length === 0) {
+        weekendVerdictHtml = `📌 Solo hay registros en el tramo Viernes–Domingo (${rep.avgFriSunKcal.toLocaleString("es-AR")} kcal/día promedio).`;
+      } else {
+        const diffWknd = rep.avgFriSunKcal - rep.avgMonThuKcal;
+        if (diffWknd >= 300) {
+          weekendVerdictHtml = `⚠️ <strong>Efecto Fin de Semana detectado (+${diffWknd.toLocaleString("es-AR")} kcal/día):</strong> de viernes a domingo subiste tu ingesta de ${rep.avgMonThuKcal.toLocaleString("es-AR")} a ${rep.avgFriSunKcal.toLocaleString("es-AR")} kcal/día. Usá la táctica <em>Colchón Lun–Jue</em> recomendada abajo.`;
+        } else if (diffWknd <= -180) {
+          weekendVerdictHtml = `👏 <strong>Fin de semana más liviano (${diffWknd.toLocaleString("es-AR")} kcal/día vs. Lun–Jue):</strong> excelente control en los días donde la mayoría pierde su déficit.`;
+        } else {
+          weekendVerdictHtml = `✅ <strong>Consistencia pareja toda la semana:</strong> mantuviste casi el mismo ritmo entre días hábiles (${rep.avgMonThuKcal.toLocaleString("es-AR")} kcal) y fin de semana (${rep.avgFriSunKcal.toLocaleString("es-AR")} kcal).`;
+        }
+      }
+
+      const ringCirc = 2 * Math.PI * 30;
+      const ringOffset = ringCirc * (1 - (rep.nLogged > 0 ? rep.score / 100 : 0));
+
+      box.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+            <span style="font-size:1.25rem;">📋</span>
+            <div>
+              <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                <strong style="font-size:1.02rem;color:var(--text);">Reporte Ejecutivo Semanal</strong>
+                <span style="font-size:0.73rem;font-weight:800;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);">
+                  ${rep.weekOffset === 0 ? "En curso" : (rep.weekOffset === -1 ? "Última cerrada" : `Hace ${Math.abs(rep.weekOffset)} sem.`)} • ${rep.rangeLabel}
+                </span>
+              </div>
+              <small style="font-size:0.74rem;color:var(--text-muted);">Valoración real, victorias, fugas calóricas y plan de acción para la próxima semana</small>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-sm" id="btnWkExecPrev" title="Semana anterior" style="padding:4px 9px;font-size:0.76rem;">◀</button>
+            <button type="button" class="btn btn-sm ${rep.weekOffset === -1 ? 'btn-primary' : ''}" id="btnWkExecLastClosed" style="padding:4px 9px;font-size:0.73rem;font-weight:800;">
+              🏁 Sem. Pasada
+            </button>
+            <button type="button" class="btn btn-sm ${rep.weekOffset === 0 ? 'btn-primary' : ''}" id="btnWkExecCurrent" style="padding:4px 9px;font-size:0.73rem;font-weight:800;">
+              📅 Actual
+            </button>
+            <button type="button" class="btn btn-sm" id="btnWkExecNext" ${rep.weekOffset >= 0 ? "disabled" : ""} title="Semana siguiente" style="padding:4px 9px;font-size:0.76rem;opacity:${rep.weekOffset >= 0 ? '0.4' : '1'};">▶</button>
+            <button type="button" class="btn btn-sm" id="btnWkExecShare" title="Copiar o compartir resumen semanal" style="padding:4px 9px;font-size:0.73rem;font-weight:800;">
+              📤 Compartir
+            </button>
+            <button type="button" class="btn btn-sm" id="btnWkExecToggle" title="Mostrar/ocultar reporte" style="padding:4px 8px;font-size:0.74rem;">
+              ${_weeklyExecCollapsed ? "🔽 Expandir" : "🔼"}
+            </button>
+          </div>
+        </div>
+
+        ${_weeklyExecCollapsed ? "" : `
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:14px;">
+            <!-- BLOQUE 1: NOTA GLOBAL + VEREDICTO DE MICHU + 4 KPIs -->
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:13px 14px;display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                <div style="position:relative;width:72px;height:72px;flex-shrink:0;">
+                  <svg viewBox="0 0 72 72" width="72" height="72">
+                    <circle cx="36" cy="36" r="30" fill="none" stroke="var(--border)" stroke-width="6.5" />
+                    <circle cx="36" cy="36" r="30" fill="none" stroke="${scoreColor}" stroke-width="6.5"
+                      stroke-dasharray="${ringCirc.toFixed(1)}" stroke-dashoffset="${ringOffset.toFixed(1)}"
+                      stroke-linecap="round" transform="rotate(-90 36 36)" />
+                  </svg>
+                  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;">
+                    <strong style="font-size:1.18rem;font-weight:900;color:${scoreColor};">${rep.nLogged > 0 ? rep.score : "—"}</strong>
+                    <span style="font-size:0.6rem;color:var(--text-muted);font-weight:700;">/ 100</span>
+                  </div>
+                </div>
+
+                <div style="flex:1;min-width:200px;">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+                    <strong style="font-size:0.92rem;color:${scoreColor};">${verdictBadge}</strong>
+                    ${scoreDeltaHtml}
+                  </div>
+                  <div style="font-size:0.81rem;color:var(--text);line-height:1.45;">
+                    🐱 ${buildMichuWeeklyVerdictSpeech(rep)}
+                  </div>
+                </div>
+              </div>
+
+              ${rep.nLogged > 0 ? `
+                <!-- 4 Tarjetas KPI limpias -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(145px, 1fr));gap:8px;">
+                  <div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:9px 11px;">
+                    <div style="font-size:0.69rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Promedio Ingerido</div>
+                    <div style="font-size:1rem;font-weight:900;color:var(--text);margin-top:2px;">${rep.avgKcal.toLocaleString("es-AR")} kcal/día</div>
+                    <div style="font-size:0.71rem;color:var(--text-muted);">Meta base: ${rep.targets.targetKcal.toLocaleString("es-AR")} kcal</div>
+                  </div>
+
+                  <div style="background:var(--bg-elev);border:1px solid ${rep.isNetFatBurn ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.35)'};border-radius:11px;padding:9px 11px;">
+                    <div style="font-size:0.69rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">${rep.isNetFatBurn ? "Quema de Grasa Neta" : "Aumento de Grasa Neto"}</div>
+                    <div style="font-size:1rem;font-weight:900;color:${rep.isNetFatBurn ? 'var(--accent)' : 'var(--danger)'};margin-top:2px;">
+                      ${rep.isNetFatBurn ? `🔥 ${rep.netFatGrams} g (${rep.netFatKg} kg)` : `📈 +${rep.netFatGrams} g (+${rep.netFatKg} kg)`}
+                    </div>
+                    <div style="font-size:0.71rem;color:var(--text-muted);">Comida + Ejercicio combinados</div>
+                  </div>
+
+                  <div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:9px 11px;">
+                    <div style="font-size:0.69rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Proteína Promedio</div>
+                    <div style="font-size:1rem;font-weight:900;color:#38bdf8;margin-top:2px;">${rep.avgProt} g/día (${rep.protPct}%)</div>
+                    <div style="font-size:0.71rem;color:var(--text-muted);">Meta cumplida: ${rep.protHitDays}/${rep.nLogged} días</div>
+                  </div>
+
+                  <div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:9px 11px;">
+                    <div style="font-size:0.69rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Constancia & Energía</div>
+                    <div style="font-size:1rem;font-weight:900;color:var(--text);margin-top:2px;">${rep.nLogged}/${rep.nElapsed} días cargados</div>
+                    <div style="font-size:0.71rem;color:var(--text-muted);">☀️ Vit.D ${rep.vitDStats.pctWeek}% • 💧 ${rep.avgWater} vasos</div>
+                  </div>
+                </div>
+
+                <div style="background:var(--bg-elev);border-left:3px solid var(--info);border-radius:8px;padding:8px 11px;font-size:0.77rem;color:var(--text);line-height:1.4;">
+                  ${scaleVsRealHtml}
+                </div>
+              ` : ""}
+            </div>
+
+            ${rep.nLogged > 0 ? `
+              <!-- BLOQUE 2: DETECTOR LUNES-JUEVES VS FIN DE SEMANA -->
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;">
+                <div style="font-size:0.82rem;font-weight:800;color:var(--text);margin-bottom:8px;">
+                  🔍 Radiografía Días Hábiles (Lun–Jue) vs. Fin de Semana (Vie–Dom)
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:10px;margin-bottom:8px;">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;">
+                      <span><strong>Lun–Jue</strong> (${rep.monThuLogged.length}d reg.)</span>
+                      <strong>${rep.monThuLogged.length > 0 ? `${rep.avgMonThuKcal.toLocaleString("es-AR")} kcal • ${rep.avgMonThuProt}g P` : "Sin datos"}</strong>
+                    </div>
+                    <div style="height:8px;border-radius:999px;background:var(--bg-elev);overflow:hidden;">
+                      <div style="height:100%;width:${monThuPct}%;background:${rep.avgMonThuKcal <= rep.targets.tdee ? '#10b981' : '#f59e0b'};border-radius:999px;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;">
+                      <span><strong>Vie–Dom</strong> (${rep.friSunLogged.length}d reg.)</span>
+                      <strong>${rep.friSunLogged.length > 0 ? `${rep.avgFriSunKcal.toLocaleString("es-AR")} kcal • ${rep.avgFriSunProt}g P` : "Pendiente / Sin datos"}</strong>
+                    </div>
+                    <div style="height:8px;border-radius:999px;background:var(--bg-elev);overflow:hidden;">
+                      <div style="height:100%;width:${friSunPct}%;background:${rep.friSunLogged.length === 0 ? 'transparent' : (rep.avgFriSunKcal <= rep.targets.tdee ? '#10b981' : '#ef4444')};border-radius:999px;"></div>
+                    </div>
+                  </div>
+                </div>
+                <div style="font-size:0.77rem;color:var(--text-muted);line-height:1.4;">
+                  ${weekendVerdictHtml}
+                </div>
+              </div>
+
+              <!-- BLOQUE 3 & 4: PUNTOS A DESTACAR + CUELLOS DE BOTELLA -->
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:12px;">
+                <div style="background:var(--bg-card);border:1px solid rgba(16,185,129,0.32);border-radius:14px;padding:12px 14px;">
+                  <div style="font-size:0.83rem;font-weight:900;color:var(--accent);margin-bottom:8px;">
+                    🌟 Puntos a Destacar (Tus Victorias)
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:7px;font-size:0.78rem;line-height:1.42;color:var(--text);">
+                    ${rep.wins.map(w => `<div>${w}</div>`).join("")}
+                  </div>
+                </div>
+
+                <div style="background:var(--bg-card);border:1px solid rgba(245,158,11,0.35);border-radius:14px;padding:12px 14px;">
+                  <div style="font-size:0.83rem;font-weight:900;color:var(--warn);margin-bottom:8px;">
+                    ⚠️ Puntos a Cuidar Detectados
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:7px;font-size:0.78rem;line-height:1.42;color:var(--text);">
+                    ${rep.bottlenecks.length > 0
+                      ? rep.bottlenecks.map(b => `<div>${b}</div>`).join("")
+                      : `<div>✨ <strong>Sin fugas críticas esta semana:</strong> constancia, proteína e ingesta estuvieron alineadas con tu meta. ¡Mantené el ritmo!</div>`}
+                  </div>
+                </div>
+              </div>
+
+              <!-- BLOQUE 5: 3 RECOMENDACIONES PARA LA SEMANA QUE ARRANCA -->
+              <div style="background:linear-gradient(135deg, rgba(14,159,119,0.10), rgba(2,132,199,0.08));border:1.5px solid rgba(14,159,119,0.38);border-radius:14px;padding:13px 14px;">
+                <div style="font-size:0.86rem;font-weight:900;color:var(--text);margin-bottom:9px;">
+                  🎯 Plan de Acción para la Semana que Arranca (3 Foco Clave)
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:9px;">
+                  ${rep.recs.map((rc, idx) => `
+                    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:11px;padding:10px 12px;">
+                      <div style="font-size:0.78rem;font-weight:900;color:var(--accent);margin-bottom:4px;">
+                        ${idx + 1}. ${rc.title}
+                      </div>
+                      <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.4;">
+                        ${rc.desc}
+                      </div>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
+            ` : ""}
+          </div>
+        `}
+      `;
+
+      document.getElementById("btnWkExecPrev")?.addEventListener("click", () => {
+        _weeklyExecOffset -= 1;
+        renderWeeklyExecutiveReport();
+      });
+      document.getElementById("btnWkExecNext")?.addEventListener("click", () => {
+        if (_weeklyExecOffset < 0) {
+          _weeklyExecOffset += 1;
+          renderWeeklyExecutiveReport();
+        }
+      });
+      document.getElementById("btnWkExecLastClosed")?.addEventListener("click", () => {
+        _weeklyExecOffset = -1;
+        _weeklyExecCollapsed = false;
+        renderWeeklyExecutiveReport();
+      });
+      document.getElementById("btnWkExecCurrent")?.addEventListener("click", () => {
+        _weeklyExecOffset = 0;
+        _weeklyExecCollapsed = false;
+        renderWeeklyExecutiveReport();
+      });
+      document.getElementById("btnWkExecToggle")?.addEventListener("click", () => {
+        _weeklyExecCollapsed = !_weeklyExecCollapsed;
+        renderWeeklyExecutiveReport();
+      });
+      document.getElementById("btnWkExecShare")?.addEventListener("click", async () => {
+        const stripHtml = (s) => String(s || "").replace(/<[^>]+>/g, "");
+        const summaryLines = [
+          `📋 REPORTE SEMANAL MICHU FIT (${rep.rangeLabel})`,
+          `• Nota global: ${rep.score}/100 (${verdictBadge})`,
+          `• Promedio ingerido: ${rep.avgKcal.toLocaleString("es-AR")} kcal/día (Meta: ${rep.targets.targetKcal.toLocaleString("es-AR")} kcal)`,
+          `• Balance graso real: ${rep.isNetFatBurn ? `🔥 ${rep.netFatGrams} g (${rep.netFatKg} kg) de quema de grasa` : `📈 +${rep.netFatGrams} g (+${rep.netFatKg} kg) de aumento de grasa`}`,
+          `• Proteína promedio: ${rep.avgProt} g/día (${rep.protPct}% de meta • ${rep.protHitDays}/${rep.nLogged} días)`,
+          `• Constancia: ${rep.nLogged}/${rep.nElapsed} días • Vitamina D semanal: ${rep.vitDStats.pctWeek}%`,
+          "",
+          "🌟 Puntos a destacar:",
+          ...rep.wins.map(w => `  - ${stripHtml(w)}`),
+          ...(rep.bottlenecks.length ? ["", "⚠️ A cuidar:", ...rep.bottlenecks.map(b => `  - ${stripHtml(b)}`)] : []),
+          "",
+          "🎯 Plan para la próxima semana:",
+          ...rep.recs.map((r, i) => `  ${i + 1}) ${r.title}: ${stripHtml(r.desc)}`)
+        ].join("\n");
+
+        const shBtn = document.getElementById("btnWkExecShare");
+        try {
+          if (navigator.share) {
+            await navigator.share({ title: `Reporte Semanal Michu Fit (${rep.rangeLabel})`, text: summaryLines });
+            return;
+          }
+        } catch (_) {}
+        try {
+          await navigator.clipboard.writeText(summaryLines);
+          if (shBtn) {
+            shBtn.textContent = "✓ Copiado";
+            setTimeout(() => { if (shBtn) shBtn.textContent = "📤 Compartir"; }, 2000);
+          }
+        } catch (_) {}
+      });
     }
 
     const MEAS_ZONE_GUIDES = {
