@@ -7217,51 +7217,357 @@
       return Math.max(4, Math.min(maxSafeCap, Math.round(rawMins)));
     }
 
-    function playSolarAlarmSound(type = "complete") {
+    let _sharedSolarAudioCtx = null;
+    let _solarAudioElements = null;
+    let _solarAlarmVibrateTimer = null;
+    let _solarAlarmAutoStopTimer = null;
+
+    function buildSolarWavBlobUrl(mode = "alarm") {
+      try {
+        const sampleRate = mode === "keepalive" ? 8000 : 22050;
+        const durationSec = mode === "keepalive" ? 1.0 : (mode === "half" ? 1.15 : 2.2);
+        const numSamples = Math.floor(sampleRate * durationSec);
+        const dataBytes = numSamples * 2;
+        const buf = new ArrayBuffer(44 + dataBytes);
+        const view = new DataView(buf);
+        const writeStr = (off, str) => {
+          for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i));
+        };
+        writeStr(0, "RIFF");
+        view.setUint32(4, 36 + dataBytes, true);
+        writeStr(8, "WAVE");
+        writeStr(12, "fmt ");
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeStr(36, "data");
+        view.setUint32(40, dataBytes, true);
+
+        for (let i = 0; i < numSamples; i++) {
+          const t = i / sampleRate;
+          let sample = 0;
+          if (mode === "keepalive") {
+            // Señal mínima no-cero inaudible para mantener vivo el reloj en pantalla bloqueada móvil
+            sample = Math.sin(2 * Math.PI * 40 * t) * 0.0004;
+          } else if (mode === "half") {
+            // Doble campana clara para aviso de mitad de tiempo
+            const inTone1 = t >= 0.02 && t < 0.34;
+            const inTone2 = t >= 0.44 && t < 0.88;
+            if (inTone1 || inTone2) {
+              const localT = inTone1 ? (t - 0.02) : (t - 0.44);
+              const freq = inTone1 ? 784 : 1046.5;
+              const env = Math.min(1, localT / 0.015) * Math.exp(-localT * 4.2);
+              sample = (0.65 * Math.sin(2 * Math.PI * freq * t) + 0.35 * Math.sin(2 * Math.PI * freq * 2 * t)) * env * 0.88;
+            }
+          } else {
+            // Alarma solar exterior potente: 4 pulsos agudos bitonales + pausa en ciclo de 2.2s
+            const windows = [
+              [0.02, 0.22, 880, 1760],
+              [0.28, 0.48, 1046.5, 2093],
+              [0.54, 0.74, 880, 1760],
+              [0.80, 1.18, 1318.5, 2637]
+            ];
+            for (const [w0, w1, f1, f2] of windows) {
+              if (t >= w0 && t < w1) {
+                const lt = t - w0;
+                const dur = w1 - w0;
+                const env = Math.min(1, lt / 0.012) * Math.min(1, (dur - lt) / 0.02);
+                const wv = 0.58 * Math.sin(2 * Math.PI * f1 * t)
+                         + 0.28 * Math.sin(2 * Math.PI * f2 * t)
+                         + 0.14 * (Math.sin(2 * Math.PI * f1 * t) >= 0 ? 0.7 : -0.7);
+                sample = wv * env * 0.92;
+                break;
+              }
+            }
+          }
+          const clamped = Math.max(-1, Math.min(1, sample));
+          view.setInt16(44 + i * 2, Math.round(clamped * 32767), true);
+        }
+        return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+      } catch (_) {
+        return "";
+      }
+    }
+
+    function ensureSolarAudioEngine() {
       try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        const notes = type === "half" ? [587.33, 783.99] : [523.25, 659.25, 783.99, 1046.5];
-        notes.forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = "sine";
-          osc.frequency.value = freq;
-          const startAt = ctx.currentTime + idx * 0.19;
-          gain.gain.setValueAtTime(0.001, startAt);
-          gain.gain.exponentialRampToValueAtTime(0.28, startAt + 0.03);
-          gain.gain.exponentialRampToValueAtTime(0.001, startAt + 0.32);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(startAt);
-          osc.stop(startAt + 0.34);
-        });
+        if (AudioCtx && (!_sharedSolarAudioCtx || _sharedSolarAudioCtx.state === "closed")) {
+          _sharedSolarAudioCtx = new AudioCtx();
+        }
+        if (_sharedSolarAudioCtx && _sharedSolarAudioCtx.state === "suspended") {
+          _sharedSolarAudioCtx.resume().catch(() => {});
+        }
       } catch (_) {}
+
+      if (!_solarAudioElements && typeof document !== "undefined") {
+        const mkAudio = (id, mode, loop, vol) => {
+          let el = document.getElementById(id);
+          if (!el) {
+            el = document.createElement("audio");
+            el.id = id;
+            el.preload = "auto";
+            el.setAttribute("playsinline", "true");
+            el.style.display = "none";
+            document.body.appendChild(el);
+          }
+          if (!el.src) el.src = buildSolarWavBlobUrl(mode);
+          el.loop = Boolean(loop);
+          el.volume = vol;
+          return el;
+        };
+        _solarAudioElements = {
+          keepalive: mkAudio("michuSolarKeepAliveAudio", "keepalive", true, 0.02),
+          half: mkAudio("michuSolarHalfAudio", "half", false, 1.0),
+          alarm: mkAudio("michuSolarAlarmAudio", "alarm", true, 1.0)
+        };
+      }
+      return _solarAudioElements;
+    }
+
+    function unlockSolarAudioOnUserGesture() {
+      const els = ensureSolarAudioEngine();
+      if (!els) return;
+      // Pre-desbloquear canales de alarma y mitad dentro del tap del usuario
+      [els.alarm, els.half].forEach((a) => {
+        try {
+          a.muted = true;
+          a.currentTime = 0;
+          const p = a.play();
+          if (p && typeof p.then === "function") {
+            p.then(() => {
+              a.pause();
+              a.currentTime = 0;
+              a.muted = false;
+            }).catch(() => {
+              a.muted = false;
+            });
+          } else {
+            a.pause();
+            a.currentTime = 0;
+            a.muted = false;
+          }
+        } catch (_) {
+          a.muted = false;
+        }
+      });
+    }
+
+    function setSolarKeepAlivePlaying(enable) {
+      const els = ensureSolarAudioEngine();
+      if (!els || !els.keepalive) return;
       try {
-        if (navigator.vibrate) {
-          navigator.vibrate(type === "half" ? [140, 80, 140] : [260, 110, 260, 110, 420]);
+        if (enable) {
+          els.keepalive.currentTime = 0;
+          const p = els.keepalive.play();
+          if (p && p.catch) p.catch(() => {});
+          if ("mediaSession" in navigator && typeof MediaMetadata !== "undefined") {
+            navigator.mediaSession.metadata = new MediaMetadata({
+              title: "☀️ Cronómetro de Vitamina D activo",
+              artist: "MichuFit • Exposición solar segura",
+              album: "Alarma solar programada"
+            });
+          }
+        } else {
+          els.keepalive.pause();
+          els.keepalive.currentTime = 0;
         }
       } catch (_) {}
     }
 
+    function stopSolarRingingAlarm() {
+      if (_solarAlarmVibrateTimer) {
+        clearInterval(_solarAlarmVibrateTimer);
+        _solarAlarmVibrateTimer = null;
+      }
+      if (_solarAlarmAutoStopTimer) {
+        clearTimeout(_solarAlarmAutoStopTimer);
+        _solarAlarmAutoStopTimer = null;
+      }
+      try {
+        if (navigator.vibrate) navigator.vibrate(0);
+      } catch (_) {}
+      if (_solarAudioElements && _solarAudioElements.alarm) {
+        try {
+          _solarAudioElements.alarm.pause();
+          _solarAudioElements.alarm.currentTime = 0;
+          _solarAudioElements.alarm.muted = false;
+        } catch (_) {}
+      }
+      const modal = document.getElementById("michuSolarAlarmRingingModal");
+      if (modal) modal.remove();
+    }
+
+    function showSolarRingingModal(minsDone, uiEst) {
+      const prev = document.getElementById("michuSolarAlarmRingingModal");
+      if (prev) prev.remove();
+      const overlay = document.createElement("div");
+      overlay.id = "michuSolarAlarmRingingModal";
+      overlay.style.cssText = "position:fixed;inset:0;z-index:100080;background:rgba(10,15,28,0.86);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:18px;";
+      overlay.innerHTML = `
+        <div style="width:100%;max-width:370px;background:var(--bg-card,#111827);border:2px solid #f59e0b;border-radius:22px;padding:24px 20px;text-align:center;box-shadow:0 20px 55px rgba(245,158,11,0.35);color:var(--text,#f9fafb);">
+          <div style="font-size:3rem;line-height:1;margin-bottom:10px;">☀️🔔</div>
+          <h3 style="margin:0 0 8px;font-size:1.22rem;font-weight:900;color:#fbbf24;">¡Tiempo de Sol Cumplido!</h3>
+          <p style="margin:0 0 14px;font-size:0.88rem;line-height:1.45;color:var(--text-muted,#cbd5e1);">
+            Completaste tus <strong>${minsDone} min</strong> de exposición segura (<strong>~${uiEst} UI</strong> de Vitamina D sumadas a tu semana).<br/>
+            <span style="color:#fcd34d;font-weight:700;">Pasá a la sombra o aplicate protector solar ahora.</span>
+          </p>
+          <button type="button" id="btnDismissSolarRingingAlarm" class="btn btn-primary" style="width:100%;justify-content:center;padding:13px 16px;font-size:0.96rem;font-weight:900;background:linear-gradient(135deg,#f59e0b,#ea580c);border:none;color:#fff;border-radius:14px;box-shadow:0 8px 22px rgba(234,88,12,0.4);">
+            🔕 Detener Alarma
+          </button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      overlay.querySelector("#btnDismissSolarRingingAlarm")?.addEventListener("click", () => {
+        stopSolarRingingAlarm();
+      });
+      overlay.addEventListener("click", (ev) => {
+        if (ev.target === overlay) stopSolarRingingAlarm();
+      });
+    }
+
+    function playSolarAlarmSound(type = "complete") {
+      const els = ensureSolarAudioEngine();
+      // 1) Reproducción por canal HTML5 <audio> WAV (funciona en segundo plano y exterior)
+      try {
+        if (type === "complete" && els && els.alarm) {
+          els.alarm.muted = false;
+          els.alarm.volume = 1.0;
+          els.alarm.loop = true;
+          els.alarm.currentTime = 0;
+          const p = els.alarm.play();
+          if (p && p.catch) p.catch(() => {});
+          if (_solarAlarmAutoStopTimer) clearTimeout(_solarAlarmAutoStopTimer);
+          _solarAlarmAutoStopTimer = setTimeout(() => {
+            if (_solarAudioElements && _solarAudioElements.alarm) {
+              _solarAudioElements.alarm.pause();
+              _solarAudioElements.alarm.currentTime = 0;
+            }
+            if (_solarAlarmVibrateTimer) {
+              clearInterval(_solarAlarmVibrateTimer);
+              _solarAlarmVibrateTimer = null;
+            }
+          }, 26000);
+        } else if (type === "half" && els && els.half) {
+          els.half.muted = false;
+          els.half.volume = 1.0;
+          els.half.currentTime = 0;
+          const p = els.half.play();
+          if (p && p.catch) p.catch(() => {});
+        } else if (type === "test" && els && els.alarm) {
+          els.alarm.muted = false;
+          els.alarm.volume = 1.0;
+          els.alarm.loop = false;
+          els.alarm.currentTime = 0;
+          const p = els.alarm.play();
+          if (p && p.catch) p.catch(() => {});
+        }
+      } catch (_) {}
+
+      // 2) Respaldo simultáneo con WebAudio persistente desbloqueado
+      try {
+        if (_sharedSolarAudioCtx) {
+          if (_sharedSolarAudioCtx.state === "suspended") {
+            _sharedSolarAudioCtx.resume().catch(() => {});
+          }
+          const notes = type === "start"
+            ? [659.25, 880]
+            : (type === "half"
+              ? [587.33, 880]
+              : (type === "manual"
+                ? [523.25, 659.25, 783.99, 1046.5]
+                : [880, 1174.66, 880, 1318.5, 1760]));
+          notes.forEach((freq, idx) => {
+            const osc = _sharedSolarAudioCtx.createOscillator();
+            const gain = _sharedSolarAudioCtx.createGain();
+            osc.type = (type === "start" || type === "manual") ? "triangle" : "square";
+            osc.frequency.value = freq;
+            const step = type === "start" ? 0.11 : 0.18;
+            const peak = type === "start" ? 0.22 : 0.45;
+            const startAt = _sharedSolarAudioCtx.currentTime + idx * step;
+            gain.gain.setValueAtTime(0.001, startAt);
+            gain.gain.exponentialRampToValueAtTime(peak, startAt + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, startAt + step + 0.12);
+            osc.connect(gain);
+            gain.connect(_sharedSolarAudioCtx.destination);
+            osc.start(startAt);
+            osc.stop(startAt + step + 0.14);
+          });
+        }
+      } catch (_) {}
+
+      // 3) Vibración táctil repetida para alarma real
+      try {
+        if (navigator.vibrate) {
+          if (type === "complete") {
+            navigator.vibrate([450, 160, 450, 160, 650]);
+            if (_solarAlarmVibrateTimer) clearInterval(_solarAlarmVibrateTimer);
+            _solarAlarmVibrateTimer = setInterval(() => {
+              try { navigator.vibrate([450, 160, 450, 160, 650]); } catch (_) {}
+            }, 2400);
+          } else if (type === "half" || type === "test") {
+            navigator.vibrate([240, 100, 240, 100, 360]);
+          } else if (type === "start" || type === "manual") {
+            navigator.vibrate(90);
+          }
+        }
+      } catch (_) {}
+    }
+
+    async function requestAndVerifySolarNotifications() {
+      if (!("Notification" in window)) return "unsupported";
+      if (Notification.permission === "granted") return "granted";
+      try {
+        const perm = await Notification.requestPermission();
+        return perm || Notification.permission;
+      } catch (_) {
+        return Notification.permission || "default";
+      }
+    }
+
     async function fireSolarSystemNotification(title, bodyText) {
       try {
-        if (!("Notification" in window) || Notification.permission !== "granted") return;
+        if (!("Notification" in window) || Notification.permission !== "granted") return false;
+        const notifOpts = {
+          body: bodyText,
+          icon: "./icon-192.png",
+          badge: "./icon-192.png",
+          vibrate: [400, 150, 400, 150, 600],
+          tag: "michufit-vitd-timer",
+          renotify: true,
+          requireInteraction: true
+        };
         if ("serviceWorker" in navigator) {
           const reg = await navigator.serviceWorker.getRegistration();
           if (reg && reg.showNotification) {
-            await reg.showNotification(title, {
-              body: bodyText,
-              icon: "./icon-192.png",
-              badge: "./icon-192.png",
-              vibrate: [250, 120, 250, 120, 400],
-              tag: "michufit-vitd-timer"
-            });
-            return;
+            await reg.showNotification(title, notifOpts);
+            return true;
           }
         }
-        new Notification(title, { body: bodyText, icon: "./icon-192.png" });
+        new Notification(title, notifOpts);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function syncSolarTimerWithServiceWorker(action, delayMs = 0, minutesTarget = 0, uvUsed = 0) {
+      try {
+        if (!("serviceWorker" in navigator)) return;
+        navigator.serviceWorker.ready.then((reg) => {
+          if (reg && reg.active) {
+            reg.active.postMessage({
+              type: action === "schedule" ? "SCHEDULE_SOLAR_ALARM" : "CANCEL_SOLAR_ALARM",
+              delayMs,
+              minutesTarget,
+              uvUsed
+            });
+          }
+        }).catch(() => {});
       } catch (_) {}
     }
 
@@ -7291,12 +7597,15 @@
       } catch (_) {}
     }
 
-    function completeVitDSession(minsDone, uvUsed) {
+    function completeVitDSession(minsDone, uvUsed, opts = {}) {
+      const isManual = Boolean(opts && opts.manual);
       setVitDTimerState(null);
       if (_vitDTickInterval) {
         clearInterval(_vitDTickInterval);
         _vitDTickInterval = null;
       }
+      setSolarKeepAlivePlaying(false);
+      syncSolarTimerWithServiceWorker("cancel");
       requestSolarWakeLock(false);
       const tKey = todayStr();
       const dRec = ensureDayRecord(tKey);
@@ -7315,24 +7624,33 @@
       };
       saveToServer();
       renderAll();
-      playSolarAlarmSound("complete");
-      fireSolarSystemNotification(
-        "☀️ ¡Dosis de Vitamina D completada!",
-        `Cumpliste tus ${minsDone} min de sol seguro (~${uiEst} UI). Pasá a la sombra o aplicate protector solar.`
-      );
+      if (isManual) {
+        playSolarAlarmSound("manual");
+      } else {
+        playSolarAlarmSound("complete");
+        showSolarRingingModal(minsDone, uiEst);
+        fireSolarSystemNotification(
+          "☀️ ¡Dosis de Vitamina D completada!",
+          `Cumpliste tus ${minsDone} min de sol seguro (~${uiEst} UI). Pasá a la sombra o aplicate protector solar.`
+        );
+      }
       if (typeof fireCartoonConfetti === "function") fireCartoonConfetti("normal");
       setRaccoonSpeech(`"☀️ ¡Excelente! Cumpliste tus ${minsDone} min de sol seguro (~${uiEst} UI de Vitamina D). Ahora a la sombra o protector, que cuidamos piel y metabolismo 🐱🕶️."`, { forceShow: true });
     }
 
     function startVitDTimerCountdown(minutesTarget, uvUsed, halfAlert) {
+      stopSolarRingingAlarm();
+      // 1) Desbloquear audio y arrancar keep-alive SÍNCRONAMENTE en el gesto táctil del usuario
+      unlockSolarAudioOnUserGesture();
+      setSolarKeepAlivePlaying(true);
+      playSolarAlarmSound("start");
+
+      // 2) Pedir permiso de notificaciones si aún no fue concedido
       if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission().catch(() => {});
+        Notification.requestPermission().then(() => {
+          if (typeof renderVitDTracker === "function") renderVitDTracker();
+        }).catch(() => {});
       }
-      // Desbloquear contexto de audio en el gesto del clic móvil
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) { const c = new AudioCtx(); c.resume().then(() => c.close()).catch(() => {}); }
-      } catch (_) {}
 
       const totalSec = Math.max(60, Math.round(minutesTarget * 60));
       const now = Date.now();
@@ -7347,6 +7665,7 @@
         halfFired: false
       };
       setVitDTimerState(st);
+      syncSolarTimerWithServiceWorker("schedule", totalSec * 1000, minutesTarget, uvUsed);
       requestSolarWakeLock(true);
       ensureVitDIntervalRunning();
       renderVitDTracker();
@@ -7679,7 +7998,7 @@
                 </div>
               </div>
 
-              <div style="display:flex;flex-direction:column;gap:5px;min-width:140px;">
+              <div style="display:flex;flex-direction:column;gap:6px;min-width:148px;flex:1;">
                 ${!isTimerRunning ? `
                   <div style="display:inline-flex;align-items:center;gap:6px;">
                     <span style="font-size:0.74rem;color:var(--text-muted);font-weight:700;">Ajustar:</span>
@@ -7688,15 +8007,26 @@
                     <button type="button" id="btnVitDMinPlus" class="btn btn-sm" style="padding:2px 8px;font-size:0.78rem;">+</button>
                   </div>
                 ` : `
-                  <span style="font-size:0.76rem;font-weight:800;color:var(--warn);">☀️ Exposición solar activa...</span>
+                  <span style="font-size:0.76rem;font-weight:800;color:var(--warn);">☀️ Exposición solar activa (sonará aunque bloquees pantalla)...</span>
                 `}
                 <label style="display:inline-flex;align-items:center;gap:6px;font-size:0.73rem;color:var(--text-muted);cursor:pointer;">
                   <input type="checkbox" id="chkVitDHalfAlert" ${halfAlert ? "checked" : ""} style="accent-color:var(--accent);" />
                   <span>Sonar aviso a la mitad (cambiar de lado)</span>
                 </label>
-                <span style="font-size:0.7rem;color:var(--text-muted);">
-                  🔔 Al llegar a 00:00 suena tono + vibración + notificación.
-                </span>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px;">
+                  <button type="button" id="btnTestVitDAlarm" class="btn btn-sm" style="padding:3px 9px;font-size:0.71rem;font-weight:800;border-color:rgba(245,158,11,0.45);color:var(--text);">
+                    🔊 Probar alarma
+                  </button>
+                  <span id="vitDNotifStatusBadge" style="font-size:0.68rem;font-weight:700;color:${("Notification" in window && Notification.permission === "granted") ? "var(--accent)" : "var(--text-muted)"};">
+                    ${!("Notification" in window)
+                      ? "📳 Sonido + Vibración"
+                      : (Notification.permission === "granted"
+                        ? "🔔 Notif. activas"
+                        : (Notification.permission === "denied"
+                          ? "⚠️ Notif. bloqueadas (sonará alarma)"
+                          : "🔕 Tocá Probar para activar notif."))}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -7810,10 +8140,29 @@
           runManualCitySearch();
         }
       });
+      document.getElementById("btnTestVitDAlarm")?.addEventListener("click", async () => {
+        const tBtn = document.getElementById("btnTestVitDAlarm");
+        unlockSolarAudioOnUserGesture();
+        playSolarAlarmSound("test");
+        if (tBtn) tBtn.textContent = "🔊 ¡Sonando!";
+        const perm = await requestAndVerifySolarNotifications();
+        if (perm === "granted") {
+          await fireSolarSystemNotification(
+            "☀️ Prueba de Alarma Solar MichuFit",
+            "¡Listo! Así te avisaremos con sonido, vibración y notificación al cumplir tu tiempo al sol."
+          );
+        }
+        setTimeout(() => {
+          if (typeof renderVitDTracker === "function") renderVitDTracker();
+        }, 2100);
+      });
       document.getElementById("btnStartVitDTimer")?.addEventListener("click", () => {
         startVitDTimerCountdown(targetMins, currentUv, appData.profile.vitDHalfAlert !== false);
       });
       document.getElementById("btnStopVitDTimer")?.addEventListener("click", () => {
+        stopSolarRingingAlarm();
+        setSolarKeepAlivePlaying(false);
+        syncSolarTimerWithServiceWorker("cancel");
         setVitDTimerState(null);
         if (_vitDTickInterval) { clearInterval(_vitDTickInterval); _vitDTickInterval = null; }
         requestSolarWakeLock(false);
@@ -7822,10 +8171,10 @@
       document.getElementById("btnFinishVitDNow")?.addEventListener("click", () => {
         const st = getVitDTimerState();
         const elapsedMin = st ? Math.max(1, Math.round((Date.now() - st.startMs) / 60000)) : targetMins;
-        completeVitDSession(elapsedMin, currentUv);
+        completeVitDSession(elapsedMin, currentUv, { manual: true });
       });
       document.getElementById("btnMarkVitDManual")?.addEventListener("click", () => {
-        completeVitDSession(targetMins, currentUv);
+        completeVitDSession(targetMins, currentUv, { manual: true });
       });
       document.getElementById("btnUndoVitDDone")?.addEventListener("click", () => {
         const dRecNow = ensureDayRecord(selectedDate);
@@ -7836,8 +8185,14 @@
     }
 
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible" && typeof renderVitDTracker === "function") {
-        renderVitDTracker();
+      if (document.visibilityState === "visible") {
+        const st = getVitDTimerState();
+        if (st && st.active && st.endMs > Date.now()) {
+          requestSolarWakeLock(true);
+        }
+        if (typeof renderVitDTracker === "function") {
+          renderVitDTracker();
+        }
       }
     });
 

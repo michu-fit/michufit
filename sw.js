@@ -1,4 +1,4 @@
-const CACHE_NAME = 'michufit-cloud-v75';
+const CACHE_NAME = 'michufit-cloud-v76';
 const ASSETS = ['./', './index.html', './privacidad.html', './terminos.html', './eliminar-cuenta.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -65,6 +65,38 @@ self.addEventListener('fetch', (e) => {
       })
       .catch(() => caches.match(e.request).then((c) => c || caches.match('./index.html') || caches.match('./')))
   );
+});
+
+let _swSolarAlarmTimer = null;
+
+self.addEventListener('message', (event) => {
+  const data = event.data || {};
+  if (data.type === 'CANCEL_SOLAR_ALARM') {
+    if (_swSolarAlarmTimer) {
+      clearTimeout(_swSolarAlarmTimer);
+      _swSolarAlarmTimer = null;
+    }
+  } else if (data.type === 'SCHEDULE_SOLAR_ALARM') {
+    if (_swSolarAlarmTimer) clearTimeout(_swSolarAlarmTimer);
+    const delay = Math.max(1000, Number(data.delayMs) || 0);
+    const mins = Number(data.minutesTarget) || 10;
+    event.waitUntil(
+      new Promise((resolve) => {
+        _swSolarAlarmTimer = setTimeout(() => {
+          _swSolarAlarmTimer = null;
+          self.registration.showNotification('☀️ ¡Dosis de Vitamina D completada!', {
+            body: `Cumpliste tus ${mins} min de sol seguro. Pasá a la sombra o aplicate protector solar.`,
+            icon: './icon-192.png',
+            badge: './icon-192.png',
+            vibrate: [450, 160, 450, 160, 650],
+            tag: 'michufit-vitd-timer',
+            renotify: true,
+            requireInteraction: true
+          }).catch(() => {}).finally(resolve);
+        }, delay);
+      })
+    );
+  }
 });
 
 self.addEventListener('notificationclick', (event) => {
