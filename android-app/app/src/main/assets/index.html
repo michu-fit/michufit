@@ -1711,6 +1711,39 @@
       background: var(--bg-card-hover);
     }
 
+    .catalog-item.just-added {
+      border-color: var(--accent) !important;
+      background: var(--accent-soft) !important;
+      box-shadow: 0 0 0 2px rgba(14, 159, 119, 0.18);
+    }
+
+    @keyframes michuToastSlideIn {
+      0% { opacity: 0; transform: translate(-50%, -16px) scale(0.96); }
+      100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    }
+
+    .michu-food-toast {
+      position: fixed;
+      top: max(14px, env(safe-area-inset-top, 12px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(430px, calc(100vw - 24px));
+      z-index: 100040;
+      background: rgba(15, 25, 29, 0.96);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid rgba(20, 189, 142, 0.58);
+      border-radius: 16px;
+      padding: 11px 13px;
+      color: #f8fafc;
+      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.42);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      animation: michuToastSlideIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
     /* Cross-Browser & Mobile PWA Bulletproof Modal Overlay */
     .custom-modal-overlay,
     dialog {
@@ -6718,21 +6751,53 @@
       });
 
       const container = document.getElementById("quickCatalogContainer");
+      const prevScroll = container.scrollTop;
       container.innerHTML = "";
+
+      const currentSlot = (document.getElementById("quickMealTarget") && document.getElementById("quickMealTarget").value) || "lunch";
+      const dayMeals = ((appData.days && appData.days[selectedDate] && appData.days[selectedDate].meals) || []).filter(m => isMealConsumed(m));
+      const nowTs = Date.now();
+      const justState = window._michuQuickJustAdded || { name: "", slot: "", until: 0, lockUntil: 0 };
 
       for (const item of filtered) {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "catalog-item";
+        const normItemName = (item.name || "").trim().toLowerCase();
+        const isJustAdded = justState.name === normItemName && justState.slot === currentSlot && nowTs < justState.until;
+        const countInSlot = dayMeals.filter(m => m.mealType === currentSlot && (m.name || "").trim().toLowerCase() === normItemName).length;
+
+        btn.className = isJustAdded ? "catalog-item just-added" : "catalog-item";
         btn.innerHTML = `
           <div style="min-width:0;flex:1;">
             <div style="font-weight:800;font-size:0.84rem;color:var(--text);word-break:break-word;">${item.emoji || "🍽️"} ${item.name}</div>
             <div style="font-size:0.72rem;color:var(--text-muted);">${item.kcal} kcal • ${item.p}g P • ${item.c}g C • ${item.f}g G</div>
           </div>
-          <span style="color:var(--accent);font-weight:800;font-size:0.86rem;flex-shrink:0;">+ Sumar</span>
+          ${isJustAdded
+            ? `<span style="background:var(--accent);color:#ffffff;font-weight:800;font-size:0.76rem;padding:5px 10px;border-radius:999px;flex-shrink:0;box-shadow:0 3px 10px rgba(14,159,119,0.3);">✓ Sumado${countInSlot > 1 ? ` (${countInSlot})` : ""}</span>`
+            : `<div style="display:inline-flex;align-items:center;gap:6px;flex-shrink:0;">
+                ${countInSlot > 0 ? `<span style="background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:0.7rem;padding:2px 7px;border-radius:999px;border:1px solid rgba(14,159,119,0.28);">✓ ${countInSlot}x</span>` : ""}
+                <span style="color:var(--accent);font-weight:800;font-size:0.86rem;">+ Sumar</span>
+              </div>`}
         `;
         btn.addEventListener("click", () => {
+          const clickTs = Date.now();
+          const curJust = window._michuQuickJustAdded || { name: "", slot: "", lockUntil: 0 };
           const mealType = document.getElementById("quickMealTarget").value || "lunch";
+          // Evita doble toque involuntario en los primeros 550ms
+          if (curJust.name === normItemName && curJust.slot === mealType && clickTs < curJust.lockUntil) {
+            return;
+          }
+          window._michuQuickJustAdded = {
+            name: normItemName,
+            slot: mealType,
+            until: clickTs + 2000,
+            lockUntil: clickTs + 550
+          };
+          if (window._michuQuickJustTimer) clearTimeout(window._michuQuickJustTimer);
+          window._michuQuickJustTimer = setTimeout(() => {
+            renderQuickCatalog();
+          }, 2050);
+
           addFoodItemToDay(selectedDate, {
             mealType,
             name: item.name,
@@ -6745,6 +6810,7 @@
         });
         container.appendChild(btn);
       }
+      if (prevScroll > 0) container.scrollTop = prevScroll;
 
       if (normQ && filtered.length === 0) {
         const aiBtn = document.createElement("button");
@@ -7917,6 +7983,67 @@
       };
     }
 
+    let _foodToastTimer = null;
+
+    function showFoodAddedToast(newItem, dateKey) {
+      let toast = document.getElementById("michuFoodAddedToast");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "michuFoodAddedToast";
+        document.body.appendChild(toast);
+      }
+      if (_foodToastTimer) {
+        clearTimeout(_foodToastTimer);
+        _foodToastTimer = null;
+      }
+
+      const slotNames = {
+        breakfast: "🌅 Desayuno",
+        lunch: "☀️ Almuerzo",
+        merienda: "🧉 Merienda",
+        dinner: "🌙 Cena",
+        snack: "🍿 Snacks"
+      };
+      const slotLabel = slotNames[newItem.mealType] || "tu diario";
+      const shortName = String(newItem.name || "Alimento").length > 42
+        ? String(newItem.name).slice(0, 40) + "…"
+        : String(newItem.name || "Alimento");
+
+      toast.className = "michu-food-toast";
+      toast.style.display = "flex";
+      toast.innerHTML = `
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:0.73rem;font-weight:800;color:#34d399;letter-spacing:0.02em;">
+            ✅ Sumado en ${slotLabel}
+          </div>
+          <div style="font-size:0.82rem;font-weight:700;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${newItem.emoji || "🍽️"} ${shortName}
+          </div>
+          <div style="font-size:0.71rem;color:#94a3b8;font-weight:600;">
+            +${newItem.kcal} kcal • ${newItem.p}g P
+          </div>
+        </div>
+        <button type="button" id="btnUndoLastFoodToast" style="background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);color:#e2e8f0;font-size:0.74rem;font-weight:800;padding:6px 10px;border-radius:10px;cursor:pointer;flex-shrink:0;">
+          ↩ Deshacer
+        </button>
+      `;
+
+      document.getElementById("btnUndoLastFoodToast")?.addEventListener("click", () => {
+        const dRec = appData.days && appData.days[dateKey];
+        if (dRec && Array.isArray(dRec.meals)) {
+          dRec.meals = dRec.meals.filter(m => m.id !== newItem.id);
+          if (window._michuQuickJustAdded) window._michuQuickJustAdded.until = 0;
+          saveToServer();
+          renderAll();
+        }
+        toast.style.display = "none";
+      });
+
+      _foodToastTimer = setTimeout(() => {
+        if (toast) toast.style.display = "none";
+      }, 3400);
+    }
+
     function addFoodItemToDay(dateKey, itemData) {
       const day = ensureDayRecord(dateKey);
       const now = new Date();
@@ -7933,16 +8060,21 @@
         time: timeStr
       };
       day.meals.push(newItem);
+      try {
+        if (navigator.vibrate) navigator.vibrate(20);
+      } catch (_) {}
       const f = ensureFastingData();
       if (f.activeStart && dateKey === todayStr() && newItem.kcal > 15) {
         const hrs = Math.round(((Date.now() - new Date(f.activeStart).getTime()) / 3600000) * 10) / 10;
         if (confirm(`⏳ Tenés un ayuno intermitente en curso (${hrs} hs).\n\n¿Querés cortar y guardar tu ayuno ahora al registrar "${newItem.name}"?`)) {
           finishFastingSession();
+          showFoodAddedToast(newItem, dateKey);
           return;
         }
       }
       saveToServer();
       renderAll();
+      showFoodAddedToast(newItem, dateKey);
       setRaccoonSpeech(generateContextualRaccoonComment({ type: "food_added", item: newItem }));
     }
 
@@ -10056,6 +10188,7 @@
 
     // Buscador de catálogo rápido
     document.getElementById("quickCatalogSearch").addEventListener("input", renderQuickCatalog);
+    document.getElementById("quickMealTarget")?.addEventListener("change", renderQuickCatalog);
     document.getElementById("btnOpenCustomFoodModal").addEventListener("click", (e) => {
       e.stopPropagation();
       openFoodModal();
