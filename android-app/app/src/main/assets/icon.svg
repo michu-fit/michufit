@@ -1,73 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <!-- Fondo redondeado luminoso estilo app moderna -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#e0f2fe"/>
-      <stop offset="55%" stop-color="#f0fdf4"/>
-      <stop offset="100%" stop-color="#dcfce7"/>
+    <linearGradient id="michuEmeraldBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#12ad82"/>
+      <stop offset="100%" stop-color="#0d8f6b"/>
     </linearGradient>
   </defs>
-  <rect width="200" height="200" rx="46" fill="url(#bgGrad)"/>
-  <circle cx="100" cy="100" r="88" fill="#ffffff" stroke="#22c55e" stroke-width="5"/>
-
-  <!-- Cola en S con punta blanca (Izquierda) -->
-  <g>
-    <path d="M72 166 C34 162, 42 114, 20 100 C10 93, 12 76, 28 78 C44 80, 50 102, 52 124 C54 142, 62 150, 74 154 Z" fill="#686c73" stroke="#111318" stroke-width="4.2" stroke-linejoin="round"/>
-    <path d="M36 82 C26 77, 13 78, 15 92 C17 100, 26 102, 34 106 C38 96, 39 88, 36 82 Z" fill="#ffffff" stroke="#111318" stroke-width="4" stroke-linejoin="round"/>
+  <rect width="64" height="64" rx="15" fill="url(#michuEmeraldBg)"/>
+  <g transform="translate(5.44, 5.76) scale(0.83)">
+    <!-- Orejas grises con interior rosado -->
+    <path d="M13 27 C10 15, 12 7, 15 6 C18 5, 25 11, 28 18 Z" fill="#686c73" stroke="#111318" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M15.5 24 C13.5 16, 14.5 10, 16.5 9.5 C18.5 9, 23 13.5, 25 18.5 Z" fill="#f4979c"/>
+    <path d="M51 27 C54 15, 52 7, 49 6 C46 5, 39 11, 36 18 Z" fill="#686c73" stroke="#111318" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M48.5 24 C50.5 16, 49.5 10, 47.5 9.5 C45.5 9, 41 13.5, 39 18.5 Z" fill="#f4979c"/>
+    <!-- Cabeza gris con mechones laterales -->
+    <path d="M14 24 C19 15, 45 15, 50 24 C54 28, 57 32, 59 34 L54 36 L58 39 L53 41 L55 44 C50 51, 42 55, 32 55 C22 55, 14 51, 9 44 L11 41 L6 39 L10 36 L5 34 C7 32, 10 28, 14 24 Z" fill="#686c73" stroke="#111318" stroke-width="2.4" stroke-linejoin="round"/>
+    <!-- Triángulo blanco del hocico -->
+    <path d="M13.5 47.5 L32 34.5 L50.5 47.5 C45.5 52.5, 39 54.5, 32 54.5 C25 54.5, 18.5 52.5, 13.5 47.5 Z" fill="#ffffff"/>
+    <!-- Contorno superior cabeza -->
+    <path d="M14 24 C19 15, 45 15, 50 24 C54 28, 57 32, 59 34 L54 36 L58 39 L53 41 L55 44 C50 51, 42 55, 32 55 C22 55, 14 51, 9 44 L11 41 L6 39 L10 36 L5 34 C7 32, 10 28, 14 24 Z" fill="none" stroke="#111318" stroke-width="2.4" stroke-linejoin="round"/>
+    <!-- Cejas ovaladas -->
+    <ellipse cx="22.5" cy="24.5" rx="3.4" ry="1.6" transform="rotate(-14 22.5 24.5)" fill="#2e3239" stroke="#111318" stroke-width="1.2"/>
+    <ellipse cx="41.5" cy="24.5" rx="3.4" ry="1.6" transform="rotate(14 41.5 24.5)" fill="#2e3239" stroke="#111318" stroke-width="1.2"/>
+    <!-- Ojos redondos grandes con aro celeste y brillo -->
+    <circle cx="22" cy="33.5" r="6.2" fill="#a5c8f0" stroke="#111318" stroke-width="2"/>
+    <circle cx="22" cy="33.5" r="4.1" fill="#090d16"/>
+    <circle cx="20.3" cy="31.6" r="1.8" fill="#ffffff"/>
+    <circle cx="42" cy="33.5" r="6.2" fill="#a5c8f0" stroke="#111318" stroke-width="2"/>
+    <circle cx="42" cy="33.5" r="4.1" fill="#090d16"/>
+    <circle cx="40.3" cy="31.6" r="1.8" fill="#ffffff"/>
+    <!-- Nariz rosada y sonrisa :3 -->
+    <path d="M29.2 38.2 C30.8 37.3, 33.2 37.3, 34.8 38.2 C35.5 38.7, 34 41.5, 32 41.5 C30 41.5, 28.5 38.7, 29.2 38.2 Z" fill="#f48a94" stroke="#111318" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M32 41.5 L32 44.2 M26.5 44 C27.8 46.8, 32 46.5, 32 44 M32 44 C32 46.5, 36.2 46.8, 37.5 44" fill="none" stroke="#111318" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
-
-  <!-- Muslos traseros y patitas traseras gris oscuro -->
-  <path d="M68 128 C52 138, 50 162, 60 174 L78 174 Z" fill="#52565c" stroke="#111318" stroke-width="4" stroke-linejoin="round"/>
-  <path d="M132 128 C148 138, 150 162, 140 174 L122 174 Z" fill="#52565c" stroke="#111318" stroke-width="4" stroke-linejoin="round"/>
-  <ellipse cx="64" cy="175" rx="13" ry="9" fill="#52565c" stroke="#111318" stroke-width="4"/>
-  <ellipse cx="136" cy="175" rx="13" ry="9" fill="#52565c" stroke="#111318" stroke-width="4"/>
-
-  <!-- Torso sentado y Pechera blanca en V -->
-  <path d="M70 112 L64 174 L136 174 L130 112 Z" fill="#686c73" stroke="#111318" stroke-width="4" stroke-linejoin="round"/>
-  <ellipse cx="100" cy="160" rx="14" ry="18" fill="#8b9098"/>
-  <path d="M75 114 Q100 122 125 114 C122 138, 112 154, 100 158 C88 154, 78 138, 75 114 Z" fill="#ffffff" stroke="#111318" stroke-width="4" stroke-linejoin="round"/>
-
-  <!-- Patas delanteras y patitas blancas con deditos -->
-  <path d="M72 122 L70 176 L92 176 L89 144" fill="#686c73" stroke="#111318" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M128 122 L130 176 L108 176 L111 144" fill="#686c73" stroke="#111318" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <ellipse cx="83" cy="178" rx="14.5" ry="9.5" fill="#ffffff" stroke="#111318" stroke-width="4"/>
-  <path d="M78 171 L78 184 M87 171 L87 184" stroke="#111318" stroke-width="3" stroke-linecap="round"/>
-  <ellipse cx="117" cy="178" rx="14.5" ry="9.5" fill="#ffffff" stroke="#111318" stroke-width="4"/>
-  <path d="M113 171 L113 184 M122 171 L122 184" stroke="#111318" stroke-width="3" stroke-linecap="round"/>
-
-  <!-- Orejas redondeadas con interior rosado -->
-  <path d="M52 62 C44 38, 46 18, 56 16 C66 14, 82 28, 88 44 Z" fill="#686c73" stroke="#111318" stroke-width="4.2" stroke-linejoin="round"/>
-  <path d="M57 57 C52 40, 53 26, 59 24 C66 23, 77 33, 82 45 Z" fill="#f4979c" stroke="#111318" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M148 62 C156 38, 154 18, 144 16 C134 14, 118 28, 112 44 Z" fill="#686c73" stroke="#111318" stroke-width="4.2" stroke-linejoin="round"/>
-  <path d="M143 57 C148 40, 147 26, 141 24 C134 23, 123 33, 118 45 Z" fill="#f4979c" stroke="#111318" stroke-width="3" stroke-linejoin="round"/>
-
-  <!-- Cabeza con mechones laterales en las mejillas -->
-  <path d="M52 54 C66 36, 134 36, 148 54 C156 64, 158 76, 154 84 L164 88 L154 95 L162 100 L146 108 C130 122, 70 122, 54 108 L38 100 L46 95 L36 88 L46 84 C42 76, 44 64, 52 54 Z" fill="#686c73" stroke="#111318" stroke-width="4.2" stroke-linejoin="round"/>
-
-  <!-- Máscara facial blanca triangular en el hocico -->
-  <path d="M100 78 C86 84, 72 98, 56 108 C72 120, 128 120, 144 108 C128 98, 114 84, 100 78 Z" fill="#ffffff"/>
-  <path d="M54 108 C70 122, 130 122, 146 108" fill="none" stroke="#111318" stroke-width="4.2" stroke-linecap="round"/>
-
-  <!-- Rayas oscuras suaves en las mejillas -->
-  <path d="M44 89 Q56 91 63 88 M46 98 Q56 99 62 96" stroke="#484b52" stroke-width="3.4" stroke-linecap="round" fill="none"/>
-  <path d="M156 89 Q144 91 137 88 M154 98 Q144 99 138 96" stroke="#484b52" stroke-width="3.4" stroke-linecap="round" fill="none"/>
-
-  <!-- Cejas ovaladas expresivas -->
-  <ellipse cx="76" cy="55" rx="7.5" ry="3.4" transform="rotate(-14 76 55)" fill="#484b52" stroke="#111318" stroke-width="2.6"/>
-  <ellipse cx="124" cy="55" rx="7.5" ry="3.4" transform="rotate(14 124 55)" fill="#484b52" stroke="#111318" stroke-width="2.6"/>
-
-  <!-- Ojos grandes redondos con aro celeste y doble brillo blanco -->
-  <circle cx="75" cy="75" r="15.5" fill="#a5c8f0" stroke="#111318" stroke-width="3.5"/>
-  <circle cx="75" cy="75" r="11.2" fill="#090d16"/>
-  <circle cx="71" cy="70.5" r="4" fill="#ffffff"/>
-  <circle cx="79" cy="79.5" r="1.7" fill="#ffffff"/>
-
-  <circle cx="125" cy="75" r="15.5" fill="#a5c8f0" stroke="#111318" stroke-width="3.5"/>
-  <circle cx="125" cy="75" r="11.2" fill="#090d16"/>
-  <circle cx="121" cy="70.5" r="4" fill="#ffffff"/>
-  <circle cx="129" cy="79.5" r="1.7" fill="#ffffff"/>
-
-  <!-- Naricita rosada redondeada y sonrisa felina :3 -->
-  <path d="M93 84 Q100 81 107 84 Q109 89 100 92 Q91 89 93 84 Z" fill="#f4979c" stroke="#111318" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M100 92 L100 97 M88 96 Q94 103 100 97 Q106 103 112 96" fill="none" stroke="#111318" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

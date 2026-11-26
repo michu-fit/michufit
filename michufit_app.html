@@ -8,8 +8,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Michu Fit" />
   <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png" />
   <link rel="icon" type="image/svg+xml" href="./icon.svg" />
-  <link rel="apple-touch-icon" href="./icon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
   <title>Michu Fit 🐱 | Calculadora de Déficit y Seguimiento Calórico</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -2502,13 +2504,15 @@
               <path id="eyebrowRight" d="M119 47 Q127 43 136 48" stroke="#23272e" stroke-width="5" stroke-linecap="round" fill="none"/>
 
               <!-- Ojos grandes redondos con iris celeste claro y pupila negra brillante -->
-              <g id="raccoonEyes">
-                <ellipse id="eyeOrbLeft" cx="81" cy="64" rx="12.5" ry="12.5" fill="#a5c8f0" stroke="#111318" stroke-width="3.4"/>
-                <ellipse id="eyeOrbRight" cx="127" cy="64" rx="12.5" ry="12.5" fill="#a5c8f0" stroke="#111318" stroke-width="3.4"/>
-                <ellipse id="pupilLeft" cx="81" cy="64" rx="9" ry="9" fill="#090d16"/>
-                <ellipse id="pupilRight" cx="127" cy="64" rx="9" ry="9" fill="#090d16"/>
-                <circle id="shineLeft" cx="77.5" cy="60" r="3.4" fill="#ffffff"/>
-                <circle id="shineRight" cx="123.5" cy="60" r="3.4" fill="#ffffff"/>
+              <g id="raccoonEyes" style="transform-origin: 104px 64px;">
+                <ellipse id="eyeOrbLeft" cx="81" cy="64" rx="13.2" ry="13.2" fill="#a5c8f0" stroke="#111318" stroke-width="3.2"/>
+                <ellipse id="eyeOrbRight" cx="127" cy="64" rx="13.2" ry="13.2" fill="#a5c8f0" stroke="#111318" stroke-width="3.2"/>
+                <ellipse id="pupilLeft" cx="81" cy="64" rx="7.8" ry="7.8" fill="#090d16"/>
+                <ellipse id="pupilRight" cx="127" cy="64" rx="7.8" ry="7.8" fill="#090d16"/>
+                <circle id="shineLeft" cx="77.6" cy="60.2" r="3.6" fill="#ffffff"/>
+                <circle cx="84.2" cy="67.2" r="1.5" fill="#ffffff" opacity="0.9"/>
+                <circle id="shineRight" cx="123.6" cy="60.2" r="3.6" fill="#ffffff"/>
+                <circle cx="130.2" cy="67.2" r="1.5" fill="#ffffff" opacity="0.9"/>
               </g>
 
               <!-- Nariz triangular redondeada rosada -->
@@ -3680,8 +3684,8 @@
                 <path d="M51 27 C54 15, 52 7, 49 6 C46 5, 39 11, 36 18 Z" fill="#686c73" stroke="#111318" stroke-width="2.4" stroke-linejoin="round"/>
                 <path d="M14 24 C19 15, 45 15, 50 24 C54 28, 57 32, 59 34 L54 36 L58 39 L53 41 L55 44 C50 51, 42 55, 32 55 C22 55, 14 51, 9 44 L11 41 L6 39 L10 36 L5 34 C7 32, 10 28, 14 24 Z" fill="#686c73" stroke="#111318" stroke-width="2.4" stroke-linejoin="round"/>
                 <path d="M13.5 47.5 L32 34.5 L50.5 47.5 C45.5 52.5, 39 54.5, 32 54.5 C25 54.5, 18.5 52.5, 13.5 47.5 Z" fill="#ffffff"/>
-                <circle cx="22" cy="33.5" r="5.5" fill="#a5c8f0" stroke="#111318" stroke-width="1.8"/><circle cx="22" cy="33.5" r="4" fill="#090d16"/>
-                <circle cx="42" cy="33.5" r="5.5" fill="#a5c8f0" stroke="#111318" stroke-width="1.8"/><circle cx="42" cy="33.5" r="4" fill="#090d16"/>
+                <circle cx="22" cy="33.5" r="6.2" fill="#a5c8f0" stroke="#111318" stroke-width="2"/><circle cx="22" cy="33.5" r="4.3" fill="#090d16"/><circle cx="20.2" cy="31.5" r="1.8" fill="#ffffff"/>
+                <circle cx="42" cy="33.5" r="6.2" fill="#a5c8f0" stroke="#111318" stroke-width="2"/><circle cx="42" cy="33.5" r="4.3" fill="#090d16"/><circle cx="40.2" cy="31.5" r="1.8" fill="#ffffff"/>
               </svg>
             </div>
             <span style="font-weight:800;font-size:1.02rem;letter-spacing:-0.02em;color:#f8fafc;">Michu Fit</span>
@@ -5634,12 +5638,23 @@
       const mouth = document.getElementById("raccoonMouth");
       const browL = document.getElementById("eyebrowLeft");
       const browR = document.getElementById("eyebrowRight");
+      const orbL = document.getElementById("eyeOrbLeft");
+      const orbR = document.getElementById("eyeOrbRight");
       const pupilL = document.getElementById("pupilLeft");
       const pupilR = document.getElementById("pupilRight");
-      const belly = document.getElementById("raccoonBelly");
+      const shineL = document.getElementById("shineLeft");
+      const shineR = document.getElementById("shineRight");
+      const eyesGroup = document.getElementById("raccoonEyes");
       const prop = document.getElementById("raccoonProp");
       const badge = document.getElementById("raccoonStateLabel");
       const wrap = document.getElementById("raccoonAvatarWrap");
+
+      // Garantizar siempre iris celeste y brillo blanco visibles
+      if (orbL) { orbL.setAttribute("rx", "13.2"); orbL.setAttribute("ry", "13.2"); }
+      if (orbR) { orbR.setAttribute("rx", "13.2"); orbR.setAttribute("ry", "13.2"); }
+      if (shineL) shineL.style.opacity = "1";
+      if (shineR) shineR.style.opacity = "1";
+      if (eyesGroup && window.gsap) window.gsap.set(eyesGroup, { scaleY: 1, svgOrigin: "104 64" });
 
       wrap.classList.remove("bounce");
       void wrap.offsetWidth;
@@ -5650,8 +5665,8 @@
         if (browL) browL.setAttribute("d", "M70 44 Q81 39 90 48");
         if (browR) browR.setAttribute("d", "M118 49 Q127 46 138 49");
         if (mouth) mouth.setAttribute("d", "M95 88 Q104 83 113 88");
-        if (pupilL) pupilL.setAttribute("rx", "7.5");
-        if (pupilR) pupilR.setAttribute("rx", "7.5");
+        if (pupilL) { pupilL.setAttribute("rx", "6.8"); pupilL.setAttribute("ry", "7.6"); }
+        if (pupilR) { pupilR.setAttribute("rx", "6.8"); pupilR.setAttribute("ry", "7.6"); }
         prop.textContent = "🍕";
         badge.textContent = "🐱 Michu te está juzgando";
         badge.style.background = "var(--danger-soft)";
@@ -5661,27 +5676,27 @@
         if (browL) browL.setAttribute("d", "M72 46 Q81 40 89 46");
         if (browR) browR.setAttribute("d", "M119 46 Q127 40 136 46");
         if (mouth) mouth.setAttribute("d", "M104 80.5 L104 86.5 M91 85 C93 93, 104 92.5, 104 86 M104 86 C104 92.5, 115 93, 117 85");
-        if (pupilL) pupilL.setAttribute("rx", "9.5");
-        if (pupilR) pupilR.setAttribute("rx", "9.5");
+        if (pupilL) { pupilL.setAttribute("rx", "8.4"); pupilL.setAttribute("ry", "8.4"); }
+        if (pupilR) { pupilL.setAttribute("rx", "8.4"); pupilR.setAttribute("ry", "8.4"); }
         prop.textContent = "💪";
         badge.textContent = "🐱 Modo Gym-Michu";
         badge.style.background = "var(--accent-soft)";
         badge.style.color = "var(--accent)";
       } else if (stateType === "hydrated") {
         if (mouth) mouth.setAttribute("d", "M104 80.5 L104 86.5 M92 86 C94 92, 104 91.5, 104 86 M104 86 C104 91.5, 114 92, 116 86");
-        if (pupilL) pupilL.setAttribute("rx", "9");
-        if (pupilR) pupilR.setAttribute("rx", "9");
+        if (pupilL) { pupilL.setAttribute("rx", "7.8"); pupilL.setAttribute("ry", "7.8"); }
+        if (pupilR) { pupilR.setAttribute("rx", "7.8"); pupilR.setAttribute("ry", "7.8"); }
         prop.textContent = "💧";
         badge.textContent = "🐱 Michu hidratado";
         badge.style.background = "var(--info-soft)";
         badge.style.color = "var(--info)";
       } else if (stateType === "scanning") {
-        // Pupilas dilatadas de gato cazando calorías
+        // Pupilas dilatadas de gato cazando calorías (conservando aro celeste)
         if (browL) browL.setAttribute("d", "M72 45 Q81 40 89 47");
         if (browR) browR.setAttribute("d", "M119 47 Q127 40 136 45");
         if (mouth) mouth.setAttribute("d", "M99 87 A5 5 0 1 0 109 87 A5 5 0 1 0 99 87");
-        if (pupilL) pupilL.setAttribute("rx", "10");
-        if (pupilR) pupilR.setAttribute("rx", "10");
+        if (pupilL) { pupilL.setAttribute("rx", "8.8"); pupilL.setAttribute("ry", "8.8"); }
+        if (pupilR) { pupilL.setAttribute("rx", "8.8"); pupilR.setAttribute("ry", "8.8"); }
         prop.textContent = "🔍";
         badge.textContent = "🐱 Olfateando calorías...";
         badge.style.background = "var(--purple-soft)";
@@ -5690,8 +5705,8 @@
         if (browL) browL.setAttribute("d", "M72 48 Q81 43 89 47");
         if (browR) browR.setAttribute("d", "M119 47 Q127 43 136 48");
         if (mouth) mouth.setAttribute("d", "M104 80.5 L104 86.5 M92 86 C94 92, 104 91.5, 104 86 M104 86 C104 91.5, 114 92, 116 86");
-        if (pupilL) { pupilL.setAttribute("rx", "9"); pupilL.setAttribute("ry", "9"); }
-        if (pupilR) { pupilR.setAttribute("rx", "9"); pupilR.setAttribute("ry", "9"); }
+        if (pupilL) { pupilL.setAttribute("rx", "7.8"); pupilL.setAttribute("ry", "7.8"); }
+        if (pupilR) { pupilR.setAttribute("rx", "7.8"); pupilR.setAttribute("ry", "7.8"); }
         prop.textContent = "🥗";
         badge.textContent = "🐱 En zona de déficit";
         badge.style.background = "var(--accent-soft)";
@@ -9388,22 +9403,24 @@
         if (pupilL) {
           pupilL.setAttribute("cx", "81");
           pupilL.setAttribute("cy", "64");
-          pupilL.setAttribute("rx", "9");
-          pupilL.setAttribute("ry", "9");
+          pupilL.setAttribute("rx", "7.8");
+          pupilL.setAttribute("ry", "7.8");
         }
         if (pupilR) {
           pupilR.setAttribute("cx", "127");
           pupilR.setAttribute("cy", "64");
-          pupilR.setAttribute("rx", "9");
-          pupilR.setAttribute("ry", "9");
+          pupilR.setAttribute("rx", "7.8");
+          pupilR.setAttribute("ry", "7.8");
         }
         if (shineL) {
-          shineL.setAttribute("cx", "77.5");
-          shineL.setAttribute("cy", "60");
+          shineL.setAttribute("cx", "77.6");
+          shineL.setAttribute("cy", "60.2");
+          shineL.style.opacity = "1";
         }
         if (shineR) {
-          shineR.setAttribute("cx", "123.5");
-          shineR.setAttribute("cy", "60");
+          shineR.setAttribute("cx", "123.6");
+          shineR.setAttribute("cy", "60.2");
+          shineR.style.opacity = "1";
         }
         if (fangs) fangs.style.opacity = "0";
         if (bellyDetails) bellyDetails.style.opacity = "0";
@@ -9566,14 +9583,14 @@
         if (clawsL) clawsL.style.opacity = "1";
         if (clawsR) clawsR.style.opacity = "1";
 
-        // Pupilas súper dilatadas de gato cazador
+        // Pupilas dilatadas de gato cazador (conservando el aro celeste visible)
         if (pupilL) {
-          pupilL.setAttribute("rx", "10.6");
-          pupilL.setAttribute("ry", "10.6");
+          pupilL.setAttribute("rx", "9.2");
+          pupilL.setAttribute("ry", "9.2");
         }
         if (pupilR) {
-          pupilR.setAttribute("rx", "10.6");
-          pupilR.setAttribute("ry", "10.6");
+          pupilR.setAttribute("rx", "9.2");
+          pupilR.setAttribute("ry", "9.2");
         }
         if (browL) browL.setAttribute("d", "M70 43 L91 51");
         if (browR) browR.setAttribute("d", "M138 43 L117 51");
@@ -11901,12 +11918,14 @@
                 <path d="M68 65 Q81 74 94 65" fill="none" stroke="#111318" stroke-width="4.2" stroke-linecap="round"/>
                 <path d="M114 65 Q127 74 140 65" fill="none" stroke="#111318" stroke-width="4.2" stroke-linecap="round"/>
               ` : `
-                <circle cx="81" cy="64" r="12.5" fill="#a5c8f0" stroke="#111318" stroke-width="3.2"/>
-                <circle cx="81" cy="64" r="9" fill="#090d16"/>
-                <circle cx="77.5" cy="60" r="3.3" fill="#ffffff"/>
-                <circle cx="127" cy="64" r="12.5" fill="#a5c8f0" stroke="#111318" stroke-width="3.2"/>
-                <circle cx="127" cy="64" r="9" fill="#090d16"/>
-                <circle cx="123.5" cy="60" r="3.3" fill="#ffffff"/>
+                <circle cx="81" cy="64" r="13.2" fill="#a5c8f0" stroke="#111318" stroke-width="3.2"/>
+                <circle cx="81" cy="64" r="7.8" fill="#090d16"/>
+                <circle cx="77.6" cy="60.2" r="3.6" fill="#ffffff"/>
+                <circle cx="84.2" cy="67.2" r="1.5" fill="#ffffff" opacity="0.9"/>
+                <circle cx="127" cy="64" r="13.2" fill="#a5c8f0" stroke="#111318" stroke-width="3.2"/>
+                <circle cx="127" cy="64" r="7.8" fill="#090d16"/>
+                <circle cx="123.6" cy="60.2" r="3.6" fill="#ffffff"/>
+                <circle cx="130.2" cy="67.2" r="1.5" fill="#ffffff" opacity="0.9"/>
               `}
               <!-- Cejas expresivas -->
               ${isDirect ? `
@@ -16943,33 +16962,31 @@
           });
         }
 
-        // Parpadeo natural sobre los ojos redondos (cy=64 fijo)
+        // Parpadeo limpio escalando el grupo completo de ojos (nunca oculta iris ni brillos)
+        const eyesGroup = document.getElementById("raccoonEyes");
         function scheduleNextBlink() {
-          const delayMs = 2600 + Math.random() * 2800;
+          const delayMs = 2800 + Math.random() * 2800;
           setTimeout(() => {
-            if (orbL && orbR && pupL && pupR && window.gsap) {
-              window.gsap.to([orbL, orbR], {
-                attr: { ry: 0.8 },
-                duration: 0.075,
-                yoyo: true,
-                repeat: 1,
-                ease: "power1.inOut"
-              });
-              window.gsap.to([pupL, pupR], {
-                attr: { ry: 0.6 },
-                duration: 0.075,
-                yoyo: true,
-                repeat: 1,
-                ease: "power1.inOut"
-              });
-              if (shL && shR) {
-                window.gsap.to([shL, shR], {
-                  opacity: 0,
+            if (eyesGroup && window.gsap) {
+              window.gsap.fromTo(
+                eyesGroup,
+                { scaleY: 1, svgOrigin: "104 64" },
+                {
+                  scaleY: 0.08,
+                  svgOrigin: "104 64",
                   duration: 0.075,
                   yoyo: true,
-                  repeat: 1
-                });
-              }
+                  repeat: 1,
+                  ease: "power1.inOut",
+                  onComplete: () => {
+                    window.gsap.set(eyesGroup, { scaleY: 1, svgOrigin: "104 64" });
+                    if (orbL) orbL.setAttribute("ry", "13.2");
+                    if (orbR) orbR.setAttribute("ry", "13.2");
+                    if (shL) shL.style.opacity = "1";
+                    if (shR) shR.style.opacity = "1";
+                  }
+                }
+              );
             }
             scheduleNextBlink();
           }, delayMs);
