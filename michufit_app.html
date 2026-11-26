@@ -4438,6 +4438,7 @@
       const gwVal = Number(goalWeight) || Math.max(48, Math.round(wVal - 5));
       const fastHours = Number(extra.fastingTargetHours) || 14;
       const eatHours = Math.max(4, 24 - fastHours);
+      const calcWaterGlasses = Number(extra.waterGoal) || Math.max(8, Math.min(14, Math.round((wVal * 35) / 250) + (extra.waterHabit && extra.waterHabit !== "yes" ? 1 : 0)));
       return {
         profile: {
           name: name || "Paciente",
@@ -4451,14 +4452,21 @@
           deficitType: extra.deficitType || "recommended",
           customDeficit: Number(extra.customDeficit) || 500,
           macroPreset: extra.macroPreset || "high_protein",
-          waterGoal: Number(extra.waterGoal) || 8,
+          dietType: extra.dietType || extra.macroPreset || "high_protein",
+          waterGoal: calcWaterGlasses,
+          waterHabit: extra.waterHabit || "yes",
           moodMode: extra.moodMode || "sarcastic",
           talkStyle: extra.talkStyle || "direct",
           MascotName: extra.mascotName || "Michu",
           eatingWindowStart: extra.eatingStart || "10:00",
           eatingWindowEnd: extra.eatingEnd || "20:00",
           mealsPerDay: Number(extra.mealsPerDay) || 3,
-          allergies: Array.isArray(extra.allergies) ? extra.allergies : []
+          allergies: Array.isArray(extra.allergies) ? extra.allergies : [],
+          extraGoals: Array.isArray(extra.extraGoals) ? extra.extraGoals : [],
+          weekendEatMore: extra.weekendEatMore || null,
+          cravingsFreq: extra.cravingsFreq || null,
+          weeklyRateKg: Number(extra.weeklyRateKg) || 0.5,
+          aiWizardSummary: extra.aiWizardSummary || ""
         },
         customFoods: [
           {
@@ -5271,6 +5279,11 @@
           const result = estimateExerciseOffline(desc, weightKg);
           return sbJsonResponse({ ok: true, result });
         }
+
+        // 13. POST /api/ai-wizard-coach (en modo nube usa motor IA local o clave Gemini del navegador)
+        if (method === "POST" && path.endsWith("/api/ai-wizard-coach")) {
+          return sbJsonResponse({ ok: false });
+        }
       } catch (err) {
         console.warn("Supabase Cloud API fallback:", err);
       }
@@ -5787,7 +5800,7 @@
         targets.isSurplus
           ? `"En etapa de volumen limpio cada gramo de proteína y entrenamiento pesado cuenta. Te faltan ${Math.max(0, remaining)} kcal hoy para completar tu superávit 🐱💪."`
           : `"¿Sabías que cada 7,700 kcal de déficit acumulado bajás ~1 kg de grasa pura? Hoy ya le venís ganando ${Math.max(0, targets.tdee + totals.exerciseKcal - totals.kcal)} kcal a tu mantenimiento 🐱📉."`,
-        `"A ver esas manos... ¿viniste a registrar una comida nutritiva o un picoteo clandestino? Mis ojos amarillos lo ven todo 🐱🕵️‍♂️"`
+        `"A ver esas manos... ¿viniste a registrar una comida nutritiva o un picoteo clandestino? Mis ojos celestes lo ven todo 🐱🕵️‍♂️"`
       ];
 
       const cutePool = [
@@ -12001,13 +12014,325 @@
         return { label: "Obeso", color: "#ef4444", bg: "rgba(239,68,68,0.18)" };
       }
 
-      function getBpEtaDateStr() {
-        const diff = Math.abs(getBpWeight() - getBpGoalWeight());
-        const rate = Math.max(0.15, Number(bpState.weeklyRateKg) || 0.5);
-        const weeks = Math.max(1, Math.ceil(diff / rate));
-        const dt = new Date();
-        dt.setDate(dt.getDate() + weeks * 7);
-        return dt.toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
+      function getBpEtaDateStr(customDays = null) {
+        if (typeof customDays === "number" && customDays > 0) {
+          const dtCustom = new Date();
+          dtCustom.setDate(dtCustom.getDate() + customDays);
+          return dtCustom.toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
+        }
+        const ev = evaluateBpWizardAi();
+        return ev.etaDateStr;
+      }
+
+      let bpGeminiWizardCache = { sig: "", text: "", headline: "" };
+
+      function evaluateBpWizardAi() {
+        const uName = ((bpState.userName || "Campeón").trim().split(/\s+/)[0]) || "Campeón";
+        const curW = getBpWeight();
+        const goalW = getBpGoalWeight();
+        const hCm = Number(bpState.height) || 173;
+        const hM = hCm / 100;
+        const age = Number(bpState.age) || 35;
+        const sex = bpState.sex === "female" ? "female" : "male";
+        const act = Number(bpState.activity) || 1.375;
+        const talk = bpState.talkStyle || "direct";
+        const meals = Number(bpState.mealsPerDay) || 3;
+        const rawWin = (bpState.eatingEndHour - bpState.eatingStartHour + 24) % 24;
+        const winHrs = rawWin === 0 ? 24 : rawWin;
+        const fastHrs = 24 - winHrs;
+        const fmtH = (h) => `${String(((h % 24) + 24) % 24).padStart(2, "0")}:00`;
+
+        const bmi = Math.round((curW / (hM * hM)) * 10) / 10;
+        const goalBmi = Math.round((goalW / (hM * hM)) * 10) / 10;
+        const healthyMinW = Math.ceil(18.8 * hM * hM);
+
+        const isGain = bpState.mainGoal === "gain" || goalW > curW + 0.2;
+        const isMaint = !isGain && (bpState.mainGoal === "maintain" || Math.abs(goalW - curW) <= 0.2);
+        const absDiff = Math.abs(curW - goalW);
+        const diffKgFmt = absDiff.toFixed(1).replace(".", ",");
+
+        const sexOffset = sex === "female" ? -161 : 5;
+        const bmr = Math.round(10 * curW + 6.25 * hCm - 5 * age + sexOffset);
+        const tdee = Math.round(bmr * act);
+        const minSafe = sex === "female" ? 1250 : 1500;
+
+        const r = Number(bpState.weeklyRateKg) || (isGain ? 0.3 : 0.5);
+        const rFmt = r.toFixed(2).replace(".00", ",0").replace(/(\.\d)0$/, "$1").replace(".", ",");
+        const requestedAdj = isMaint ? 0 : (isGain ? Math.round(r * 1100) : Math.round(r * 1000));
+        const rawTargetKcal = isMaint ? tdee : (isGain ? tdee + requestedAdj : tdee - requestedAdj);
+        const safeTargetKcal = isMaint ? tdee : (isGain ? rawTargetKcal : Math.max(minSafe, rawTargetKcal));
+        const effectiveDeficit = isGain ? 0 : Math.max(0, tdee - safeTargetKcal);
+        const effectiveSurplus = isGain ? Math.max(0, safeTargetKcal - tdee) : 0;
+        const effectiveWeeklyKg = isMaint
+          ? 0
+          : (isGain
+            ? Math.max(0.1, Number((effectiveSurplus / 1100).toFixed(2)))
+            : Math.max(0.15, Number(((effectiveDeficit * 7) / 7700).toFixed(2))));
+
+        const weeksNeeded = !isMaint && absDiff > 0.1
+          ? Math.max(1, Math.ceil(absDiff / Math.max(0.12, effectiveWeeklyKg)))
+          : 0;
+        const etaDt = new Date();
+        etaDt.setDate(etaDt.getDate() + weeksNeeded * 7);
+        const etaDateStr = etaDt.toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
+
+        const pctBwWeek = (r / Math.max(35, curW)) * 100;
+        const pctBwFmt = pctBwWeek.toFixed(2).replace(".", ",");
+        const pctTdeeCut = Math.round((requestedAdj / Math.max(1, tdee)) * 100);
+        const dropsBelowMinSafe = !isGain && !isMaint && rawTargetKcal < minSafe;
+        const dropsBelowBmr = !isGain && !isMaint && rawTargetKcal < Math.round(bmr * 0.93);
+
+        const extraGoals = Array.isArray(bpState.extraGoals) ? bpState.extraGoals : [];
+        const wantsMuscle = extraGoals.some(g => /fuerza|hipertrofia|músculo|deportivo/i.test(g));
+        const wantsEnergy = extraGoals.some(g => /energía/i.test(g));
+        const wantsHealthyRel = extraGoals.some(g => /relación saludable/i.test(g));
+        const wantsGut = extraGoals.some(g => /intestinal/i.test(g));
+
+        // Calcular ritmo recomendado real para su cuerpo y objetivos
+        let recRateKg = 0.5;
+        if (isGain) {
+          recRateKg = act >= 1.55 ? 0.30 : 0.25;
+        } else if (!isMaint) {
+          const idealPct = bmi >= 30 ? 0.007 : (bmi < 24 || wantsMuscle ? 0.0052 : 0.0062);
+          const byWeight = curW * idealPct;
+          const maxSafeDeficit = Math.max(300, Math.min(680, tdee - Math.max(minSafe, Math.round(bmr * 0.95))));
+          const byMetabolism = maxSafeDeficit / 1000;
+          recRateKg = Math.max(0.3, Math.min(0.7, Math.round(Math.min(byWeight, byMetabolism) * 10) / 10));
+        }
+        const recRateFmt = recRateKg.toFixed(1).replace(".", ",");
+        const recKcalAdj = isGain ? Math.round(recRateKg * 1100) : Math.round(recRateKg * 1000);
+        const recTargetKcal = isGain ? tdee + recKcalAdj : Math.max(minSafe, tdee - recKcalAdj);
+
+        let severity = "optimal"; // gentle | optimal | demanding | aggressive | underweight_warn
+        if (!isGain && !isMaint && goalBmi < 18.5) {
+          severity = "underweight_warn";
+        } else if (isMaint) {
+          severity = "optimal";
+        } else if (isGain) {
+          if (r >= 0.55) severity = "aggressive";
+          else if (r >= 0.42) severity = "demanding";
+          else if (r <= 0.2) severity = "gentle";
+          else severity = "optimal";
+        } else {
+          if (dropsBelowMinSafe || dropsBelowBmr || pctBwWeek > 0.92 || pctTdeeCut >= 34 || requestedAdj >= 850) {
+            severity = "aggressive";
+          } else if (pctBwWeek > 0.74 || pctTdeeCut >= 26 || requestedAdj >= 700 || (requestedAdj >= 600 && (wantsMuscle || wantsEnergy))) {
+            severity = "demanding";
+          } else if (pctBwWeek < 0.42) {
+            severity = "gentle";
+          } else {
+            severity = "optimal";
+          }
+        }
+
+        const dietNames = {
+          balanced: "Equilibrada",
+          high_protein: "Alta en proteínas",
+          low_carb: "Low-Carb / Keto",
+          vegetarian: "Vegetariana",
+          vegan: "Vegana",
+          paleo: "Paleo"
+        };
+        const dietLabel = dietNames[bpState.dietType] || "Alta en proteínas";
+        const actLabel = act <= 1.21 ? "sedentario" : (act <= 1.38 ? "actividad ligera" : (act <= 1.56 ? "entrenamiento moderado" : "alta actividad"));
+        const proteinTargetG = Math.round(curW * (bpState.dietType === "balanced" ? 1.8 : 2.0));
+        const protPerMeal = Math.round(proteinTargetG / Math.max(1, meals));
+        const waterGoalGlasses = Math.max(8, Math.min(14, Math.round((curW * 35) / 250) + (bpState.waterHabit !== "yes" ? 1 : 0)));
+
+        // Cruces inteligentes de todo lo cargado en el wizard
+        const conflictReasons = [];
+        if (dropsBelowMinSafe || dropsBelowBmr) {
+          conflictReasons.push(`Con tu gasto diario actual (${tdee} kcal, basal ${bmr} kcal por ${actLabel}), recortar -${requestedAdj} kcal te bajaría a ${rawTargetKcal} kcal/día — perforando tu metabolismo basal y el piso clínico seguro (${minSafe} kcal).`);
+        } else if (!isGain && !isMaint && severity === "aggressive") {
+          conflictReasons.push(`-${requestedAdj} kcal/día representa recortar el ${pctTdeeCut}% de tu energía diaria (${pctBwFmt}% de tu peso por semana), superando el límite fisiológico sostenible (0,5%–0,75%/sem).`);
+        }
+        if (wantsMuscle && (severity === "aggressive" || severity === "demanding") && !isGain) {
+          conflictReasons.push(`Marcaste ganar fuerza/músculo o rendimiento: con -${requestedAdj} kcal/día cae la síntesis proteica y corrés alto riesgo de perder masa magra.`);
+        }
+        if (wantsEnergy && (severity === "aggressive" || severity === "demanding") && !isGain) {
+          conflictReasons.push(`Pediste aumentar tu energía diaria, pero un recorte de -${requestedAdj} kcal genera fatiga, frío y caída de rendimiento por la tarde.`);
+        }
+        if (wantsHealthyRel && severity === "aggressive") {
+          conflictReasons.push(`Buscás una relación sana con la comida: los déficits extremos suelen disparar ansiedad y efecto rebote el fin de semana.`);
+        }
+        if (isGain && severity === "aggressive") {
+          conflictReasons.push(`Un superávit de +${requestedAdj} kcal/día (+${rFmt} kg/sem) supera la velocidad natural de creación muscular (~0,25–0,35 kg/sem) y acumulará grasa innecesaria.`);
+        }
+
+        const personalizedBullets = [];
+        personalizedBullets.push(`🍽️ <strong>${meals} comidas/día (${fmtH(bpState.eatingStartHour)}–${fmtH(bpState.eatingEndHour)}, ayuno ${fastHrs}:${winHrs})</strong>: ~${protPerMeal}g de proteína por comida (meta ${proteinTargetG}g/día).`);
+        personalizedBullets.push(`🥗 <strong>Dieta ${dietLabel}</strong>${bpState.allergies.length ? ` • Sin <strong>${bpState.allergies.join(", ")}</strong> en tu Menú IA` : " • Sin alergias reportadas"}.`);
+        if (bpState.waterHabit !== "yes") {
+          personalizedBullets.push(`💧 <strong>Hidratación reforzada (${waterGoalGlasses} vasos/día)</strong>: clave porque indicaste tomar poca agua y eso suele confundirse con hambre.`);
+        } else {
+          personalizedBullets.push(`💧 <strong>Meta hídrica (${waterGoalGlasses} vasos/día)</strong> calibrada para tus ${curW} kg.`);
+        }
+        if (bpState.weekendEatMore === "yes" || bpState.cravingsFreq === "always" || bpState.cravingsFreq === "sometimes") {
+          const wkTxt = bpState.weekendEatMore === "yes" ? "fines de semana más flexibles" : "";
+          const crTxt = bpState.cravingsFreq === "always" ? "control diario de antojos frecuentes" : (bpState.cravingsFreq === "sometimes" ? "opciones anti-antojo" : "");
+          personalizedBullets.push(`🧠 <strong>Blindaje conductual</strong>: activamos ${[wkTxt, crTxt].filter(Boolean).join(" + ")} en el Menú Emocional de Michu.`);
+        }
+        if (wantsGut) {
+          personalizedBullets.push(`🫚 <strong>Salud digestiva</strong>: tenés habilitado el modo Desinflamante con infusiones digestivas.`);
+        }
+
+        // Mensaje corto reactivo para la pantalla del slider (goal_speed)
+        let sliderBubble = isGain
+          ? "¿A qué ritmo querés ganar peso y masa muscular?"
+          : "¿Qué tan rápido quieres alcanzar tu meta?";
+        if (!isMaint) {
+          if (severity === "aggressive") {
+            if (talk === "direct") {
+              sliderBubble = isGain
+                ? `Pará la moto, ${uName}: +${rFmt} kg/sem (+${requestedAdj} kcal) te va a tapar de grasa, no de músculo.`
+                : `Frená ahí, ${uName}: -${requestedAdj} kcal/día sobre tus ${tdee} kcal es demasiado agresivo. Vas a perder músculo y energía.`;
+            } else if (talk === "kind") {
+              sliderBubble = `Cuidemos tu cuerpo, ${uName}: ${isGain ? `+${requestedAdj}` : `-${requestedAdj}`} kcal/día es muy brusco para sostenerlo con bienestar.`;
+            } else if (talk === "mindful") {
+              sliderBubble = `Observá este ritmo, ${uName}: recortar -${requestedAdj} kcal/día genera tensión metabólica difícil de sostener.`;
+            } else {
+              sliderBubble = `¡Ojo ${uName}! Con entusiasmo sí, pero -${requestedAdj} kcal/día es muy extremo; en ${recRateFmt} kg/sem rendís mucho mejor.`;
+            }
+          } else if (severity === "demanding") {
+            sliderBubble = talk === "direct"
+              ? `Ritmo picante (${isGain ? '+' : '-'}${requestedAdj} kcal/día). Exige disciplina total con los ${proteinTargetG}g de proteína y el descanso.`
+              : `Es un ritmo exigente (${rFmt} kg/sem): viable si cuidamos al máximo tu proteína y descanso.`;
+          } else if (severity === "optimal") {
+            sliderBubble = talk === "direct"
+              ? `Punto justo, ${uName}: ${rFmt} kg/sem (${isGain ? '+' : '-'}${requestedAdj} kcal/día) quema grasa real sin regalar músculo.`
+              : `¡Excelente equilibrio, ${uName}! ${rFmt} kg/sem es sostenible, saludable y respaldado por evidencia.`;
+          }
+        }
+
+        // Headline + discurso completo en pantalla 24 (Diagnóstico IA de Viabilidad)
+        let headlineHtml = "";
+        let coachBody = "";
+        let mascotVariant = talk === "direct" ? "direct" : (talk === "kind" ? "kind" : (talk === "mindful" ? "zen" : "stars"));
+
+        if (severity === "underweight_warn") {
+          mascotVariant = "direct";
+          headlineHtml = `${uName}, bajar a <span style="color:#ef4444;">${goalW} kg</span> te deja en bajo peso clínico (IMC ${goalBmi.toFixed(1).replace(".", ",")})`;
+          coachBody = talk === "direct"
+            ? `Me elegiste directo y mi prioridad es tu salud: para tus ${hCm} cm, ${goalW} kg está por debajo del rango saludable. Apuntemos al menos a ${healthyMinW} kg con buena masa muscular y ${proteinTargetG}g de proteína.`
+            : `Queremos verte saludable y fuerte: para tus ${hCm} cm, un objetivo desde ${healthyMinW} kg protege tus hormonas, tu energía y tu masa muscular.`;
+        } else if (severity === "aggressive") {
+          mascotVariant = "direct";
+          if (isGain) {
+            headlineHtml = `${uName}, subir <span style="color:#38bdf8;">+${diffKgFmt} kg</span> está bien, pero a <span style="color:#ef4444;">+${rFmt} kg/sem</span> no es músculo real`;
+            coachBody = talk === "direct"
+              ? `Elegiste un Michu directo, así que sin humo: tu cuerpo construye músculo limpio a ~0,25–0,35 kg/sem. Meter +${requestedAdj} kcal/día sobre tus ${tdee} kcal solo te suma grasa abdominal. Bajalo a +${recRateFmt} kg/sem (+${recKcalAdj} kcal) y subimos limpio.`
+              : `Subir +${diffKgFmt} kg es un gran proyecto, pero a +${rFmt} kg/sem gran parte será tejido adiposo. En +${recRateFmt} kg/sem maximizamos masa magra cuidando tu definición.`;
+          } else {
+            headlineHtml = `${uName}, bajar <span style="color:#22c55e;">${diffKgFmt} kg</span> es lograble, pero a <span style="color:#ef4444;">-${requestedAdj} kcal/día (${rFmt} kg/sem)</span> NO es realista`;
+            if (talk === "direct") {
+              coachBody = `Pediste un Michu directo, así que te hablo con tus datos reales: con ${age} años, ${curW} kg y ${actLabel}, tu gasto diario es ${tdee} kcal (basal ${bmr} kcal). Recortar -${requestedAdj} kcal (${pctTdeeCut}% de recorte) ${dropsBelowMinSafe ? `perfora el mínimo seguro de ${minSafe} kcal` : `castiga tu masa muscular, tu energía y termina en rebote`}. Ajustemos a ${recRateFmt} kg/sem (-${recKcalAdj} kcal → ${recTargetKcal} kcal/día) con ${proteinTargetG}g de proteína en tus ${meals} comidas: llegás firme y sin sufrir.`;
+            } else if (talk === "kind") {
+              coachBody = `Bajar ${diffKgFmt} kg es totalmente posible para vos, pero un recorte de -${requestedAdj} kcal/día sobre tu gasto de ${tdee} kcal es demasiado duro para tu cuerpo y tu ánimo. Si pasamos a ${recRateFmt} kg/sem (-${recKcalAdj} kcal/día → ${recTargetKcal} kcal), cuidamos tu músculo, tu energía y llegás sin pasar hambre.`;
+            } else if (talk === "mindful") {
+              coachBody = `Tu meta de bajar ${diffKgFmt} kg tiene sentido, pero un déficit de -${requestedAdj} kcal/día (${pctTdeeCut}% menos que tus ${tdee} kcal) desconecta tus señales de saciedad y agota tu energía. Un ritmo consciente de ${recRateFmt} kg/sem (-${recKcalAdj} kcal) sostiene el hábito de verdad.`;
+            } else {
+              coachBody = `¡Vamos por esos -${diffKgFmt} kg, ${uName}! Pero como buen coach te cuido: -${requestedAdj} kcal/día es un recorte excesivo para tus ${tdee} kcal actuales. En ${recRateFmt} kg/sem (-${recKcalAdj} kcal) quemás grasa a pleno cuidando músculo y energía.`;
+            }
+          }
+        } else if (severity === "demanding") {
+          mascotVariant = talk === "direct" ? "direct" : "think";
+          headlineHtml = `${uName}, ${isGain ? `subir +${diffKgFmt} kg` : `bajar ${diffKgFmt} kg`} a <span style="color:#f59e0b;">${rFmt} kg/sem</span> es exigente: requiere precisión`;
+          coachBody = talk === "direct"
+            ? `Voy al grano: con tus ${tdee} kcal de gasto, un ajuste de ${isGain ? '+' : '-'}${requestedAdj} kcal/día está justo en la frontera alta (${pctBwFmt}% de tu peso/sem). Funciona solo si cumplís los ${proteinTargetG}g de proteína en tus ${meals} comidas (${fmtH(bpState.eatingStartHour)}–${fmtH(bpState.eatingEndHour)}) y dormís bien; si querés cero fatiga, ${recRateFmt} kg/sem es más sólido.`
+            : `Tu meta es alcanzable, aunque ${rFmt} kg/sem es un ritmo intenso para tu gasto de ${tdee} kcal. Priorizaremos ${proteinTargetG}g de proteína e hidratación (${waterGoalGlasses} vasos), o podés suavizarlo a ${recRateFmt} kg/sem para mayor comodidad.`;
+        } else {
+          headlineHtml = isGain
+            ? `${uName}, ganar <span style="color:#38bdf8;">+${diffKgFmt} kg</span> a +${rFmt} kg/sem ¡es un plan sólido y realista! 💪`
+            : (isMaint
+              ? `${uName}, recomponer en <span style="color:#22c55e;">${curW} kg</span> con ${proteinTargetG}g de proteína ¡es una gran estrategia! ⚖️`
+              : `${uName}, bajar <span style="color:#22c55e;">${diffKgFmt} kg</span> a ${rFmt} kg/sem (-${effectiveDeficit} kcal) ¡es realista y sostenible!`);
+          coachBody = talk === "direct"
+            ? `Números aprobados: con un gasto de ${tdee} kcal/día, trabajar en ${safeTargetKcal} kcal y ${proteinTargetG}g de proteína repartidos en tus ${meals} comidas (${fmtH(bpState.eatingStartHour)}–${fmtH(bpState.eatingEndHour)}) protege tu músculo y sostiene tu energía real.`
+            : `Analizamos tu metabolismo (${tdee} kcal/día), tus ${meals} comidas en ventana ${fastHrs}:${winHrs} y tu preferencia ${dietLabel.toLowerCase()}: con ${safeTargetKcal} kcal/día y ${proteinTargetG}g de proteína vas a avanzar con energía y sin efecto rebote.`;
+        }
+
+        return {
+          uName, curW, goalW, hCm, age, sex, act, actLabel, talk,
+          bmi, goalBmi, healthyMinW, isGain, isMaint, absDiff, diffKgFmt,
+          bmr, tdee, minSafe, r, rFmt, requestedAdj, rawTargetKcal, safeTargetKcal,
+          effectiveDeficit, effectiveSurplus, effectiveWeeklyKg, weeksNeeded, etaDateStr,
+          pctBwWeek, pctBwFmt, pctTdeeCut, dropsBelowMinSafe, dropsBelowBmr,
+          recRateKg, recRateFmt, recKcalAdj, recTargetKcal,
+          severity, dietLabel, meals, winHrs, fastHrs, proteinTargetG, protPerMeal, waterGoalGlasses,
+          conflictReasons, personalizedBullets, sliderBubble, headlineHtml, coachBody, mascotVariant
+        };
+      }
+
+      async function fetchBpWizardGeminiVerdict(ev) {
+        const sig = JSON.stringify({
+          n: ev.uName, t: ev.talk, g: bpState.mainGoal, eg: bpState.extraGoals,
+          m: ev.meals, w: [bpState.eatingStartHour, bpState.eatingEndHour],
+          d: bpState.dietType, al: bpState.allergies, wh: bpState.waterHabit,
+          s: ev.sex, a: ev.age, ac: ev.act, h: ev.hCm, cw: ev.curW, gw: ev.goalW, r: ev.r
+        });
+        if (bpGeminiWizardCache.sig === sig && bpGeminiWizardCache.text) {
+          return bpGeminiWizardCache;
+        }
+        const styleDesc = {
+          direct: "DIRECTO, frontal, técnico, sin endulzar nada pero cuidando la salud y masa muscular del usuario",
+          kind: "AMABLE, empático, cálido y protector",
+          cheer: "ANIMADOR, enérgico pero nutricionalmente responsable",
+          mindful: "ATENCIÓN PLENA, reflexivo, enfocado en señales internas y sostenibilidad"
+        }[ev.talk] || "DIRECTO y honesto";
+
+        const prompt = `Sos Michu, coach nutricional deportivo con IA de Michu Fit. Analizá TODOS los datos que cargó ${ev.uName} en el wizard:
+- Sexo/Edad/Altura: ${ev.sex === 'female' ? 'Mujer' : 'Hombre'}, ${ev.age} años, ${ev.hCm} cm
+- Peso actual: ${ev.curW} kg (IMC ${ev.bmi}) -> Peso meta: ${ev.goalW} kg (IMC ${ev.goalBmi})
+- Actividad: factor ${ev.act} (${ev.actLabel}) | Metabolismo basal BMR: ${ev.bmr} kcal | Gasto total TDEE: ${ev.tdee} kcal | Piso seguro: ${ev.minSafe} kcal
+- Ritmo elegido: ${ev.isMaint ? 'Mantenimiento' : `${ev.r} kg/sem (${ev.isGain ? '+' : '-'}${ev.requestedAdj} kcal/día -> ingesta teórica ${ev.rawTargetKcal} kcal/día, ${ev.pctBwFmt}% peso/sem)`}
+- Diagnóstico clínico detectado: severidad="${ev.severity}", ritmo óptimo sugerido=${ev.recRateKg} kg/sem (-${ev.recKcalAdj} kcal)
+- Metas extra: ${(bpState.extraGoals || []).join(', ') || 'ninguna'}
+- Hábitos: ${ev.meals} comidas/día, ventana ${bpState.eatingStartHour}:00 a ${bpState.eatingEndHour}:00 (ayuno ${ev.fastHrs}h), dieta ${ev.dietLabel}, alergias: ${(bpState.allergies || []).join(', ') || 'ninguna'}, toma suficiente agua: ${bpState.waterHabit}
+- Personalidad elegida para Michu: ${styleDesc}.
+
+Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contundentes (máx 430 caracteres), SIN markdown ni asteriscos. Si el déficit o superávit es agresivo o poco realista, decilo claramente sin felicitarlo falsamente, explicando el impacto real según sus metas/gasto y proponiendo ${ev.recRateKg} kg/sem.`;
+
+        // 1. Intentar con Gemini API directa si hay clave configurada en el dispositivo
+        const localKey = (localStorage.getItem("michufit_gemini_key") || "").trim();
+        if (localKey) {
+          try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(localKey)}`;
+            const res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.45, maxOutputTokens: 220 }
+              })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+              if (txt && txt.length > 30) {
+                bpGeminiWizardCache = { sig, text: txt.replace(/\*\*/g, ""), source: "gemini" };
+                return bpGeminiWizardCache;
+              }
+            }
+          } catch (_) {}
+        }
+
+        // 2. Intentar endpoint local /api/ai-wizard-coach si corre con servidor Python local con clave
+        try {
+          const resSrv = await fetch("/api/ai-wizard-coach", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt })
+          });
+          if (resSrv.ok) {
+            const dSrv = await resSrv.json();
+            if (dSrv && dSrv.ok && dSrv.text && dSrv.text.length > 30) {
+              bpGeminiWizardCache = { sig, text: String(dSrv.text).replace(/\*\*/g, "").trim(), source: "gemini" };
+              return bpGeminiWizardCache;
+            }
+          }
+        } catch (_) {}
+
+        return null;
       }
 
       // Definición de las pantallas del Onboarding con Michu (sin renombrar a mapache)
@@ -12823,6 +13148,14 @@
 
             const isGain = bpState.mainGoal === "gain";
             const isMaint = bpState.mainGoal === "maintain";
+            const evGoal = evaluateBpWizardAi();
+            const isUnderweightGoal = !isGain && !isMaint && evGoal.goalBmi < 18.5;
+            const isLongTermLoss = !isGain && !isMaint && !isUnderweightGoal && diffPct >= 18;
+            const gwBadgeColor = isUnderweightGoal ? "#ef4444" : (isGain ? "#38bdf8" : (isLongTermLoss ? "#f59e0b" : "#22c55e"));
+            const gwBadgeBg = isUnderweightGoal ? "rgba(239,68,68,0.16)" : (isGain ? "rgba(56,189,248,0.16)" : (isLongTermLoss ? "rgba(245,158,11,0.16)" : "rgba(34,197,94,0.16)"));
+            const gwBadgeText = isUnderweightGoal
+              ? `⚠️ Bajo peso clínico (IMC ${evGoal.goalBmi.toFixed(1).replace(".", ",")})`
+              : (isGain ? "Superávit Muscular" : (isMaint ? "Recomposición" : (isLongTermLoss ? `Meta por etapas (IMC ${evGoal.goalBmi.toFixed(1).replace(".", ",")})` : `Rango saludable (IMC ${evGoal.goalBmi.toFixed(1).replace(".", ",")})`)));
 
             stage.innerHTML = `
               <!-- Píldoras rápidas de estrategia para cambiar entre Bajar, Ganar Músculo o Mantener -->
@@ -12842,24 +13175,39 @@
                 <span style="font-size:2.4rem;font-weight:900;">.</span>
                 ${buildBpWheelHtml("bpGWDec", bpState.goalWeightDec, 0, 9, "kg")}
               </div>
-              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:12px 15px;margin-top:4px;">
+              <div style="background:var(--bg-card);border:1.5px solid ${isUnderweightGoal ? 'rgba(239,68,68,0.45)' : 'var(--border)'};border-radius:16px;padding:12px 15px;margin-top:4px;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
-                  <strong style="color:${isGain ? '#38bdf8' : '#22c55e'};font-size:0.94rem;">
+                  <strong style="color:${gwBadgeColor};font-size:0.94rem;">
                     ${isGain ? `💪 Ganancia proyectada: +${absDiff} kg (+${diffPct}%)` : (isMaint ? `⚖️ Mantener tus ${curW} kg actuales` : `📉 Reducción proyectada: -${absDiff} kg (-${diffPct}%)`)}
                   </strong>
-                  <span style="background:${isGain ? 'rgba(56,189,248,0.16)' : 'rgba(34,197,94,0.16)'};color:${isGain ? '#38bdf8' : '#22c55e'};font-size:0.74rem;font-weight:800;padding:2px 9px;border-radius:6px;">
-                    ${isGain ? "Superávit Muscular" : (isMaint ? "Recomposición" : "Déficit Realista")}
+                  <span style="background:${gwBadgeBg};color:${gwBadgeColor};font-size:0.74rem;font-weight:800;padding:2px 9px;border-radius:6px;">
+                    ${gwBadgeText}
                   </span>
                 </div>
-                <span style="font-size:0.78rem;color:var(--text-muted);">
-                  ${isGain
-                    ? "Configuraremos un superávit calórico limpio con proteína alta para que subas masa muscular magra y fuerza."
-                    : (isMaint
-                      ? "Mantendremos tus calorías en equilibrio priorizando proteínas para mejorar tu composición corporal."
-                      : "Una meta segura y alcanzable con beneficios notables para tu salud y definición corporal.")}
+                <span style="font-size:0.78rem;color:var(--text-muted);display:block;">
+                  ${isUnderweightGoal
+                    ? `Para tus ${evGoal.hCm} cm, bajar de ${evGoal.healthyMinW} kg compromete masa muscular y salud hormonal.`
+                    : (isGain
+                      ? "Configuraremos un superávit calórico limpio con proteína alta para que subas masa muscular magra y fuerza."
+                      : (isMaint
+                        ? "Mantendremos tus calorías en equilibrio priorizando proteínas para mejorar tu composición corporal."
+                        : (isLongTermLoss
+                          ? `Es un cambio importante (-${diffPct}% corporal): Michu cuidará tu metabolismo con proteína alta (${evGoal.proteinTargetG}g/día) sin déficits extremos.`
+                          : "Peso objetivo dentro de rango fisiológico saludable para mejorar definición y energía.")))}
                 </span>
+                ${isUnderweightGoal ? `
+                  <button type="button" id="bpFixHealthyGoalBtn" class="btn btn-sm" style="margin-top:8px;background:rgba(14,159,119,0.14);color:var(--accent);border-color:var(--accent);font-weight:800;">
+                    ⚡ Ajustar a mínimo saludable (${evGoal.healthyMinW},0 kg)
+                  </button>
+                ` : ""}
               </div>
             `;
+
+            document.getElementById("bpFixHealthyGoalBtn")?.addEventListener("click", () => {
+              bpState.goalWeightInt = evGoal.healthyMinW;
+              bpState.goalWeightDec = 0;
+              renderGoalW();
+            });
 
             stage.querySelectorAll("[data-qmode]").forEach(btn => {
               btn.addEventListener("click", () => {
@@ -12891,53 +13239,71 @@
           return;
         }
 
-        // 23. GOAL SPEED SLIDER + ANILLO METABÓLICO DINÁMICO (DÉFICIT O SUPERÁVIT MUSCULAR) (01:55)
+        // 23. GOAL SPEED SLIDER + ANILLO METABÓLICO DINÁMICO CON DIAGNÓSTICO HONESTO EN TIEMPO REAL (01:55)
         if (scr.id === "goal_speed") {
           const isGain = bpState.mainGoal === "gain" || getBpGoalWeight() > getBpWeight() + 0.2;
           const isMaint = !isGain && (bpState.mainGoal === "maintain" || Math.abs(getBpGoalWeight() - getBpWeight()) <= 0.2);
-          const qSpeed = isGain
-            ? "¿A qué ritmo querés ganar peso y masa muscular?"
-            : (isMaint ? "Tu estrategia de Recomposición Corporal" : "¿Qué tan rápido quieres alcanzar tu meta?");
-          setHeaderBubble(qSpeed, false);
-          typewriteBpBubble(speechEl, qSpeed);
 
           if (isGain && (bpState.weeklyRateKg > 0.7 || bpState.weeklyRateKg < 0.1)) {
             bpState.weeklyRateKg = 0.3;
           }
 
-          const renderSpeed = () => {
+          mascotHeader.style.display = "flex";
+
+          const renderSpeed = (animateBubble = false) => {
+            const ev = evaluateBpWizardAi();
+            mascotMiniSvg.innerHTML = bpMascotSvg(
+              ev.severity === "aggressive" ? "direct" : (bpState.talkStyle === "direct" ? "direct" : "notepad"),
+              66
+            );
+            if (animateBubble) typewriteBpBubble(speechEl, ev.sliderBubble);
+            else speechEl.textContent = ev.sliderBubble;
+
             if (isMaint) {
               stage.innerHTML = `
                 <div style="text-align:center;padding:12px 6px;">
                   <div style="font-size:2.6rem;margin-bottom:6px;">⚖️💪</div>
-                  <h3 style="font-size:1.25rem;font-weight:900;color:#22c55e;margin-bottom:6px;">Balance Neutro (0 kcal) + Alta Proteína</h3>
+                  <h3 style="font-size:1.25rem;font-weight:900;color:#22c55e;margin-bottom:6px;">Balance Neutro (${ev.tdee} kcal) + Alta Proteína</h3>
                   <p style="font-size:0.84rem;color:var(--text-muted);max-width:320px;margin:0 auto;">
-                    Comerás exactamente tus calorías de mantenimiento (TDEE) con <strong>2.0g de proteína por kg</strong> para ganar tono muscular y oxidar grasa manteniendo tus <strong>${getBpWeight()} kg</strong>.
+                    Comerás tus calorías reales de mantenimiento (<strong>${ev.tdee} kcal/día</strong>) con <strong>${ev.proteinTargetG}g de proteína</strong> en tus ${ev.meals} comidas para ganar tono muscular y oxidar grasa manteniendo tus <strong>${ev.curW} kg</strong>.
                   </p>
                 </div>
               `;
               return;
             }
 
-            const r = Number(bpState.weeklyRateKg) || (isGain ? 0.3 : 0.5);
-            const badgeTxt = isGain
-              ? (r <= 0.25 ? "Volumen Limpio (Lean Bulk)" : (r <= 0.45 ? "Hipertrofia Recomendada" : "Superávit Intenso (Bulking)"))
-              : (r <= 0.35 ? "Suave y flexible" : (r <= 0.65 ? "Recomendado" : "Intenso"));
-            const badgeColor = isGain
-              ? (r <= 0.25 ? "#22c55e" : (r <= 0.45 ? "#38bdf8" : "#f59e0b"))
-              : (r <= 0.35 ? "#38bdf8" : (r <= 0.65 ? "#22c55e" : "#f59e0b"));
-            const dailyKcalAdj = isGain ? Math.round(r * 1100) : Math.round(r * 1000);
+            const r = ev.r;
+            let badgeTxt = "";
+            let badgeColor = "#10b981";
+            let badgeTextColor = "#ffffff";
+            if (isGain) {
+              if (ev.severity === "aggressive") { badgeTxt = "⚠️ Excesivo (+grasa)"; badgeColor = "#ef4444"; }
+              else if (ev.severity === "demanding") { badgeTxt = "⚡ Volumen rápido"; badgeColor = "#f59e0b"; badgeTextColor = "#1f1300"; }
+              else if (ev.severity === "gentle") { badgeTxt = "🌱 Volumen ultra limpio"; badgeColor = "#3b82f6"; }
+              else { badgeTxt = "✓ Hipertrofia óptima"; badgeColor = "#0e9f77"; }
+            } else {
+              if (ev.severity === "aggressive") { badgeTxt = "⚠️ Agresivo / Poco realista"; badgeColor = "#ef4444"; }
+              else if (ev.severity === "demanding") { badgeTxt = "⚡ Exigente (al límite)"; badgeColor = "#f59e0b"; badgeTextColor = "#1f1300"; }
+              else if (ev.severity === "gentle") { badgeTxt = "🌱 Suave y sostenible"; badgeColor = "#3b82f6"; }
+              else { badgeTxt = "✓ Óptimo recomendado"; badgeColor = "#0e9f77"; }
+            }
+
+            const dailyKcalAdj = ev.requestedAdj;
             const maxR = isGain ? 0.7 : 1.0;
             const minR = isGain ? 0.1 : 0.2;
             const stepR = isGain ? 0.05 : 0.1;
             const ringPct = Math.min(1, r / maxR);
             const circ = 2 * Math.PI * 36;
+            const isWarn = ev.severity === "aggressive" || ev.severity === "demanding";
+            const cardBorder = ev.severity === "aggressive"
+              ? "rgba(239,68,68,0.55)"
+              : (ev.severity === "demanding" ? "rgba(245,158,11,0.5)" : "var(--border)");
 
             stage.innerHTML = `
               <div style="text-align:center;padding:4px;">
                 <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:6px;">
                   <svg viewBox="0 0 88 88" width="86" height="86">
-                    <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8"/>
+                    <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(148,163,184,0.18)" stroke-width="8"/>
                     <circle cx="44" cy="44" r="36" fill="none" stroke="${badgeColor}" stroke-width="8"
                       stroke-dasharray="${(ringPct * circ).toFixed(1)} ${circ.toFixed(1)}"
                       stroke-linecap="round" transform="rotate(-90 44 44)"/>
@@ -12945,69 +13311,151 @@
                     <text x="44" y="55" text-anchor="middle" font-size="8" font-weight="800" fill="#94a3b8">${isGain ? 'SUPERÁVIT' : 'kcal/día'}</text>
                   </svg>
                   <div style="text-align:left;">
-                    <div style="font-size:0.78rem;color:var(--text-muted);">${isGain ? "Ganancia muscular semanal" : "Ritmo semanal"}</div>
-                    <div style="font-size:2.45rem;font-weight:900;line-height:1.05;">
-                      ${isGain ? "+" : ""}${r.toFixed(2).replace(".00", ",0").replace(/(\.\d)0$/, "$1").replace(".", ",")} <small style="font-size:1.1rem;color:var(--text-muted);">kg/sem</small>
+                    <div style="font-size:0.78rem;color:var(--text-muted);">${isGain ? "Ganancia semanal" : `Ritmo semanal (${ev.pctBwFmt}% peso)`}</div>
+                    <div style="font-size:2.35rem;font-weight:900;line-height:1.05;font-family:'Outfit',sans-serif;">
+                      ${isGain ? "+" : ""}${ev.rFmt} <small style="font-size:1.05rem;color:var(--text-muted);">kg/sem</small>
                     </div>
-                    <span style="display:inline-block;margin-top:5px;background:${badgeColor};color:#052e14;font-size:0.73rem;font-weight:900;padding:2px 10px;border-radius:8px;">
+                    <span style="display:inline-block;margin-top:5px;background:${badgeColor};color:${badgeTextColor};font-size:0.72rem;font-weight:800;padding:3px 10px;border-radius:8px;">
                       ${badgeTxt}
                     </span>
                   </div>
                 </div>
                 <input type="range" id="bpRateRange" min="${minR}" max="${maxR}" step="${stepR}" value="${r}" style="width:100%;accent-color:${badgeColor};cursor:pointer;margin-top:6px;" />
-                <div style="display:flex;justify-content:space-between;font-size:0.74rem;color:var(--text-muted);margin-top:3px;">
+                <div style="display:flex;justify-content:space-between;font-size:0.73rem;color:var(--text-muted);margin-top:3px;">
                   ${isGain
-                    ? `<span>🌱 Limpio (+0,15 kg)</span><span>💪 Hipertrofia (+0,35 kg)</span><span>🔥 Bulking (+0,7 kg)</span>`
-                    : `<span>🐢 Lento (0,2 kg)</span><span>⚡ Óptimo (0,5 kg)</span><span>🔥 Rápido (1,0 kg)</span>`}
+                    ? `<span>🌱 Limpio (+0,2 kg)</span><span>⚡ Óptimo (+0,3 kg)</span><span>⚠️ Exceso (+0,7 kg)</span>`
+                    : `<span>🐢 Suave (0,2 kg)</span><span>⚡ Óptimo (${ev.recRateFmt} kg)</span><span>⚠️ Extremo (1,0 kg)</span>`}
                 </div>
               </div>
-              <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:12px 15px;margin-top:4px;">
-                <strong style="color:${badgeColor};font-size:0.88rem;display:block;margin-bottom:2px;">
-                  ✅ Meta estimada (${getBpGoalWeight()} kg): ${getBpEtaDateStr()}
+              <div style="background:var(--bg-card);border:1.5px solid ${cardBorder};border-radius:16px;padding:11px 14px;margin-top:4px;">
+                <strong style="color:${badgeColor};font-size:0.86rem;display:block;margin-bottom:3px;">
+                  ${ev.severity === "aggressive"
+                    ? `🚨 Ritmo poco realista para tu gasto actual (${ev.tdee} kcal/día)`
+                    : (ev.severity === "demanding"
+                      ? `⚠️ Meta exigente (${ev.goalW} kg • ~${ev.etaDateStr})`
+                      : `✅ Meta sostenible (${ev.goalW} kg): ${ev.etaDateStr}`)}
                 </strong>
-                <span style="font-size:0.77rem;color:var(--text-muted);">
-                  ${isGain
-                    ? `Michu sumará un superávit de <strong>+${dailyKcalAdj} kcal/día</strong> sobre tu mantenimiento (TDEE) con proteína alta para construir músculo limpio.`
-                    : `Michu ajustará tu déficit diario (-${dailyKcalAdj} kcal) cuidando tu masa muscular con proteína alta.`}
+                <span style="font-size:0.76rem;color:var(--text-muted);display:block;line-height:1.4;">
+                  ${ev.conflictReasons.length > 0
+                    ? ev.conflictReasons[0]
+                    : (isGain
+                      ? `Superávit controlado de <strong>+${dailyKcalAdj} kcal/día</strong> (${ev.safeTargetKcal} kcal totales) con ${ev.proteinTargetG}g de proteína.`
+                      : `Quedarías en <strong>${ev.safeTargetKcal} kcal/día</strong> (sobre tu basal de ${ev.bmr} kcal) con <strong>${ev.proteinTargetG}g de proteína</strong> en tus ${ev.meals} comidas.`)}
                 </span>
+                ${isWarn && Math.abs(ev.r - ev.recRateKg) >= 0.08 ? `
+                  <button type="button" id="bpApplyOptRateSliderBtn" class="btn btn-sm" style="margin-top:8px;width:100%;justify-content:center;background:var(--accent-soft);color:var(--accent);border-color:var(--accent);font-weight:800;">
+                    ⚡ Aplicar ritmo óptimo sugerido para vos (${ev.recRateFmt} kg/sem • ${isGain ? '+' : '-'}${ev.recKcalAdj} kcal)
+                  </button>
+                ` : ""}
               </div>
             `;
             const rng = document.getElementById("bpRateRange");
             if (rng) {
               rng.addEventListener("input", () => {
                 bpState.weeklyRateKg = Number(rng.value) || (isGain ? 0.3 : 0.5);
-                renderSpeed();
+                renderSpeed(false);
               });
             }
+            document.getElementById("bpApplyOptRateSliderBtn")?.addEventListener("click", () => {
+              bpState.weeklyRateKg = ev.recRateKg;
+              renderSpeed(true);
+            });
           };
-          renderSpeed();
+          renderSpeed(true);
           return;
         }
 
-        // 24. REALISTIC CELEBRATION (01:59)
+        // 24. DIAGNÓSTICO IA HONESTO DE VIABILIDAD SEGÚN PERSONALIDAD Y DATOS DEL WIZARD (01:59)
         if (scr.id === "realistic_celebration") {
           mascotHeader.style.display = "none";
-          nextBtn.innerHTML = `Obtener mi plan personal`;
-          const uName = (bpState.userName || "Campeón").trim().split(/\s+/)[0];
-          const curW = getBpWeight();
-          const goalW = getBpGoalWeight();
-          const isGain = bpState.mainGoal === "gain" || goalW > curW + 0.2;
-          const isMaint = !isGain && (bpState.mainGoal === "maintain" || Math.abs(goalW - curW) <= 0.2);
-          const diffKg = Math.abs(curW - goalW).toFixed(1).replace(".", ",");
-          stage.innerHTML = `
-            <div style="text-align:center;padding:18px 6px;">
-              <div class="bp-center-bubble">
-                ${isGain
-                  ? `${uName}, ganar <span style="color:#38bdf8;">+${diffKg} kg</span> de masa muscular ¡es una meta excelente y realista! 💪`
-                  : (isMaint
-                    ? `${uName}, mantener tus <span style="color:#22c55e;">${curW} kg</span> recomponiendo músculo ¡es un gran objetivo! ⚖️`
-                    : `${uName}, bajar <span style="color:#22c55e;">${diffKg} kg</span> ¡es una meta realista!`)}
+          const renderVerdictScreen = () => {
+            const ev = evaluateBpWizardAi();
+            const isAggressive = ev.severity === "aggressive" || ev.severity === "underweight_warn";
+            const isDemanding = ev.severity === "demanding";
+            const styleNames = {
+              direct: "⚡ MICHU DIRECTO • IA NUTRICIONAL",
+              kind: "💚 MICHU CERCANO • IA NUTRICIONAL",
+              cheer: "🌟 MICHU ANIMADOR • IA NUTRICIONAL",
+              mindful: "🧘 MICHU CONSCIENTE • IA NUTRICIONAL"
+            };
+            const pillColor = isAggressive ? "#ef4444" : (isDemanding ? "#f59e0b" : "var(--accent)");
+            const pillBg = isAggressive ? "rgba(239,68,68,0.14)" : (isDemanding ? "rgba(245,158,11,0.16)" : "var(--accent-soft)");
+
+            nextBtn.innerHTML = isAggressive
+              ? (ev.dropsBelowMinSafe
+                ? `Continuar con piso seguro (${ev.minSafe} kcal) ›`
+                : `Mantener ritmo intenso igual ›`)
+              : `Obtener mi plan personal ›`;
+
+            stage.innerHTML = `
+              <div style="padding:4px 2px;display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                  <span style="background:${pillBg};color:${pillColor};font-size:0.7rem;font-weight:800;padding:4px 10px;border-radius:999px;letter-spacing:0.03em;">
+                    ${styleNames[ev.talk] || styleNames.direct}
+                  </span>
+                  <span id="bpAiLiveSourceBadge" style="font-size:0.69rem;color:var(--text-muted);font-weight:700;">
+                    🧠 ${bpState.extraGoals.length + 10} variables analizadas
+                  </span>
+                </div>
+
+                <div class="bp-center-bubble" style="padding:14px 15px;text-align:left;border-color:${isAggressive ? 'rgba(239,68,68,0.48)' : (isDemanding ? 'rgba(245,158,11,0.45)' : 'var(--border)')};">
+                  <div style="font-size:1.04rem;font-weight:800;line-height:1.28;margin-bottom:7px;color:var(--text);">
+                    ${ev.headlineHtml}
+                  </div>
+                  <p id="bpAiVerdictBodyText" style="font-size:0.82rem;line-height:1.46;color:var(--text-muted);margin:0;font-weight:600;">
+                    ${ev.coachBody}
+                  </p>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:9px 12px;">
+                  <div style="flex-shrink:0;">
+                    ${bpMascotSvg(ev.mascotVariant, 74)}
+                  </div>
+                  <div style="font-size:0.74rem;color:var(--text-muted);line-height:1.4;display:flex;flex-direction:column;gap:3px;">
+                    <div>📊 <strong>Gasto real (TDEE):</strong> ${ev.tdee} kcal • <strong>Basal:</strong> ${ev.bmr} kcal</div>
+                    <div>🎯 <strong>Plan resultante:</strong> ${ev.safeTargetKcal} kcal/día • <strong>${ev.proteinTargetG}g P</strong> (${ev.meals} comidas)</div>
+                    <div>⏱️ <strong>Ventana:</strong> ${ev.fastHrs}:${ev.winHrs} • <strong>Dieta:</strong> ${ev.dietLabel}</div>
+                  </div>
+                </div>
+
+                ${(isAggressive || isDemanding) && ev.severity !== "underweight_warn" && Math.abs(ev.r - ev.recRateKg) >= 0.08 ? `
+                  <button type="button" id="bpAcceptMichuRecommendedBtn" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px 14px;font-size:0.86rem;font-weight:800;box-shadow:0 8px 20px rgba(14,159,119,0.28);">
+                    ⚡ Hacerle caso a Michu: ajustar a ${ev.recRateFmt} kg/sem (${ev.isGain ? '+' : '-'}${ev.recKcalAdj} kcal/día)
+                  </button>
+                ` : ""}
+                ${ev.severity === "underweight_warn" ? `
+                  <button type="button" id="bpAcceptHealthyWeightBtn" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px 14px;font-size:0.86rem;font-weight:800;">
+                    ⚡ Ajustar meta a peso saludable (${ev.healthyMinW},0 kg)
+                  </button>
+                ` : ""}
               </div>
-              <div style="display:flex;justify-content:center;margin-top:18px;">
-                ${bpMascotSvg("stars", 160)}
-              </div>
-            </div>
-          `;
+            `;
+
+            document.getElementById("bpAcceptMichuRecommendedBtn")?.addEventListener("click", () => {
+              bpState.weeklyRateKg = ev.recRateKg;
+              renderVerdictScreen();
+            });
+            document.getElementById("bpAcceptHealthyWeightBtn")?.addEventListener("click", () => {
+              bpState.goalWeightInt = ev.healthyMinW;
+              bpState.goalWeightDec = 0;
+              bpState.weeklyRateKg = ev.recRateKg;
+              renderVerdictScreen();
+            });
+
+            // Enriquecer con Gemini en vivo si hay API disponible
+            fetchBpWizardGeminiVerdict(ev).then((gem) => {
+              if (!gem || !gem.text) return;
+              const bodyEl = document.getElementById("bpAiVerdictBodyText");
+              const srcEl = document.getElementById("bpAiLiveSourceBadge");
+              if (bodyEl) bodyEl.textContent = gem.text;
+              if (srcEl) {
+                srcEl.textContent = "✨ Gemini IA en vivo";
+                srcEl.style.color = "var(--accent)";
+              }
+            });
+          };
+
+          renderVerdictScreen();
           return;
         }
 
@@ -13105,34 +13553,36 @@
           return;
         }
 
-        // 26. PLAN READY + CURVA PROYECTADA ANIMADA + CREAR CUENTA (02:23)
+        // 26. PLAN READY + DIAGNÓSTICO IA COMPLETO DE RESPUESTAS + CURVA PROYECTADA + CREAR CUENTA (02:23)
         if (scr.id === "plan_ready") {
           mascotHeader.style.display = "none";
           nextBtn.innerHTML = `🚀 Comprometerme y Crear mi Cuenta`;
-          const curW = getBpWeight();
-          const goalW = getBpGoalWeight();
-          const etaStr = getBpEtaDateStr();
-          const isGain = bpState.mainGoal === "gain" || goalW > curW + 0.2;
-          const isMaint = !isGain && (bpState.mainGoal === "maintain" || Math.abs(goalW - curW) <= 0.2);
+          const ev = evaluateBpWizardAi();
+          const curW = ev.curW;
+          const goalW = ev.goalW;
+          const isGain = ev.isGain;
+          const isMaint = ev.isMaint;
           const customKcalAdj = isGain
-            ? Math.max(150, Math.min(850, Math.round((Number(bpState.weeklyRateKg) || 0.3) * 1100)))
-            : (isMaint ? 0 : Math.max(250, Math.min(900, Math.round((Number(bpState.weeklyRateKg) || 0.5) * 1000))));
+            ? Math.max(150, Math.min(850, ev.requestedAdj))
+            : (isMaint ? 0 : Math.max(200, Math.min(1000, ev.requestedAdj)));
           const defTypeVal = isGain ? "custom_surplus" : (isMaint ? "maintain" : "custom");
           const macroPreset = ["balanced", "high_protein", "low_carb"].includes(bpState.dietType) ? bpState.dietType : "high_protein";
           const calc = computeNutritionTargets({
             name: bpState.userName || "Campeón",
-            sex: bpState.sex === "female" ? "female" : "male",
-            age: bpState.age,
-            height: bpState.height,
+            sex: ev.sex,
+            age: ev.age,
+            height: ev.hCm,
             weight: curW,
             goalWeight: goalW,
-            activity: bpState.activity,
+            activity: ev.act,
             deficitType: defTypeVal,
             customDeficit: customKcalAdj,
             macroPreset
           });
+          const etaStr = calc.etaStr || ev.etaDateStr;
+          const wasFloorProtected = !isGain && !isMaint && ev.requestedAdj > calc.deficit + 30;
 
-          const curveColor = isGain ? "#38bdf8" : "#22c55e";
+          const curveColor = isGain ? "#38bdf8" : "#0e9f77";
           const curvePathArea = isGain
             ? "M 24 80 C 110 78, 150 26, 230 26 L 296 26 L 296 100 L 24 100 Z"
             : (isMaint
@@ -13148,31 +13598,36 @@
           const badgeY = isGain ? 4 : (isMaint ? 26 : 52);
 
           stage.innerHTML = `
-            <div style="text-align:center;margin-bottom:4px;">
-              <span style="font-size:0.76rem;color:${curveColor};font-weight:800;">
-                ${isGain ? "💪 TU PLAN DE HIPERTROFIA Y SUPERÁVIT ESTÁ LISTO" : "✨ TU PLAN CON MICHU ESTÁ LISTO"}
+            <div style="text-align:center;margin-bottom:2px;">
+              <span style="font-size:0.74rem;color:${curveColor};font-weight:800;letter-spacing:0.03em;">
+                ${isGain ? "💪 PLAN IA DE HIPERTROFIA Y SUPERÁVIT" : "⚡ PLAN PERSONALIZADO CON MICHU IA"}
               </span>
-              <h2 style="font-size:1.34rem;font-weight:900;line-height:1.2;margin-top:2px;">
+              <h2 style="font-size:1.28rem;font-weight:900;line-height:1.2;margin-top:2px;">
                 ${isGain
                   ? `Subir a <span style="color:#38bdf8;">${goalW} kg</span> para el ${etaStr}`
                   : (isMaint
-                    ? `Mantener y recomponer en <span style="color:#22c55e;">${goalW} kg</span>`
-                    : `Alcanzar <span style="color:#22c55e;">${goalW} kg</span> para el ${etaStr}`)}
+                    ? `Mantener y recomponer en <span style="color:var(--accent);">${goalW} kg</span>`
+                    : `Alcanzar <span style="color:var(--accent);">${goalW} kg</span> para el ${etaStr}`)}
               </h2>
             </div>
 
             <!-- Curva SVG Animada de Progreso Proyectado -->
-            <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:11px 13px;">
+            <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:10px 12px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
-                <strong style="font-size:0.84rem;">${isGain ? "Curva de ganancia muscular" : "Progreso proyectado"}</strong>
-                <span class="chip" style="background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:0.72rem;">
+                <strong style="font-size:0.82rem;">${isGain ? "Curva proyectada" : "Proyección real"}</strong>
+                <span class="chip" style="background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:0.71rem;">
                   🎯 ${calc.targetKcal} kcal (${isGain ? `+${calc.surplus} superávit` : (isMaint ? `mantenimiento` : `-${calc.deficit} déficit`)}) • 🥩 ${calc.proteinG}g P • 🍚 ${calc.carbsG}g C • 🥑 ${calc.fatG}g G
                 </span>
               </div>
-              <svg viewBox="0 0 320 106" style="width:100%;height:auto;overflow:visible;">
+              ${wasFloorProtected ? `
+                <div style="background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.4);border-radius:10px;padding:6px 9px;margin-bottom:6px;font-size:0.73rem;color:var(--text);">
+                  🛡️ <strong>Protección metabólica activa:</strong> Michu fijó tu piso seguro en <strong>${calc.targetKcal} kcal/día</strong> (-${calc.deficit} kcal reales sobre tus ${calc.tdee} kcal) para proteger tu masa muscular y hormonas.
+                </div>
+              ` : ""}
+              <svg viewBox="0 0 320 100" style="width:100%;height:auto;overflow:visible;">
                 <defs>
                   <linearGradient id="bpCurveGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="${curveColor}" stop-opacity="0.32"/>
+                    <stop offset="0%" stop-color="${curveColor}" stop-opacity="0.30"/>
                     <stop offset="100%" stop-color="${curveColor}" stop-opacity="0.0"/>
                   </linearGradient>
                 </defs>
@@ -13180,13 +13635,19 @@
                 <path d="${curvePathLine}" fill="none" stroke="${curveColor}" stroke-width="4" stroke-linecap="round"
                   style="stroke-dasharray:400;stroke-dashoffset:400;animation:bpDrawCurve 1.2s ease forwards;"/>
                 <circle cx="24" cy="${startY}" r="5.5" fill="var(--bg)" stroke="#94a3b8" stroke-width="3"/>
-                <text x="24" y="${startY - 10}" font-size="11" font-weight="900" fill="var(--text)">${curW} kg</text>
+                <text x="24" y="${startY - 9}" font-size="11" font-weight="900" fill="var(--text)">${curW} kg</text>
                 <rect x="202" y="${badgeY}" width="54" height="20" rx="6" fill="${curveColor}"/>
-                <text x="229" y="${badgeY + 14}" font-size="10.5" font-weight="900" fill="#052e14" text-anchor="middle">${goalW} kg</text>
+                <text x="229" y="${badgeY + 14}" font-size="10.5" font-weight="900" fill="#ffffff" text-anchor="middle">${goalW} kg</text>
                 <circle cx="230" cy="${endY}" r="5.5" fill="${curveColor}" stroke="#fff" stroke-width="2.2"/>
-                <text x="24" y="102" font-size="9.5" fill="var(--text-muted)">Hoy</text>
-                <text x="230" y="102" font-size="9.5" fill="${curveColor}" font-weight="800" text-anchor="middle">${isMaint ? "Constante" : etaStr}</text>
+                <text x="24" y="98" font-size="9.5" fill="var(--text-muted)">Hoy</text>
+                <text x="230" y="98" font-size="9.5" fill="${curveColor}" font-weight="800" text-anchor="middle">${isMaint ? "Constante" : etaStr}</text>
               </svg>
+            </div>
+
+            <!-- Síntesis IA de todo lo cargado en el Wizard -->
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:15px;padding:9px 12px;display:flex;flex-direction:column;gap:4px;">
+              <strong style="font-size:0.76rem;color:var(--accent);letter-spacing:0.02em;">🧠 CÓMO MICHU ADAPTÓ TU PLAN A TUS RESPUESTAS:</strong>
+              ${ev.personalizedBullets.map(b => `<div style="font-size:0.73rem;color:var(--text-muted);line-height:1.35;">${b}</div>`).join("")}
             </div>
 
             <!-- Datos de acceso para guardar la cuenta -->
@@ -13251,13 +13712,14 @@
           nextBtn.innerHTML = "⏳ Enviando solicitud...";
         }
 
-        const curW = getBpWeight();
-        const goalW = getBpGoalWeight();
-        const isGain = bpState.mainGoal === "gain" || goalW > curW + 0.2;
-        const isMaint = !isGain && (bpState.mainGoal === "maintain" || Math.abs(goalW - curW) <= 0.2);
+        const ev = evaluateBpWizardAi();
+        const curW = ev.curW;
+        const goalW = ev.goalW;
+        const isGain = ev.isGain;
+        const isMaint = ev.isMaint;
         const customKcalAdj = isGain
-          ? Math.max(150, Math.min(850, Math.round((Number(bpState.weeklyRateKg) || 0.3) * 1100)))
-          : (isMaint ? 0 : Math.max(250, Math.min(900, Math.round((Number(bpState.weeklyRateKg) || 0.5) * 1000))));
+          ? Math.max(150, Math.min(850, ev.requestedAdj))
+          : (isMaint ? 0 : Math.max(200, Math.min(1000, ev.requestedAdj)));
         const defTypeVal = isGain ? "custom_surplus" : (isMaint ? "maintain" : "custom");
         const winHrs = Math.max(4, (bpState.eatingEndHour - bpState.eatingStartHour + 24) % 24 || 10);
         const fastTarget = Math.max(12, Math.min(20, 24 - winHrs));
@@ -13270,15 +13732,18 @@
           roleRequested: bpState.roleRequested || "patient",
           inviteCode: (bpState.inviteCode || "").trim(),
           profile: {
-            sex: bpState.sex === "female" ? "female" : "male",
-            age: Number(bpState.age) || 35,
-            height: Number(bpState.height) || 173,
+            sex: ev.sex,
+            age: ev.age,
+            height: ev.hCm,
             weight: curW,
             goalWeight: goalW,
-            activity: Number(bpState.activity) || 1.375,
+            activity: ev.act,
             deficitType: defTypeVal,
             customDeficit: customKcalAdj,
             macroPreset,
+            dietType: bpState.dietType || macroPreset,
+            waterGoal: ev.waterGoalGlasses,
+            waterHabit: bpState.waterHabit || "yes",
             moodMode: bpState.moodMode || "sarcastic",
             talkStyle: bpState.talkStyle || "direct",
             mascotName: bpState.mascotName || "Michu",
@@ -13286,7 +13751,12 @@
             eatingStart: `${String(bpState.eatingStartHour).padStart(2, "0")}:00`,
             eatingEnd: `${String(bpState.eatingEndHour).padStart(2, "0")}:00`,
             fastingTargetHours: fastTarget,
-            allergies: bpState.allergies || []
+            allergies: bpState.allergies || [],
+            extraGoals: bpState.extraGoals || [],
+            weekendEatMore: bpState.weekendEatMore || null,
+            cravingsFreq: bpState.cravingsFreq || null,
+            weeklyRateKg: ev.r,
+            aiWizardSummary: bpGeminiWizardCache.text || ev.coachBody || ""
           }
         };
 
@@ -14948,12 +15418,19 @@
 
       function getDefaultMenuPrefs() {
         const p = (appData && appData.profile) || {};
-        const allergies = Array.isArray(p.allergies) ? p.allergies : [];
-        const noGluten = allergies.includes("gluten");
-        const noLactose = allergies.includes("lactose");
-        const noNuts = allergies.includes("nuts");
-        const noSeafood = allergies.includes("seafood");
-        const noEgg = allergies.includes("egg");
+        const rawAllergies = Array.isArray(p.allergies) ? p.allergies : [];
+        const normAllergies = rawAllergies.map(a => String(a || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+        const hasAlg = (...terms) => terms.some(t => normAllergies.some(a => a.includes(t)));
+        const dietT = String(p.dietType || p.macroPreset || "").toLowerCase();
+        const isVegan = dietT === "vegan";
+        const isVeg = isVegan || dietT === "vegetarian";
+        const isLowCarbOrPaleo = dietT === "low_carb" || dietT === "paleo";
+
+        const noGluten = hasAlg("gluten", "trigo", "celiac");
+        const noLactose = isVegan || hasAlg("lactosa", "lactose", "lacteo");
+        const noNuts = hasAlg("nuts", "mani", "frutos secos", "almendra", "nuez");
+        const noSeafood = isVeg || hasAlg("seafood", "marisco", "pescado");
+        const noEgg = isVegan || hasAlg("egg", "huevo");
 
         return {
           configured: false,
@@ -14961,26 +15438,28 @@
             !noEgg ? "eggs" : null,
             !noLactose ? "milk" : null,
             !noLactose ? "yogurt" : null,
-            !noGluten ? "bread" : "ricecakes",
+            !noGluten && !isLowCarbOrPaleo ? "bread" : "ricecakes",
             !noLactose ? "cheese" : "avocado",
-            "jam",
-            "oats",
+            !isLowCarbOrPaleo ? "jam" : "avocado",
+            !isLowCarbOrPaleo ? "oats" : null,
             "fruit"
-          ].filter(Boolean),
+          ].filter((v, idx, arr) => v && arr.indexOf(v) === idx),
           proteinFreq: {
-            beef: 3,
-            chicken: 4,
+            beef: isVeg ? 0 : 3,
+            chicken: isVeg ? 0 : 4,
             fish: noSeafood ? 0 : 2,
-            pork: 1,
-            eggs_meal: noEgg ? 0 : 2,
-            legumes: 2
+            pork: isVeg ? 0 : 1,
+            eggs_meal: noEgg ? 0 : (isVeg ? 4 : 2),
+            legumes: dietT === "paleo" ? 0 : (isVegan ? 6 : (isVeg ? 4 : 2))
           },
-          carbLikes: ["rice", "potato", !noGluten ? "pasta" : "squash", "quinoa"],
+          carbLikes: isLowCarbOrPaleo
+            ? ["squash", "potato", "quinoa"].filter(Boolean)
+            : ["rice", "potato", !noGluten ? "pasta" : "squash", "quinoa"],
           vegLikes: ["tomato_lettuce", "carrot", "wok_veg", "greens"],
           snackLikes: [
             "snack_fruit",
             !noLactose ? "snack_yogurt" : null,
-            "snack_savory",
+            !isVegan ? "snack_savory" : null,
             !noNuts ? "snack_nuts" : "snack_gelatin"
           ].filter(Boolean),
           mealsPerDay: Number(p.mealsPerDay) || 4
