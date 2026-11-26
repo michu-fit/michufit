@@ -4152,7 +4152,7 @@
             <strong style="color:var(--purple);display:block;font-size:0.88rem;">🤖 App Android Nativa (.apk) con Samsung Health</strong>
             <span style="font-size:0.76rem;color:var(--text-muted);">Sincroniza automáticamente tus pasos y ejercicios con Health Connect</span>
           </div>
-          <a href="https://michu-fit.github.io/michufit/MichuFit.apk" download="MichuFit.apk" class="btn btn-purple btn-sm" style="text-decoration:none;">
+          <a href="https://michu-fit.github.io/michufit/MichuFit.apk?v=13" download="MichuFit.apk" class="btn btn-purple btn-sm" style="text-decoration:none;">
             ⬇️ Descargar MichuFit.apk
           </a>
         </div>
@@ -4186,7 +4186,7 @@
             Instalá <strong>MichuFit.apk</strong> en tu Android para que lea automáticamente tus pasos y entrenamientos desde <strong>Samsung Health / Health Connect</strong> (solo lectura, 100% privado en tu teléfono):
           </p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <a href="https://michu-fit.github.io/michufit/MichuFit.apk" download="MichuFit.apk" class="btn btn-purple" style="flex:1;justify-content:center;text-decoration:none;">
+            <a href="https://michu-fit.github.io/michufit/MichuFit.apk?v=13" download="MichuFit.apk" class="btn btn-purple" style="flex:1;justify-content:center;text-decoration:none;">
               ⬇️ Descargar MichuFit.apk (Android)
             </a>
           </div>
@@ -7519,6 +7519,12 @@
     }
 
     async function requestAndVerifySolarNotifications() {
+      try {
+        if (window.MichuAndroidHealth && typeof window.MichuAndroidHealth.requestSolarNotificationPermission === "function") {
+          window.MichuAndroidHealth.requestSolarNotificationPermission();
+          return "granted";
+        }
+      } catch (_) {}
       if (!("Notification" in window)) return "unsupported";
       if (Notification.permission === "granted") return "granted";
       try {
@@ -7530,6 +7536,12 @@
     }
 
     async function fireSolarSystemNotification(title, bodyText) {
+      try {
+        if (window.MichuAndroidHealth && typeof window.MichuAndroidHealth.postSolarNotification === "function") {
+          window.MichuAndroidHealth.postSolarNotification(title, bodyText);
+          return true;
+        }
+      } catch (_) {}
       try {
         if (!("Notification" in window) || Notification.permission !== "granted") return false;
         const notifOpts = {
@@ -7556,6 +7568,19 @@
     }
 
     function syncSolarTimerWithServiceWorker(action, delayMs = 0, minutesTarget = 0, uvUsed = 0) {
+      try {
+        if (window.MichuAndroidHealth && typeof window.MichuAndroidHealth.scheduleSolarNotification === "function") {
+          if (action === "schedule") {
+            window.MichuAndroidHealth.scheduleSolarNotification(
+              Math.max(5, Math.round(delayMs / 1000)),
+              "☀️ ¡Dosis de Vitamina D completada!",
+              `Cumpliste tus ${minutesTarget} min de sol seguro. Pasá a la sombra o aplicate protector solar.`
+            );
+          } else if (typeof window.MichuAndroidHealth.cancelSolarNotification === "function") {
+            window.MichuAndroidHealth.cancelSolarNotification();
+          }
+        }
+      } catch (_) {}
       try {
         if (!("serviceWorker" in navigator)) return;
         navigator.serviceWorker.ready.then((reg) => {
@@ -8017,14 +8042,16 @@
                   <button type="button" id="btnTestVitDAlarm" class="btn btn-sm" style="padding:3px 9px;font-size:0.71rem;font-weight:800;border-color:rgba(245,158,11,0.45);color:var(--text);">
                     🔊 Probar alarma
                   </button>
-                  <span id="vitDNotifStatusBadge" style="font-size:0.68rem;font-weight:700;color:${("Notification" in window && Notification.permission === "granted") ? "var(--accent)" : "var(--text-muted)"};">
-                    ${!("Notification" in window)
-                      ? "📳 Sonido + Vibración"
-                      : (Notification.permission === "granted"
-                        ? "🔔 Notif. activas"
-                        : (Notification.permission === "denied"
-                          ? "⚠️ Notif. bloqueadas (sonará alarma)"
-                          : "🔕 Tocá Probar para activar notif."))}
+                  <span id="vitDNotifStatusBadge" style="font-size:0.68rem;font-weight:700;color:${((window.MichuAndroidHealth && typeof window.MichuAndroidHealth.hasSolarNotificationPermission === "function" && window.MichuAndroidHealth.hasSolarNotificationPermission()) || ("Notification" in window && Notification.permission === "granted")) ? "var(--accent)" : "var(--text-muted)"};">
+                    ${(window.MichuAndroidHealth && typeof window.MichuAndroidHealth.hasSolarNotificationPermission === "function")
+                      ? (window.MichuAndroidHealth.hasSolarNotificationPermission() ? "🔔 Notif. Android activas" : "🔕 Tocá Probar para activar notif.")
+                      : (!("Notification" in window)
+                        ? "📳 Sonido + Vibración"
+                        : (Notification.permission === "granted"
+                          ? "🔔 Notif. activas"
+                          : (Notification.permission === "denied"
+                            ? "⚠️ Notif. bloqueadas (sonará alarma)"
+                            : "🔕 Tocá Probar para activar notif.")))}
                   </span>
                 </div>
               </div>

@@ -3,6 +3,10 @@ package app.michufit;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
@@ -30,7 +34,10 @@ import android.health.connect.datatypes.units.Energy;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.OutcomeReceiver;
+import android.os.PowerManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -55,10 +62,15 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     private static final int REQ_FILE_CHOOSER = 1001;
     private static final int REQ_PERMISSIONS = 1002;
+    private static final int REQ_NOTIF_PERMISSION = 1003;
+    private static final String SOLAR_CHANNEL_ID = "michufit_solar_alarm_v1";
 
     private WebView webView;
     private ValueCallback<Uri[]> fileUploadCallback;
     private String pendingTargetDate = "";
+    private final Handler solarHandler = new Handler(Looper.getMainLooper());
+    private Runnable pendingSolarAlarmRunnable = null;
+    private PowerManager.WakeLock solarPartialWakeLock = null;
 
     private SensorManager sensorManager;
     private Sensor stepCounterSensor;
@@ -222,6 +234,150 @@ public class MainActivity extends Activity implements SensorEventListener {
                     requestPermissionsAndRead(pendingTargetDate);
                 }
             });
+        }
+
+        @JavascriptInterface
+        public void requestSolarNotificationPermission() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    ensureSolarNotificationChannel();
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                            requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, REQ_NOTIF_PERMISSION);
+                        }
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public boolean hasSolarNotificationPermission() {
+            if (Build.VERSION.SDK_INT >= 33) {
+                return checkSelfPermission("android.permission.POST_NOTIFICATIONS") == PackageManager.PERMISSION_GRANTED;
+            }
+            return true;
+        }
+
+        @JavascriptInterface
+        public void postSolarNotification(final String title, final String body) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    showNativeSolarNotification(title, body);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void scheduleSolarNotification(final int delaySec, final String title, final String body) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    ensureSolarNotificationChannel();
+                    if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, REQ_NOTIF_PERMISSION);
+                    }
+                    cancelPendingSolarRunnable();
+                    acquireSolarPartialWakeLock(Math.max(5, delaySec + 15) * 1000L);
+                    pendingSolarAlarmRunnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            pendingSolarAlarmRunnable = null;
+                            showNativeSolarNotification(title, body);
+                            releaseSolarPartialWakeLock();
+                        }
+                    };
+                    solarHandler.postDelayed(pendingSolarAlarmRunnable, Math.max(1, delaySec) * 1000L);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void cancelSolarNotification() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    cancelPendingSolarRunnable();
+                    releaseSolarPartialWakeLock();
+                }
+            });
+        }
+    }
+
+    private void cancelPendingSolarRunnable() {
+        if (pendingSolarAlarmRunnable != null) {
+            solarHandler.removeCallbacks(pendingSolarAlarmRunnable);
+            pendingSolarAlarmRunnable = null;
+        }
+    }
+
+    private void acquireSolarPartialWakeLock(long timeoutMs) {
+        try {
+            releaseSolarPartialWakeLock();
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm != null) {
+                solarPartialWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MichuFit::SolarTimerWakeLock");
+                solarPartialWakeLock.setReferenceCounted(false);
+                solarPartialWakeLock.acquire(timeoutMs);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void releaseSolarPartialWakeLock() {
+        try {
+            if (solarPartialWakeLock != null && solarPartialWakeLock.isHeld()) {
+                solarPartialWakeLock.release();
+            }
+            solarPartialWakeLock = null;
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void ensureSolarNotificationChannel() {
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+            NotificationChannel ch = new NotificationChannel(
+                    SOLAR_CHANNEL_ID,
+                    "Alarma Solar Vitamina D",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            ch.setDescription("Avisos cuando cumplis tu tiempo seguro de exposicion solar");
+            ch.enableVibration(true);
+            ch.setVibrationPattern(new long[]{0, 450, 160, 450, 160, 650});
+            nm.createNotificationChannel(ch);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void showNativeSolarNotification(String title, String body) {
+        try {
+            ensureSolarNotificationChannel();
+            if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pi = PendingIntent.getActivity(
+                    this,
+                    701,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+            Notification notif = new Notification.Builder(this, SOLAR_CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(title != null ? title : "Michu Fit")
+                    .setContentText(body != null ? body : "Tiempo de exposicion solar completado.")
+                    .setStyle(new Notification.BigTextStyle().bigText(body != null ? body : ""))
+                    .setContentIntent(pi)
+                    .setAutoCancel(true)
+                    .build();
+            nm.notify(7001, notif);
+        } catch (Exception ignored) {
         }
     }
 
