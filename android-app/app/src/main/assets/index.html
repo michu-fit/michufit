@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#f4f7fb" id="metaThemeColor" />
+  <meta name="theme-color" content="#f3f6f5" id="metaThemeColor" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Michu Fit" />
@@ -21,39 +21,52 @@
     :root,
     html[data-theme="dark"] {
       color-scheme: dark;
-      --bg: #0f141c;
-      --bg-elev: #171f2c;
-      --bg-card: #1d2737;
-      --bg-card-hover: #243044;
-      --text: #f3f6fc;
-      --text-muted: #9aa8be;
-      --border: #2c3a50;
-      --accent: #22c55e;
-      --accent-hover: #16a34a;
-      --accent-soft: rgba(34, 197, 94, 0.14);
+      --bg: #101619;
+      --bg-elev: #172024;
+      --bg-card: #1e292e;
+      --bg-card-hover: #253339;
+      --text: #ecf2f3;
+      --text-muted: #92a5ae;
+      --border: #28363c;
+      --accent: #20c997;
+      --accent-hover: #17b082;
+      --accent-soft: rgba(32, 201, 151, 0.14);
       --warn: #f59e0b;
-      --warn-soft: rgba(245, 158, 11, 0.15);
-      --danger: #ef4444;
-      --danger-soft: rgba(239, 68, 68, 0.16);
+      --warn-soft: rgba(245, 158, 11, 0.14);
+      --danger: #fb7185;
+      --danger-soft: rgba(251, 113, 133, 0.14);
       --info: #38bdf8;
-      --info-soft: rgba(56, 189, 248, 0.15);
-      --purple: #a855f7;
-      --purple-soft: rgba(168, 85, 247, 0.16);
-      --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      --info-soft: rgba(56, 189, 248, 0.14);
+      --purple: #748ffc;
+      --purple-soft: rgba(116, 143, 252, 0.14);
+      --purple-border: rgba(116, 143, 252, 0.34);
+      --shadow: 0 12px 32px rgba(0, 0, 0, 0.36);
       --radius: 18px;
       --radius-sm: 12px;
     }
 
     html[data-theme="light"] {
       color-scheme: light;
-      --bg: #f4f7fb;
+      --bg: #f3f6f5;
       --bg-elev: #ffffff;
-      --bg-card: #ffffff;
-      --bg-card-hover: #f8fafd;
-      --text: #131b26;
-      --text-muted: #5a6982;
-      --border: #dfe6f0;
-      --shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
+      --bg-card: #f7faf9;
+      --bg-card-hover: #eef3f2;
+      --text: #162127;
+      --text-muted: #5c6e76;
+      --border: #e1e8e7;
+      --accent: #0e9f77;
+      --accent-hover: #0b8462;
+      --accent-soft: rgba(14, 159, 119, 0.10);
+      --warn: #d97706;
+      --warn-soft: rgba(217, 119, 6, 0.10);
+      --danger: #e11d48;
+      --danger-soft: rgba(225, 29, 72, 0.09);
+      --info: #0284c7;
+      --info-soft: rgba(2, 132, 199, 0.10);
+      --purple: #3b5bdb;
+      --purple-soft: rgba(59, 91, 219, 0.08);
+      --purple-border: rgba(59, 91, 219, 0.24);
+      --shadow: 0 8px 26px rgba(15, 30, 28, 0.055), 0 1px 3px rgba(15, 30, 28, 0.035);
     }
 
     * {
@@ -123,13 +136,13 @@
     .brand-logo {
       width: 44px;
       height: 44px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #22c55e, #10b981);
+      border-radius: 13px;
+      background: linear-gradient(135deg, #12ad82, #0d8f6b);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 24px;
-      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+      box-shadow: 0 3px 10px rgba(14, 159, 119, 0.24);
     }
 
     .brand h1 {
@@ -160,7 +173,7 @@
       color: var(--warn);
       font-weight: 700;
       font-size: 0.85rem;
-      border: 1px solid rgba(245, 158, 11, 0.35);
+      border: 1px solid rgba(217, 119, 6, 0.22);
     }
 
     .sync-pill {
@@ -172,7 +185,7 @@
       font-size: 0.76rem;
       background: var(--accent-soft);
       color: var(--accent);
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .btn {
@@ -181,63 +194,95 @@
       justify-content: center;
       gap: 7px;
       padding: 9px 15px;
-      border-radius: 14px;
-      border: 2px solid var(--border);
-      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-elev);
       color: var(--text);
-      font-size: 0.86rem;
-      font-weight: 800;
+      font-size: 0.85rem;
+      font-weight: 700;
       cursor: pointer;
-      transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background 0.14s ease;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease, border-color 0.14s ease;
       text-decoration: none;
-      box-shadow: 0 4px 0 var(--border);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       position: relative;
     }
 
     .btn:hover {
       background: var(--bg-card-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 0 var(--border);
+      border-color: rgba(14, 159, 119, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
     }
 
     .btn:active {
-      transform: translateY(3px) !important;
-      box-shadow: 0 1px 0 var(--border) !important;
+      transform: translateY(1px) scale(0.99) !important;
+      box-shadow: none !important;
     }
 
     .btn-primary {
-      background: linear-gradient(180deg, #2ce56b 0%, #22c55e 100%);
-      color: #052912;
-      border: 2px solid #15803d;
-      font-weight: 900;
-      box-shadow: 0 4px 0 #15803d, inset 0 2px 0 rgba(255, 255, 255, 0.42);
+      background: linear-gradient(135deg, #12ad82 0%, #0d8f6b 100%);
+      color: #ffffff;
+      border: 1px solid #0b7d5e;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(14, 159, 119, 0.24);
+    }
+
+    html[data-theme="dark"] .btn-primary {
+      background: linear-gradient(135deg, #20c997 0%, #12a579 100%);
+      color: #06251c;
+      border-color: #17b082;
+      box-shadow: 0 4px 14px rgba(32, 201, 151, 0.22);
     }
 
     .btn-primary:hover {
-      background: linear-gradient(180deg, #34f074 0%, #16a34a 100%);
-      color: #04210e;
-      box-shadow: 0 6px 0 #15803d, inset 0 2px 0 rgba(255, 255, 255, 0.48);
+      background: linear-gradient(135deg, #14bd8e 0%, #0b8060 100%);
+      color: #ffffff;
+      border-color: #096c51;
+      box-shadow: 0 6px 16px rgba(14, 159, 119, 0.30);
+    }
+
+    html[data-theme="dark"] .btn-primary:hover {
+      background: linear-gradient(135deg, #2be0ab 0%, #15b887 100%);
+      color: #041d15;
     }
 
     .btn-primary:active {
-      box-shadow: 0 1px 0 #15803d !important;
+      box-shadow: 0 1px 3px rgba(14, 159, 119, 0.2) !important;
     }
 
     .btn-purple {
-      background: linear-gradient(180deg, #a855f7 0%, #7e22ce 100%);
-      color: #fff;
-      border: 2px solid #581c87;
-      font-weight: 900;
-      box-shadow: 0 4px 0 #581c87, inset 0 2px 0 rgba(255, 255, 255, 0.32);
+      background: var(--purple-soft);
+      color: var(--purple);
+      border: 1px solid var(--purple-border);
+      font-weight: 800;
+      box-shadow: none;
     }
 
     .btn-purple:hover {
-      filter: brightness(1.07);
-      box-shadow: 0 6px 0 #581c87, inset 0 2px 0 rgba(255, 255, 255, 0.36);
+      background: rgba(59, 91, 219, 0.14);
+      border-color: var(--purple);
+      color: var(--purple);
+      box-shadow: 0 3px 10px rgba(59, 91, 219, 0.10);
+    }
+
+    html[data-theme="dark"] .btn-purple:hover {
+      background: rgba(116, 143, 252, 0.22);
     }
 
     .btn-purple:active {
-      box-shadow: 0 1px 0 #581c87 !important;
+      box-shadow: none !important;
+    }
+
+    .btn-danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border: 1px solid rgba(225, 29, 72, 0.24);
+      font-weight: 800;
+    }
+
+    .btn-danger:hover {
+      background: rgba(225, 29, 72, 0.15);
+      border-color: var(--danger);
     }
 
     .btn-sm {
@@ -458,27 +503,37 @@
     }
 
     .mood-btn.active.sarcastic {
-      background: linear-gradient(135deg, #f97316, #ef4444);
-      color: #fff;
-      box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35);
+      background: #1e293b;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
+    }
+
+    html[data-theme="dark"] .mood-btn.active.sarcastic {
+      background: #334155;
+      color: #f8fafc;
     }
 
     .mood-btn.active.cute {
-      background: linear-gradient(135deg, #22c55e, #14b8a6);
-      color: #052010;
-      box-shadow: 0 3px 10px rgba(34, 197, 94, 0.35);
+      background: linear-gradient(135deg, #12ad82, #0d8f6b);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(14, 159, 119, 0.28);
+    }
+
+    html[data-theme="dark"] .mood-btn.active.cute {
+      background: linear-gradient(135deg, #20c997, #12a579);
+      color: #05231b;
     }
 
     .speech-bubble {
       background: var(--bg-elev);
-      border: 2.5px solid var(--accent);
-      border-radius: 22px;
+      border: 2px solid var(--accent);
+      border-radius: 20px;
       padding: 16px 20px;
       font-size: 1.02rem;
       font-weight: 800;
       line-height: 1.45;
       position: relative;
-      box-shadow: 0 6px 0 rgba(34, 197, 94, 0.28), 0 10px 24px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 10px 28px rgba(15, 30, 28, 0.14);
       transform-origin: left center;
       animation: cartoonBubblePop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
@@ -486,19 +541,19 @@
     .speech-bubble::before {
       content: "";
       position: absolute;
-      left: -11px;
+      left: -10px;
       top: 50%;
       transform: translateY(-50%) rotate(45deg);
-      width: 18px;
-      height: 18px;
+      width: 17px;
+      height: 17px;
       background: var(--bg-elev);
-      border-left: 2.5px solid var(--accent);
-      border-bottom: 2.5px solid var(--accent);
+      border-left: 2px solid var(--accent);
+      border-bottom: 2px solid var(--accent);
     }
 
     @media (max-width: 720px) {
       .speech-bubble::before {
-        left: -10px;
+        left: -9px;
         top: 50%;
         transform: translateY(-50%) rotate(45deg);
       }
@@ -531,25 +586,25 @@
     .tab-btn {
       flex: 1 1 150px;
       padding: 11px 14px;
-      border-radius: 16px;
-      border: 2px solid var(--border);
+      border-radius: 14px;
+      border: 1px solid var(--border);
       background: var(--bg-elev);
       color: var(--text-muted);
       font-weight: 800;
-      font-size: 0.88rem;
+      font-size: 0.87rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease, background 0.15s ease;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
       text-align: center;
-      box-shadow: 0 4px 0 var(--border);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
     }
 
     .tab-btn:active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 var(--border);
+      transform: translateY(1px);
+      box-shadow: none;
     }
 
     @media (max-width: 768px) {
@@ -561,7 +616,7 @@
       .nav-tabs .tab-btn {
         min-width: 0;
         width: 100%;
-        padding: 8px 5px;
+        padding: 9px 6px;
         font-size: 0.73rem;
         line-height: 1.2;
         flex-direction: column;
@@ -573,14 +628,15 @@
 
     .tab-btn:hover {
       color: var(--text);
-      background: var(--bg-card);
+      background: var(--bg-card-hover);
+      border-color: rgba(14, 159, 119, 0.3);
     }
 
     .tab-btn.active {
       background: var(--accent-soft);
       color: var(--accent);
-      border-color: var(--accent);
-      box-shadow: 0 4px 0 rgba(34, 197, 94, 0.45);
+      border-color: rgba(14, 159, 119, 0.45);
+      box-shadow: 0 3px 10px rgba(14, 159, 119, 0.10);
     }
 
     .tab-panel {
@@ -614,10 +670,10 @@
 
     .card {
       background: var(--bg-elev);
-      border: 2px solid var(--border);
-      border-radius: 22px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
       padding: 20px;
-      box-shadow: 0 6px 0 var(--border), var(--shadow);
+      box-shadow: var(--shadow);
       width: 100%;
       max-width: 100%;
       min-width: 0;
@@ -788,8 +844,8 @@
     .cup-btn {
       width: 46px;
       height: 50px;
-      border-radius: 14px;
-      border: 2px solid var(--border);
+      border-radius: 13px;
+      border: 1px solid var(--border);
       background: var(--bg-card);
       cursor: pointer;
       display: flex;
@@ -797,20 +853,20 @@
       align-items: center;
       justify-content: center;
       font-size: 1.2rem;
-      transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.16s ease, background 0.16s ease;
-      box-shadow: 0 4px 0 var(--border);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
     }
 
     .cup-btn:active {
-      transform: translateY(3px) !important;
-      box-shadow: 0 1px 0 var(--border) !important;
+      transform: translateY(1px) scale(0.98) !important;
+      box-shadow: none !important;
     }
 
     .cup-btn.filled {
-      background: linear-gradient(180deg, rgba(56, 189, 248, 0.28) 0%, rgba(14, 165, 233, 0.42) 100%);
-      border-color: #0284c7;
-      transform: translateY(-2px);
-      box-shadow: 0 5px 0 #0284c7;
+      background: linear-gradient(180deg, rgba(14, 165, 233, 0.14) 0%, rgba(2, 132, 199, 0.24) 100%);
+      border-color: rgba(2, 132, 199, 0.55);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.14);
     }
 
     .cup-btn span {
@@ -835,13 +891,13 @@
 
     .meal-card {
       background: var(--bg-elev);
-      border: 2px solid var(--border);
-      border-radius: 22px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
       padding: 16px;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      box-shadow: 0 6px 0 var(--border), var(--shadow);
+      box-shadow: var(--shadow);
       width: 100%;
       max-width: 100%;
       min-width: 0;
@@ -914,14 +970,14 @@
 
     /* Estilos de Comidas Precargadas (Plan Excel + Check Diario) */
     .meal-item.planned-pending {
-      border: 1.5px dashed rgba(168, 85, 247, 0.55);
-      background: rgba(168, 85, 247, 0.06);
-      opacity: 0.92;
+      border: 1.5px dashed var(--purple-border);
+      background: var(--purple-soft);
+      opacity: 0.94;
     }
 
     .meal-item.planned-checked {
-      border: 1.5px solid rgba(34, 197, 94, 0.6);
-      background: rgba(34, 197, 94, 0.09);
+      border: 1.5px solid rgba(14, 159, 119, 0.48);
+      background: var(--accent-soft);
     }
 
     .plan-check-btn {
@@ -1972,10 +2028,11 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 8px 14px;
+      padding: 9px 14px;
       background: var(--bg-elev);
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
       margin-bottom: 12px;
       position: relative;
       z-index: 1200;
@@ -1984,14 +2041,14 @@
     .hamburger-btn {
       width: 40px;
       height: 40px;
-      border-radius: 11px;
+      border-radius: 12px;
       border: 1px solid var(--border);
       background: var(--bg-card);
       color: var(--text);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.25rem;
+      font-size: 1.22rem;
       cursor: pointer;
       transition: all 0.16s ease;
       flex-shrink: 0;
@@ -2000,7 +2057,7 @@
     .hamburger-btn:hover,
     .hamburger-btn.open {
       border-color: var(--accent);
-      background: var(--bg-card-hover);
+      background: var(--accent-soft);
       color: var(--accent);
     }
 
@@ -2009,15 +2066,21 @@
       position: absolute;
       top: calc(100% + 8px);
       right: 0;
-      width: min(290px, 90vw);
+      width: min(300px, 92vw);
+      max-height: calc(100dvh - 84px);
+      overflow-y: auto;
       background: var(--bg-elev);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 18px;
       padding: 12px;
-      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65);
+      box-shadow: 0 20px 46px rgba(15, 30, 28, 0.16), 0 4px 12px rgba(15, 30, 28, 0.08);
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       z-index: 1300;
+    }
+
+    html[data-theme="dark"] .hamburger-dropdown {
+      box-shadow: 0 22px 52px rgba(0, 0, 0, 0.65);
     }
 
     .hamburger-dropdown.open {
@@ -2027,8 +2090,10 @@
     .hamburger-dropdown .btn {
       width: 100%;
       justify-content: flex-start;
-      padding: 10px 13px;
-      font-size: 0.88rem;
+      padding: 9px 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: none;
     }
 
     html[data-auth-state="logged-out"] .app-shell {
@@ -2155,7 +2220,7 @@
         var initTheme = savedTheme === "dark" ? "dark" : "light";
         document.documentElement.setAttribute("data-theme", initTheme);
         var mt = document.getElementById("metaThemeColor");
-        if (mt) mt.setAttribute("content", initTheme === "dark" ? "#0f141c" : "#f4f7fb");
+        if (mt) mt.setAttribute("content", initTheme === "dark" ? "#101619" : "#f3f6f5");
       } catch (e) {
         document.documentElement.setAttribute("data-auth-state", "logged-out");
         document.documentElement.setAttribute("data-theme", "light");
@@ -2207,7 +2272,7 @@
       </div>
 
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-        <button type="button" class="tab-btn" data-tab="tab-admin-coach" id="navTabAdminCoach" style="flex:0 0 auto;white-space:nowrap;padding:6px 10px;font-size:0.78rem;border-color:rgba(168,85,247,0.45);display:inline-flex;align-items:center;gap:5px;">
+        <button type="button" class="tab-btn" data-tab="tab-admin-coach" id="navTabAdminCoach" style="flex:0 0 auto;white-space:nowrap;padding:6px 10px;font-size:0.78rem;border-color:var(--border);background:var(--bg-card);color:var(--text);display:inline-flex;align-items:center;gap:5px;">
           <span id="navTabAdminCoachText">👑 Admin</span>
           <span id="navPendingUsersBadge" style="display:none;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--danger);color:#fff;font-size:0.7rem;font-weight:900;line-height:19px;text-align:center;">0</span>
         </button>
@@ -2220,27 +2285,28 @@
 
       <!-- Menú desplegable Hamburguesa -->
       <div class="hamburger-dropdown" id="topHamburgerDropdown">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px 8px;border-bottom:1px solid var(--border);margin-bottom:2px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 4px 8px;border-bottom:1px solid var(--border);margin-bottom:2px;">
           <strong style="font-size:0.86rem;color:var(--text);">🐱 Michu Fit</strong>
-          <span class="sync-pill" id="syncBadge" style="padding:3px 8px;font-size:0.7rem;">
+          <span class="sync-pill" id="syncBadge" style="padding:3px 8px;font-size:0.69rem;">
             💾 Sincronizado
           </span>
         </div>
-        <button type="button" class="btn btn-sm" id="btnOpenAccountModal" onclick="window.openModal && window.openModal('modalAccount')" style="border-color:var(--purple);background:var(--purple-soft);color:var(--text);">
-          👤 Perfil / Cuenta: <strong id="currentUserTopLabel" style="margin-left:auto;">Mi Cuenta</strong>
-        </button>
-        <button type="button" class="btn btn-sm tab-btn" data-tab="tab-calculator" style="flex:0 0 auto;">
-          ⚖️ Calculadora TDEE & Metas
+        <button type="button" class="btn btn-sm" id="btnOpenAccountModal" onclick="window.openModal && window.openModal('modalAccount')" style="background:var(--bg-card);border-color:var(--border);color:var(--text);">
+          <span>👤 Perfil / Cuenta</span>
+          <strong id="currentUserTopLabel" style="margin-left:auto;font-size:0.78rem;color:var(--accent);">Mi Cuenta</strong>
         </button>
         <button type="button" class="btn btn-sm btn-primary" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="flex:0 0 auto;">
           🥗 Menú Sugerido y Hábitos
         </button>
-        <button type="button" class="btn btn-sm btn-purple admin-reto21-only" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;flex:0 0 auto;">
-          🔥 Reto 21 Días (Exclusivo)
+        <button type="button" class="btn btn-sm tab-btn" data-tab="tab-calculator" style="flex:0 0 auto;color:var(--text);">
+          ⚖️ Calculadora TDEE & Metas
         </button>
-        <div style="display:flex;flex-direction:column;gap:5px;padding:6px 4px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
-          <span style="font-size:0.74rem;font-weight:700;color:var(--text-muted);">🎭 Personalidad y Aparición de Michu:</span>
-          <div class="mood-switch" role="group" aria-label="Personalidad de Michu" style="display:grid;grid-template-columns:1fr 1fr;width:100%;">
+        <button type="button" class="btn btn-sm admin-reto21-only" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;flex:0 0 auto;background:var(--accent-soft);border-color:rgba(14,159,119,0.28);color:var(--accent);font-weight:800;">
+          🔥 Reto 21 Días
+        </button>
+        <div style="display:flex;flex-direction:column;gap:5px;padding:7px 4px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+          <span style="font-size:0.73rem;font-weight:700;color:var(--text-muted);">🎭 Personalidad y Aparición de Michu:</span>
+          <div class="mood-switch" role="group" aria-label="Personalidad de Michu" style="display:grid;grid-template-columns:1fr 1fr;width:100%;background:var(--bg-card);">
             <button type="button" class="mood-btn sarcastic active" id="btnMoodSarcastic" style="justify-content:center;text-align:center;">
               🔥 Sarcástico
             </button>
@@ -2252,18 +2318,23 @@
             🐾 Apariciones de Michu: ON
           </button>
         </div>
+        <button type="button" class="btn btn-sm" onclick="window.syncSamsungHealthSteps && window.syncSamsungHealthSteps()">
+          ⌚ Samsung Health / Pasos
+        </button>
         <button type="button" class="btn btn-sm" id="btnToggleTheme">
           🌓 Cambiar Tema (Claro / Oscuro)
         </button>
         <button type="button" class="btn btn-sm" id="btnOpenSettings" onclick="window.openModal && window.openModal('modalSettings')">
           ⚙️ IA & Backup
         </button>
-        <button type="button" class="btn btn-sm btn-purple" onclick="window.syncSamsungHealthSteps && window.syncSamsungHealthSteps()">
-          ⌚ Samsung Health / Pasos
-        </button>
-        <button type="button" class="btn btn-sm btn-primary" id="btnOpenMobileModal" onclick="window.openModal && window.openModal('modalMobileApp')">
+        <button type="button" class="btn btn-sm" id="btnOpenMobileModal" onclick="window.openModal && window.openModal('modalMobileApp')">
           📱 Instalar en Celu / Descargar .APK
         </button>
+        <div style="border-top:1px solid var(--border);padding-top:6px;margin-top:2px;">
+          <button type="button" class="btn btn-sm btn-danger" id="btnLogoutHamburger" style="justify-content:center;">
+            🚪 Cerrar sesión
+          </button>
+        </div>
       </div>
     </header>
 
@@ -2448,15 +2519,15 @@
     </section>
 
     <!-- BARRA COMPACTA DE ACCIONES RÁPIDAS (Siempre visible arriba sin ocupar media pantalla) -->
-    <div class="top-quick-actions-bar" style="display:flex;flex-direction:column;gap:8px;background:var(--bg-elev);border:2px solid var(--border);border-radius:18px;padding:10px 12px;margin-bottom:14px;box-shadow:0 4px 0 var(--border);">
+    <div class="top-quick-actions-bar" style="display:flex;flex-direction:column;gap:8px;background:var(--bg-elev);border:1px solid var(--border);border-radius:18px;padding:11px 13px;margin-bottom:14px;box-shadow:var(--shadow);">
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:7px;width:100%;">
         <button type="button" class="btn btn-sm btn-primary" id="btnHeroAddFood" onclick="window.openFoodModal && window.openFoodModal()" style="justify-content:center;">
           ➕ Registrar comida
         </button>
-        <button type="button" class="btn btn-sm" id="btnHeroSuggestedMenu" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="border-color:var(--accent);color:var(--accent);font-weight:800;justify-content:center;">
+        <button type="button" class="btn btn-sm" id="btnHeroSuggestedMenu" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="background:var(--accent-soft);border-color:rgba(14,159,119,0.28);color:var(--accent);font-weight:800;justify-content:center;">
           🥗 Menú Sugerido
         </button>
-        <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnHeroReto21" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;font-weight:900;justify-content:center;">
+        <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnHeroReto21" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;font-weight:800;justify-content:center;">
           🔥 Reto 21 Días
         </button>
         <button type="button" class="btn btn-sm btn-purple" id="btnHeroScanAI" style="justify-content:center;">
@@ -7703,7 +7774,7 @@
       const normalized = themeVal === "dark" ? "dark" : "light";
       document.documentElement.setAttribute("data-theme", normalized);
       const mt = document.getElementById("metaThemeColor");
-      if (mt) mt.setAttribute("content", normalized === "dark" ? "#0f141c" : "#f4f7fb");
+      if (mt) mt.setAttribute("content", normalized === "dark" ? "#101619" : "#f3f6f5");
       const btnT = document.getElementById("btnToggleTheme");
       if (btnT) {
         btnT.innerHTML = normalized === "dark"
@@ -13300,6 +13371,9 @@
 
       const btnLogoutAcc = document.getElementById("btnLogoutAccount");
       if (btnLogoutAcc) btnLogoutAcc.addEventListener("click", performLogout);
+
+      const btnLogoutHamb = document.getElementById("btnLogoutHamburger");
+      if (btnLogoutHamb) btnLogoutHamb.addEventListener("click", performLogout);
 
       const btnLogoutPend = document.getElementById("btnLogoutFromPending");
       if (btnLogoutPend) btnLogoutPend.addEventListener("click", performLogout);
