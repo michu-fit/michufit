@@ -1,4 +1,4 @@
-const CACHE_NAME = 'michufit-cloud-v72';
+const CACHE_NAME = 'michufit-cloud-v73';
 const ASSETS = ['./', './index.html', './privacidad.html', './terminos.html', './eliminar-cuenta.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -46,7 +46,7 @@ function fetchWithTimeout(urlStr, ms = 12000) {
 }
 
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET' || e.request.url.includes('/api/') || e.request.url.includes('supabase.co') || e.request.url.includes('openfoodfacts.org') || e.request.url.endsWith('.apk')) return;
+  if (e.request.method !== 'GET' || e.request.url.includes('/api/') || e.request.url.includes('supabase.co') || e.request.url.includes('openfoodfacts.org') || e.request.url.includes('open-meteo.com') || e.request.url.endsWith('.apk')) return;
   e.respondWith(
     fetchWithTimeout(e.request.url, 12000)
       .then((res) => {
@@ -64,5 +64,17 @@ self.addEventListener('fetch', (e) => {
         return caches.match(e.request).then((c) => c || caches.match('./index.html') || caches.match('./'));
       })
       .catch(() => caches.match(e.request).then((c) => c || caches.match('./index.html') || caches.match('./')))
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow('./');
+    })
   );
 });

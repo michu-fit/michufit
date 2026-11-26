@@ -2769,6 +2769,22 @@
             </div>
           </div>
 
+          <!-- Card Vitamina D & Cronómetro Solar en Tiempo Real -->
+          <div class="card" id="vitDCardContainer" style="padding:12px 16px;">
+            <div class="card-header" id="vitDCardHeaderToggle" onclick="window.toggleVitDCard && window.toggleVitDCard()" style="margin-bottom:0;cursor:pointer;user-select:none;">
+              <div class="card-title" style="display:flex;align-items:center;gap:6px;">
+                <span>☀️ Vitamina D & Sol</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:0.79rem;font-weight:800;color:var(--warn);" id="vitDSummaryPill">Ventana solar • 12 min</span>
+                <span id="vitDCollapseChevron" style="font-size:0.75rem;color:var(--text-muted);background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;padding:2px 6px;line-height:1;">▼</span>
+              </div>
+            </div>
+            <div id="vitDCollapsibleBody" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+              <div id="vitDModuleInner"></div>
+            </div>
+          </div>
+
           <div class="card" id="quickCatalogCardContainer" style="padding:12px 16px;">
             <div class="card-header" id="quickCatalogHeaderToggle" onclick="window.toggleQuickCatalogCard && window.toggleQuickCatalogCard()" style="margin-bottom:0;cursor:pointer;user-select:none;">
               <div class="card-title" style="display:flex;align-items:center;gap:6px;">
@@ -6492,6 +6508,10 @@
           sDay.water = lDay.water;
           hadLocalChanges = true;
         }
+        if (lDay.vitD && (!sDay.vitD || (Number(lDay.vitD.updatedAt) || 0) > (Number(sDay.vitD.updatedAt) || 0))) {
+          sDay.vitD = { ...lDay.vitD };
+          hadLocalChanges = true;
+        }
       }
       // Merge de Ayuno Intermitente (fasting)
       if (localData.fasting && typeof localData.fasting === "object") {
@@ -6794,6 +6814,7 @@
 
       renderDailySummary();
       renderWaterTracker();
+      if (typeof renderVitDTracker === "function") renderVitDTracker();
       renderQuickCatalog();
       renderMealSections();
       renderCalculatorTab();
@@ -6864,9 +6885,11 @@
             kcalScore = 40 * overPenalty;
           }
         }
-        const waterScore = Math.min(1, (totals.water || 0) / waterGoal) * 12;
-        const activeScore = totals.exerciseKcal > 0 ? Math.min(8, (totals.exerciseKcal / 180) * 8) : (totals.kcal > 0 ? 4 : 0);
-        const totalScore = Math.min(100, Math.round(protScore + kcalScore + waterScore + activeScore));
+        const waterScore = Math.min(1, (totals.water || 0) / waterGoal) * 10;
+        const dayObjScore = appData.days && appData.days[selectedDate];
+        const vitDBonus = (dayObjScore && dayObjScore.vitD && dayObjScore.vitD.done) ? 5 : 0;
+        const activeScore = totals.exerciseKcal > 0 ? Math.min(8, (totals.exerciseKcal / 180) * 8) : (totals.kcal > 0 ? 3 : 0);
+        const totalScore = Math.min(100, Math.round(protScore + kcalScore + waterScore + vitDBonus + activeScore));
         const scoreTier = totalScore >= 85
           ? "Nivel Atleta"
           : (totalScore >= 55 ? "En ritmo" : (totalScore > 0 ? "En progreso" : "Iniciá tu día"));
@@ -6983,6 +7006,567 @@
       body.style.display = isHidden ? "block" : "none";
       if (chev) chev.textContent = isHidden ? "▲" : "▼";
     };
+
+    // =========================================================================
+    // MÓDULO BIO-SOLAR DE VITAMINA D POR ESTACIÓN, FOTOTIPO, UV VIVO Y ALARMA
+    // =========================================================================
+    let _vitDTickInterval = null;
+    let _vitDWakeLock = null;
+    let _vitDLiveUvCache = { ts: 0, uvNow: null, cloudPct: null, hourlyUv: null, lat: -34.60, lon: -58.38, isGps: false };
+
+    window.toggleVitDCard = function () {
+      const body = document.getElementById("vitDCollapsibleBody");
+      const chev = document.getElementById("vitDCollapseChevron");
+      if (!body) return;
+      const isHidden = body.style.display === "none" || !body.style.display;
+      body.style.display = isHidden ? "block" : "none";
+      if (chev) chev.textContent = isHidden ? "▲" : "▼";
+      if (isHidden) {
+        fetchLiveSolarUvIfNeeded();
+        renderVitDTracker();
+      }
+    };
+
+    function getSeasonAndSolarModel(dateObj = new Date(), lat = -34.6) {
+      const m = dateObj.getMonth(); // 0=Ene .. 11=Dic
+      const hr = dateObj.getHours() + dateObj.getMinutes() / 60;
+      const isSouth = lat < 0;
+      let season = "spring_summer";
+      let seasonLabel = "☀️ Primavera / Verano";
+      let windowStr = "10:00–11:30 o 15:45–17:00 hs";
+      let peakUvTypical = 8.5;
+      let startHr = 9.5;
+      let endHr = 17.5;
+
+      if (isSouth) {
+        if (m === 11 || m === 0 || m === 1) {
+          season = "summer"; seasonLabel = "☀️ Verano"; windowStr = "09:45–11:15 o 16:00–17:30 hs"; peakUvTypical = 9.5; startHr = 9.0; endHr = 18.0;
+        } else if (m >= 2 && m <= 4) {
+          season = "autumn"; seasonLabel = "🍂 Otoño"; windowStr = "11:15–14:45 hs"; peakUvTypical = 5.2; startHr = 10.5; endHr = 15.8;
+        } else if (m >= 5 && m <= 7) {
+          season = "winter"; seasonLabel = "❄️ Invierno"; windowStr = "12:00–14:00 hs (mediodía solar)"; peakUvTypical = 3.2; startHr = 11.3; endHr = 14.7;
+        } else {
+          season = "spring"; seasonLabel = "🌤️ Primavera"; windowStr = "10:15–11:45 o 15:15–16:45 hs"; peakUvTypical = 7.4; startHr = 9.5; endHr = 17.2;
+        }
+      } else {
+        if (m >= 5 && m <= 7) {
+          season = "summer"; seasonLabel = "☀️ Verano"; windowStr = "09:45–11:15 o 16:00–17:30 hs"; peakUvTypical = 9.2; startHr = 9.0; endHr = 18.0;
+        } else if (m >= 8 && m <= 10) {
+          season = "autumn"; seasonLabel = "🍂 Otoño"; windowStr = "11:15–14:45 hs"; peakUvTypical = 5.0; startHr = 10.5; endHr = 15.8;
+        } else if (m === 11 || m === 0 || m === 1) {
+          season = "winter"; seasonLabel = "❄️ Invierno"; windowStr = "12:00–14:00 hs (mediodía solar)"; peakUvTypical = 3.0; startHr = 11.3; endHr = 14.7;
+        } else {
+          season = "spring"; seasonLabel = "🌤️ Primavera"; windowStr = "10:15–11:45 o 15:15–16:45 hs"; peakUvTypical = 7.2; startHr = 9.5; endHr = 17.2;
+        }
+      }
+
+      // Curva campana solar en torno a las 13:00 hs (mediodía solar típico AR UTC-3)
+      let estUv = 0;
+      if (hr >= 7.5 && hr <= 19.2) {
+        const solarNoon = 13.0;
+        const halfSpan = (endHr - startHr) / 2 + 1.4;
+        const dist = Math.abs(hr - solarNoon) / halfSpan;
+        if (dist < 1.2) {
+          estUv = Math.max(0, Math.round(peakUvTypical * Math.pow(Math.cos(Math.min(1, dist) * (Math.PI / 2)), 1.6) * 10) / 10);
+        }
+      }
+      return { season, seasonLabel, windowStr, estUv, peakUvTypical };
+    }
+
+    async function fetchLiveSolarUvIfNeeded(forceCoords = null) {
+      const now = Date.now();
+      if (!forceCoords && _vitDLiveUvCache.uvNow !== null && (now - _vitDLiveUvCache.ts) < 20 * 60 * 1000) {
+        return;
+      }
+      try {
+        const savedGeo = JSON.parse(localStorage.getItem("michufit_solar_coords") || "null");
+        if (!forceCoords && savedGeo && savedGeo.lat && savedGeo.lon) {
+          _vitDLiveUvCache.lat = Number(savedGeo.lat);
+          _vitDLiveUvCache.lon = Number(savedGeo.lon);
+          _vitDLiveUvCache.isGps = Boolean(savedGeo.isGps);
+        }
+      } catch (_) {}
+      if (forceCoords) {
+        _vitDLiveUvCache.lat = forceCoords.lat;
+        _vitDLiveUvCache.lon = forceCoords.lon;
+        _vitDLiveUvCache.isGps = true;
+        try { localStorage.setItem("michufit_solar_coords", JSON.stringify({ lat: forceCoords.lat, lon: forceCoords.lon, isGps: true })); } catch (_) {}
+      }
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${_vitDLiveUvCache.lat.toFixed(3)}&longitude=${_vitDLiveUvCache.lon.toFixed(3)}&current=uv_index,cloud_cover&timezone=auto`;
+        const res = await _nativeFetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.current && typeof data.current.uv_index === "number") {
+            _vitDLiveUvCache.uvNow = Math.round(data.current.uv_index * 10) / 10;
+            _vitDLiveUvCache.cloudPct = Number(data.current.cloud_cover) || 0;
+            _vitDLiveUvCache.ts = now;
+            renderVitDTracker();
+          }
+        }
+      } catch (_) {}
+    }
+
+    function computeSafeVitDMinutes(uvVal, skinTone = 2, exposureMode = "arms") {
+      // Escala Fitzpatrick simplificada: 1=Clara(I-II), 2=Intermedia(III-IV), 3=Morena(V-VI)
+      const effUv = Math.max(2.2, Number(uvVal) || 5.0);
+      const skinMult = skinTone === 1 ? 0.72 : (skinTone === 3 ? 1.65 : 1.0);
+      const areaMult = exposureMode === "shorts" ? 0.62 : 1.0;
+      // Base ~14 min a UV 6 para fototipo III en remera (~1000-1500 UI sin eritema)
+      const rawMins = (14 * (6.0 / effUv)) * skinMult * areaMult;
+      // Tope dermatológico seguro según UV para jamás quemarse
+      const maxSafeCap = effUv >= 9 ? (skinTone === 1 ? 8 : 14) : (effUv >= 7 ? (skinTone === 1 ? 11 : 18) : 35);
+      return Math.max(5, Math.min(maxSafeCap, Math.round(rawMins)));
+    }
+
+    function playSolarAlarmSound(type = "complete") {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const notes = type === "half" ? [587.33, 783.99] : [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = freq;
+          const startAt = ctx.currentTime + idx * 0.19;
+          gain.gain.setValueAtTime(0.001, startAt);
+          gain.gain.exponentialRampToValueAtTime(0.28, startAt + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, startAt + 0.32);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(startAt);
+          osc.stop(startAt + 0.34);
+        });
+      } catch (_) {}
+      try {
+        if (navigator.vibrate) {
+          navigator.vibrate(type === "half" ? [140, 80, 140] : [260, 110, 260, 110, 420]);
+        }
+      } catch (_) {}
+    }
+
+    async function fireSolarSystemNotification(title, bodyText) {
+      try {
+        if (!("Notification" in window) || Notification.permission !== "granted") return;
+        if ("serviceWorker" in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg && reg.showNotification) {
+            await reg.showNotification(title, {
+              body: bodyText,
+              icon: "./icon-192.png",
+              badge: "./icon-192.png",
+              vibrate: [250, 120, 250, 120, 400],
+              tag: "michufit-vitd-timer"
+            });
+            return;
+          }
+        }
+        new Notification(title, { body: bodyText, icon: "./icon-192.png" });
+      } catch (_) {}
+    }
+
+    function getVitDTimerState() {
+      try {
+        return JSON.parse(localStorage.getItem("michufit_vitd_timer") || "null");
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function setVitDTimerState(st) {
+      try {
+        if (!st) localStorage.removeItem("michufit_vitd_timer");
+        else localStorage.setItem("michufit_vitd_timer", JSON.stringify(st));
+      } catch (_) {}
+    }
+
+    async function requestSolarWakeLock(enable) {
+      try {
+        if (enable && "wakeLock" in navigator && !_vitDWakeLock) {
+          _vitDWakeLock = await navigator.wakeLock.request("screen");
+        } else if (!enable && _vitDWakeLock) {
+          await _vitDWakeLock.release();
+          _vitDWakeLock = null;
+        }
+      } catch (_) {}
+    }
+
+    function completeVitDSession(minsDone, uvUsed) {
+      setVitDTimerState(null);
+      if (_vitDTickInterval) {
+        clearInterval(_vitDTickInterval);
+        _vitDTickInterval = null;
+      }
+      requestSolarWakeLock(false);
+      const tKey = todayStr();
+      const dRec = ensureDayRecord(tKey);
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const uiEst = Math.round(Math.min(2000, Math.max(400, minsDone * (Math.max(2, uvUsed || 4) * 18))));
+      dRec.vitD = {
+        done: true,
+        minutes: minsDone,
+        uv: uvUsed,
+        uiEst,
+        time: timeStr,
+        updatedAt: Date.now()
+      };
+      saveToServer();
+      renderAll();
+      playSolarAlarmSound("complete");
+      fireSolarSystemNotification(
+        "☀️ ¡Dosis de Vitamina D completada!",
+        `Cumpliste tus ${minsDone} min de sol seguro (~${uiEst} UI). Pasá a la sombra o aplicate protector solar.`
+      );
+      if (typeof fireCartoonConfetti === "function") fireCartoonConfetti("normal");
+      setRaccoonSpeech(`"☀️ ¡Excelente! Cumpliste tus ${minsDone} min de sol seguro (~${uiEst} UI de Vitamina D). Ahora a la sombra o protector, que cuidamos piel y metabolismo 🐱🕶️."`, { forceShow: true });
+    }
+
+    function startVitDTimerCountdown(minutesTarget, uvUsed, halfAlert) {
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission().catch(() => {});
+      }
+      // Desbloquear contexto de audio en el gesto del clic móvil
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) { const c = new AudioCtx(); c.resume().then(() => c.close()).catch(() => {}); }
+      } catch (_) {}
+
+      const totalSec = Math.max(60, Math.round(minutesTarget * 60));
+      const now = Date.now();
+      const st = {
+        active: true,
+        startMs: now,
+        endMs: now + totalSec * 1000,
+        totalSec,
+        minutesTarget,
+        uvUsed,
+        halfAlert: Boolean(halfAlert),
+        halfFired: false
+      };
+      setVitDTimerState(st);
+      requestSolarWakeLock(true);
+      ensureVitDIntervalRunning();
+      renderVitDTracker();
+    }
+
+    function ensureVitDIntervalRunning() {
+      if (_vitDTickInterval) clearInterval(_vitDTickInterval);
+      _vitDTickInterval = setInterval(() => {
+        const st = getVitDTimerState();
+        if (!st || !st.active) {
+          clearInterval(_vitDTickInterval);
+          _vitDTickInterval = null;
+          requestSolarWakeLock(false);
+          return;
+        }
+        const remSec = Math.max(0, Math.ceil((st.endMs - Date.now()) / 1000));
+        if (st.halfAlert && !st.halfFired && remSec <= Math.floor(st.totalSec / 2) && remSec > 5) {
+          st.halfFired = true;
+          setVitDTimerState(st);
+          playSolarAlarmSound("half");
+          fireSolarSystemNotification("🔄 Mitad del tiempo solar", "Ya pasaste el 50%: cambiá de orientación si estás tomando sol quieto.");
+        }
+        if (remSec <= 0) {
+          completeVitDSession(st.minutesTarget, st.uvUsed);
+          return;
+        }
+        updateVitDLiveClockDOM(st, remSec);
+      }, 1000);
+    }
+
+    function updateVitDLiveClockDOM(st, remSec) {
+      const mm = String(Math.floor(remSec / 60)).padStart(2, "0");
+      const ss = String(remSec % 60).padStart(2, "0");
+      const pill = document.getElementById("vitDSummaryPill");
+      if (pill) {
+        pill.textContent = `⏱️ ${mm}:${ss} al sol`;
+        pill.style.color = "#f59e0b";
+      }
+      const clk = document.getElementById("vitDLiveCountdownDigits");
+      if (clk) clk.textContent = `${mm}:${ss}`;
+      const ringEl = document.getElementById("vitDLiveRingCircle");
+      if (ringEl) {
+        const circ = 2 * Math.PI * 48;
+        const elapsedRatio = Math.min(1, Math.max(0, (st.totalSec - remSec) / Math.max(1, st.totalSec)));
+        ringEl.style.strokeDashoffset = (circ * (1 - elapsedRatio)).toFixed(1);
+      }
+    }
+
+    function renderVitDTracker() {
+      const pill = document.getElementById("vitDSummaryPill");
+      const inner = document.getElementById("vitDModuleInner");
+      if (!pill || !inner) return;
+
+      appData.profile = appData.profile || {};
+      const skinTone = Number(appData.profile.vitDSkinTone) || 2;
+      const exposureMode = appData.profile.vitDExposure || "arms";
+      const halfAlert = appData.profile.vitDHalfAlert !== false;
+      const customMinAdj = Number(appData.profile.vitDMinOffset) || 0;
+
+      const solarModel = getSeasonAndSolarModel(new Date(), _vitDLiveUvCache.lat);
+      const currentUv = _vitDLiveUvCache.uvNow !== null ? _vitDLiveUvCache.uvNow : solarModel.estUv;
+      const baseSafeMins = computeSafeVitDMinutes(currentUv, skinTone, exposureMode);
+      const targetMins = Math.max(4, Math.min(40, baseSafeMins + customMinAdj));
+
+      const dayRec = (appData.days && appData.days[selectedDate]) || {};
+      const vitDRec = dayRec.vitD || null;
+      const timerSt = getVitDTimerState();
+      const isTimerRunning = Boolean(timerSt && timerSt.active && timerSt.endMs > Date.now());
+
+      if (timerSt && timerSt.active && timerSt.endMs <= Date.now()) {
+        completeVitDSession(timerSt.minutesTarget, timerSt.uvUsed);
+        return;
+      }
+      if (isTimerRunning && !_vitDTickInterval) {
+        ensureVitDIntervalRunning();
+      }
+
+      // Actualizar píldora superior colapsada
+      if (isTimerRunning) {
+        const remS = Math.max(0, Math.ceil((timerSt.endMs - Date.now()) / 1000));
+        pill.textContent = `⏱️ ${String(Math.floor(remS / 60)).padStart(2, "0")}:${String(remS % 60).padStart(2, "0")} al sol`;
+        pill.style.color = "var(--warn)";
+      } else if (vitDRec && vitDRec.done) {
+        pill.textContent = `✅ Cumplida (${vitDRec.minutes}m • ~${vitDRec.uiEst || 1000} UI)`;
+        pill.style.color = "var(--accent)";
+      } else {
+        pill.textContent = currentUv >= 2.2
+          ? `UV ${currentUv} ahora • ${targetMins} min`
+          : `${solarModel.seasonLabel.split(" ")[0]} Ventana: ${solarModel.windowStr.split(" ")[0]}`;
+        pill.style.color = currentUv >= 2.2 ? "var(--warn)" : "var(--text-muted)";
+      }
+
+      // Analizar sinergia alimentaria de Vitamina D + Grasas en las comidas de hoy
+      const eatenMeals = Array.isArray(dayRec.meals) ? dayRec.meals.filter(m => isMealConsumed(m)) : [];
+      const allMealNames = eatenMeals.map(m => String(m.name || "").toLowerCase()).join(" | ");
+      const hasDietaryVitD = /leche proteica|vida activa|las tres ni|huevo|atun|atún|salmon|salmón|caballa|sardina|champi|hongos/.test(allMealNames);
+      const totalFatToday = eatenMeals.reduce((acc, m) => acc + (Number(m.f) || 0), 0);
+      const hasGoodFatForAbs = totalFatToday >= 10;
+
+      const circ = 2 * Math.PI * 48;
+      let remSecInit = targetMins * 60;
+      let dashOffsetInit = 0;
+      if (isTimerRunning) {
+        remSecInit = Math.max(0, Math.ceil((timerSt.endMs - Date.now()) / 1000));
+        const elRatio = Math.min(1, Math.max(0, (timerSt.totalSec - remSecInit) / Math.max(1, timerSt.totalSec)));
+        dashOffsetInit = circ * (1 - elRatio);
+      }
+      const mmInit = String(Math.floor(remSecInit / 60)).padStart(2, "0");
+      const ssInit = String(remSecInit % 60).padStart(2, "0");
+      const lowUvbNow = currentUv < 2.2;
+
+      inner.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:11px;">
+          <!-- Barra de telemetría estacional y UV en vivo -->
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:9px 11px;">
+            <div style="font-size:0.76rem;line-height:1.38;">
+              <strong style="color:var(--text);">${solarModel.seasonLabel}</strong>
+              <span style="color:var(--text-muted);"> • Ventana óptima UVB: </span>
+              <strong style="color:var(--accent);">${solarModel.windowStr}</strong>
+            </div>
+            <div style="display:inline-flex;align-items:center;gap:6px;">
+              <span style="padding:3px 8px;border-radius:999px;font-size:0.72rem;font-weight:800;background:${currentUv >= 7 ? 'rgba(239,68,68,0.15)' : (currentUv >= 2.5 ? 'rgba(245,158,11,0.16)' : 'var(--bg-elev)')};color:${currentUv >= 7 ? 'var(--danger)' : (currentUv >= 2.5 ? 'var(--warn)' : 'var(--text-muted)')};">
+                ☀️ UV actual: ${currentUv}${_vitDLiveUvCache.cloudPct !== null ? ` • ☁️ ${_vitDLiveUvCache.cloudPct}%` : ""}
+              </span>
+              <button type="button" id="btnVitDRefreshGps" title="Usar índice UV exacto de mi ubicación" style="background:var(--bg-elev);border:1px solid var(--border);border-radius:8px;padding:3px 7px;font-size:0.71rem;font-weight:700;color:var(--text-muted);cursor:pointer;">
+                📍 ${_vitDLiveUvCache.isGps ? "GPS OK" : "Mi UV local"}
+              </button>
+            </div>
+          </div>
+
+          ${lowUvbNow ? `
+            <div style="background:var(--info-soft);border:1px solid rgba(56,189,248,0.3);border-radius:11px;padding:8px 11px;font-size:0.75rem;color:var(--text);line-height:1.38;">
+              🌤️ <strong>Aviso honesto en este horario (UV ${currentUv}):</strong> ahora los rayos UVB son muy bajos para sintetizar Vitamina D cutánea (sí sirve para activar tu reloj biológico y sumar pasos/NEAT). Para máxima Vitamina D apuntá a <strong>${solarModel.windowStr}</strong> o reforzá con alimentos ricos en Vit. D.
+            </div>
+          ` : ""}
+
+          <!-- Selectores rápidos de Tono de Piel y Ropa (se guardan solos) -->
+          <div style="display:grid;grid-template-columns:1fr;gap:7px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
+              <span style="font-size:0.74rem;font-weight:700;color:var(--text-muted);">Tono de piel:</span>
+              <div style="display:inline-flex;gap:5px;flex-wrap:wrap;">
+                ${[
+                  { v: 1, lbl: "🏻 Clara" },
+                  { v: 2, lbl: "🏽 Intermedia" },
+                  { v: 3, lbl: "🏾 Morena" }
+                ].map(s => `
+                  <button type="button" data-vitd-skin="${s.v}" style="padding:4px 9px;border-radius:999px;font-size:0.73rem;font-weight:800;cursor:pointer;border:1px solid ${skinTone === s.v ? 'var(--accent)' : 'var(--border)'};background:${skinTone === s.v ? 'var(--accent-soft)' : 'var(--bg-card)'};color:${skinTone === s.v ? 'var(--accent)' : 'var(--text-muted)'};">
+                    ${s.lbl}
+                  </button>
+                `).join("")}
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
+              <span style="font-size:0.74rem;font-weight:700;color:var(--text-muted);">Exposición:</span>
+              <div style="display:inline-flex;gap:5px;flex-wrap:wrap;">
+                <button type="button" data-vitd-exp="arms" style="padding:4px 9px;border-radius:999px;font-size:0.73rem;font-weight:800;cursor:pointer;border:1px solid ${exposureMode === 'arms' ? 'var(--accent)' : 'var(--border)'};background:${exposureMode === 'arms' ? 'var(--accent-soft)' : 'var(--bg-card)'};color:${exposureMode === 'arms' ? 'var(--accent)' : 'var(--text-muted)'};">
+                  👕 Cara y brazos
+                </button>
+                <button type="button" data-vitd-exp="shorts" style="padding:4px 9px;border-radius:999px;font-size:0.73rem;font-weight:800;cursor:pointer;border:1px solid ${exposureMode === 'shorts' ? 'var(--accent)' : 'var(--border)'};background:${exposureMode === 'shorts' ? 'var(--accent-soft)' : 'var(--bg-card)'};color:${exposureMode === 'shorts' ? 'var(--accent)' : 'var(--text-muted)'};">
+                  🩳 Brazos y piernas
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Anillo del Cronómetro Solar en Tiempo Real -->
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--bg-card);border:1.5px solid ${isTimerRunning ? 'rgba(245,158,11,0.55)' : (vitDRec && vitDRec.done ? 'rgba(14,159,119,0.45)' : 'var(--border)')};border-radius:16px;padding:12px 14px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="position:relative;width:108px;height:108px;flex-shrink:0;">
+                <svg viewBox="0 0 112 112" width="108" height="108">
+                  <circle cx="56" cy="56" r="48" fill="none" stroke="var(--border)" stroke-width="8"/>
+                  <circle id="vitDLiveRingCircle" cx="56" cy="56" r="48" fill="none"
+                    stroke="${vitDRec && vitDRec.done && !isTimerRunning ? '#0e9f77' : '#f59e0b'}" stroke-width="8"
+                    stroke-dasharray="${circ.toFixed(1)}"
+                    stroke-dashoffset="${isTimerRunning ? dashOffsetInit.toFixed(1) : '0'}"
+                    stroke-linecap="round" transform="rotate(-90 56 56)"/>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+                  <span id="vitDLiveCountdownDigits" style="font-family:'Outfit',sans-serif;font-size:1.38rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text);line-height:1.05;">
+                    ${vitDRec && vitDRec.done && !isTimerRunning ? "✓ LISTO" : `${mmInit}:${ssInit}`}
+                  </span>
+                  <small style="font-size:0.65rem;font-weight:700;color:var(--text-muted);margin-top:2px;">
+                    ${isTimerRunning ? "restantes" : (vitDRec && vitDRec.done ? `${vitDRec.minutes} min hoy` : "dosis segura")}
+                  </small>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:5px;min-width:140px;">
+                ${!isTimerRunning ? `
+                  <div style="display:inline-flex;align-items:center;gap:6px;">
+                    <span style="font-size:0.74rem;color:var(--text-muted);font-weight:700;">Ajustar:</span>
+                    <button type="button" id="btnVitDMinMinus" class="btn btn-sm" style="padding:2px 8px;font-size:0.78rem;">−</button>
+                    <strong style="font-size:0.82rem;font-variant-numeric:tabular-nums;">${targetMins} min</strong>
+                    <button type="button" id="btnVitDMinPlus" class="btn btn-sm" style="padding:2px 8px;font-size:0.78rem;">+</button>
+                  </div>
+                ` : `
+                  <span style="font-size:0.76rem;font-weight:800;color:var(--warn);">☀️ Exposición solar activa...</span>
+                `}
+                <label style="display:inline-flex;align-items:center;gap:6px;font-size:0.73rem;color:var(--text-muted);cursor:pointer;">
+                  <input type="checkbox" id="chkVitDHalfAlert" ${halfAlert ? "checked" : ""} style="accent-color:var(--accent);" />
+                  <span>Sonar aviso a la mitad (cambiar de lado)</span>
+                </label>
+                <span style="font-size:0.7rem;color:var(--text-muted);">
+                  🔔 Al llegar a 00:00 suena tono + vibración + notificación.
+                </span>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:7px;width:100%;flex-wrap:wrap;">
+              ${isTimerRunning ? `
+                <button type="button" id="btnStopVitDTimer" class="btn btn-danger btn-sm" style="flex:1;justify-content:center;">
+                  ⏹️ Cancelar
+                </button>
+                <button type="button" id="btnFinishVitDNow" class="btn btn-primary btn-sm" style="flex:1.3;justify-content:center;">
+                  ✅ Ya cumplí, finalizar ahora
+                </button>
+              ` : `
+                <button type="button" id="btnStartVitDTimer" class="btn btn-primary" style="flex:1.5;justify-content:center;padding:10px 14px;font-size:0.84rem;font-weight:800;">
+                  ▶️ Iniciar Cronómetro (${targetMins} min)
+                </button>
+                ${vitDRec && vitDRec.done ? `
+                  <button type="button" id="btnUndoVitDDone" class="btn btn-sm" style="justify-content:center;font-size:0.75rem;">
+                    ↩ Desmarcar
+                  </button>
+                ` : `
+                  <button type="button" id="btnMarkVitDManual" class="btn btn-sm" style="justify-content:center;font-size:0.76rem;" title="Marcar dosis cumplida sin esperar el cronómetro">
+                    ✓ Ya tomé sol
+                  </button>
+                `}
+              `}
+            </div>
+          </div>
+
+          <!-- Radar de Sinergia Nutricional (Vitamina D dietaria + Grasa liposoluble) -->
+          <div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:8px 11px;font-size:0.74rem;color:var(--text-muted);line-height:1.38;">
+            ${hasDietaryVitD
+              ? (hasGoodFatForAbs
+                ? `🥑🥛 <strong style="color:var(--accent);">Sinergia liposoluble óptima hoy:</strong> sumaste alimentos con Vitamina D y ${Math.round(totalFatToday)}g de grasas saludables que maximizan su absorción intestinal.`
+                : `💡 <strong style="color:var(--warn);">Tip de absorción:</strong> cargaste fuente de Vitamina D (ej. leche proteica fortificada), pero llevás poca grasa hoy (${Math.round(totalFatToday)}g). Sumar ½ palta, huevo entero o frutos secos duplica su absorción.`)
+              : `🐟🥚 <strong>Refuerzo todo el año:</strong> en días nublados o invierno acompañá tu rutina con <em>Leche proteica Vida Activa (40% VD)</em>, huevos enteros o atún/pescado junto a una grasa saludable.`}
+          </div>
+        </div>
+      `;
+
+      inner.querySelectorAll("[data-vitd-skin]").forEach(b => {
+        b.addEventListener("click", () => {
+          appData.profile.vitDSkinTone = Number(b.getAttribute("data-vitd-skin")) || 2;
+          appData.profile.vitDMinOffset = 0;
+          saveToServer();
+          renderVitDTracker();
+        });
+      });
+      inner.querySelectorAll("[data-vitd-exp]").forEach(b => {
+        b.addEventListener("click", () => {
+          appData.profile.vitDExposure = b.getAttribute("data-vitd-exp") || "arms";
+          appData.profile.vitDMinOffset = 0;
+          saveToServer();
+          renderVitDTracker();
+        });
+      });
+      document.getElementById("chkVitDHalfAlert")?.addEventListener("change", (e) => {
+        appData.profile.vitDHalfAlert = Boolean(e.target.checked);
+        saveToServer();
+      });
+      document.getElementById("btnVitDMinMinus")?.addEventListener("click", () => {
+        appData.profile.vitDMinOffset = (Number(appData.profile.vitDMinOffset) || 0) - 1;
+        renderVitDTracker();
+      });
+      document.getElementById("btnVitDMinPlus")?.addEventListener("click", () => {
+        appData.profile.vitDMinOffset = (Number(appData.profile.vitDMinOffset) || 0) + 1;
+        renderVitDTracker();
+      });
+      document.getElementById("btnVitDRefreshGps")?.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+          alert("Tu navegador no soporta geolocalización.");
+          return;
+        }
+        const gBtn = document.getElementById("btnVitDRefreshGps");
+        if (gBtn) gBtn.textContent = "⏳...";
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            fetchLiveSolarUvIfNeeded({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+          },
+          () => {
+            if (gBtn) gBtn.textContent = "📍 Sin permiso";
+          },
+          { timeout: 8000 }
+        );
+      });
+      document.getElementById("btnStartVitDTimer")?.addEventListener("click", () => {
+        startVitDTimerCountdown(targetMins, currentUv, appData.profile.vitDHalfAlert !== false);
+      });
+      document.getElementById("btnStopVitDTimer")?.addEventListener("click", () => {
+        setVitDTimerState(null);
+        if (_vitDTickInterval) { clearInterval(_vitDTickInterval); _vitDTickInterval = null; }
+        requestSolarWakeLock(false);
+        renderVitDTracker();
+      });
+      document.getElementById("btnFinishVitDNow")?.addEventListener("click", () => {
+        const st = getVitDTimerState();
+        const elapsedMin = st ? Math.max(1, Math.round((Date.now() - st.startMs) / 60000)) : targetMins;
+        completeVitDSession(elapsedMin, currentUv);
+      });
+      document.getElementById("btnMarkVitDManual")?.addEventListener("click", () => {
+        completeVitDSession(targetMins, currentUv);
+      });
+      document.getElementById("btnUndoVitDDone")?.addEventListener("click", () => {
+        const dRecNow = ensureDayRecord(selectedDate);
+        delete dRecNow.vitD;
+        saveToServer();
+        renderAll();
+      });
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && typeof renderVitDTracker === "function") {
+        renderVitDTracker();
+      }
+    });
 
     function renderQuickCatalog() {
       const rawQuery = (document.getElementById("quickCatalogSearch").value || "").trim();
