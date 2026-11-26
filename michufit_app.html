@@ -13,7 +13,7 @@
   <title>Michu Fit 🐱 | Calculadora de Déficit y Seguimiento Calórico</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Fredoka:wght@600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
@@ -90,17 +90,25 @@
     }
 
     body {
-      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
+      letter-spacing: -0.012em;
+      -webkit-font-smoothing: antialiased;
       min-height: 100vh;
       padding-bottom: 50px;
     }
 
-    h1, h2, h3, .card-title, .ring-kcal-left, .bp-center-bubble, .bp-wheel-row.dist-0 {
-      font-family: 'Fredoka', 'Nunito', sans-serif;
-      letter-spacing: 0.01em;
+    h1, h2, h3, .card-title, .bp-center-bubble {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      letter-spacing: -0.025em;
+    }
+
+    .ring-kcal-left, .stat-box .val, .if-time-big, .bp-wheel-row.dist-0 {
+      font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.03em;
     }
 
     .app-shell {
@@ -575,23 +583,28 @@
       color: var(--text-muted);
     }
 
-    /* Navigation Tabs */
+    /* Navigation Tabs — Modern Segmented Control Track */
     .nav-tabs {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 18px;
+      gap: 6px;
+      margin-bottom: 16px;
+      padding: 5px;
+      border-radius: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
     }
 
     .tab-btn {
       flex: 1 1 150px;
-      padding: 11px 14px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--bg-elev);
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
       color: var(--text-muted);
-      font-weight: 800;
-      font-size: 0.87rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: -0.015em;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -599,26 +612,25 @@
       gap: 6px;
       transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
       text-align: center;
-      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
     }
 
     .tab-btn:active {
-      transform: translateY(1px);
-      box-shadow: none;
+      transform: scale(0.985);
     }
 
     @media (max-width: 768px) {
       .nav-tabs {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
+        gap: 4px;
+        padding: 4px;
       }
       .nav-tabs .tab-btn {
         min-width: 0;
         width: 100%;
-        padding: 9px 6px;
-        font-size: 0.73rem;
-        line-height: 1.2;
+        padding: 8px 5px;
+        font-size: 0.72rem;
+        line-height: 1.22;
         flex-direction: column;
         gap: 4px;
         overflow: hidden;
@@ -628,15 +640,20 @@
 
     .tab-btn:hover {
       color: var(--text);
-      background: var(--bg-card-hover);
-      border-color: rgba(14, 159, 119, 0.3);
+      background: rgba(148, 163, 184, 0.08);
     }
 
     .tab-btn.active {
-      background: var(--accent-soft);
+      background: var(--bg-elev);
       color: var(--accent);
-      border-color: rgba(14, 159, 119, 0.45);
-      box-shadow: 0 3px 10px rgba(14, 159, 119, 0.10);
+      font-weight: 800;
+      border-color: rgba(14, 159, 119, 0.32);
+      box-shadow: 0 3px 12px rgba(15, 30, 28, 0.07);
+    }
+
+    html[data-theme="dark"] .tab-btn.active {
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      border-color: rgba(32, 201, 151, 0.35);
     }
 
     .tab-panel {
@@ -690,8 +707,9 @@
     }
 
     .card-title {
-      font-size: 1.05rem;
+      font-size: 1.04rem;
       font-weight: 800;
+      letter-spacing: -0.025em;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -701,10 +719,10 @@
     .date-nav {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       background: var(--bg-card);
-      padding: 6px 10px;
-      border-radius: var(--radius-sm);
+      padding: 5px 8px;
+      border-radius: 13px;
       border: 1px solid var(--border);
     }
 
@@ -713,14 +731,14 @@
       border: none;
       color: var(--text);
       font-weight: 700;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       outline: none;
     }
 
     /* Calorie Ring + Summary */
     .kcal-overview {
       display: grid;
-      grid-template-columns: 190px 1fr;
+      grid-template-columns: 192px 1fr;
       gap: 20px;
       align-items: center;
     }
@@ -734,8 +752,8 @@
 
     .ring-container {
       position: relative;
-      width: 180px;
-      height: 180px;
+      width: 184px;
+      height: 184px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -750,17 +768,19 @@
     }
 
     .ring-kcal-left {
-      font-size: 1.85rem;
-      font-weight: 900;
-      line-height: 1.05;
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.04em;
     }
 
     .ring-kcal-label {
-      font-size: 0.74rem;
+      font-size: 0.68rem;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-top: 2px;
+      letter-spacing: 0.08em;
+      margin-top: 5px;
     }
 
     .kcal-stats-list {
@@ -773,64 +793,79 @@
     .stat-box {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 11px 13px;
+      border-radius: 14px;
+      padding: 12px 14px;
+      transition: border-color 0.16s ease;
+    }
+
+    .stat-box:hover {
+      border-color: rgba(14, 159, 119, 0.28);
     }
 
     .stat-box .label {
-      font-size: 0.75rem;
+      font-size: 0.69rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.055em;
       color: var(--text-muted);
       display: block;
+      margin-bottom: 3px;
     }
 
     .stat-box .val {
-      font-size: 1.15rem;
+      font-size: 1.24rem;
       font-weight: 800;
+      letter-spacing: -0.03em;
     }
 
     .deficit-banner {
       margin-top: 14px;
       padding: 11px 14px;
-      border-radius: var(--radius-sm);
+      border-radius: 13px;
       background: var(--accent-soft);
-      border: 1px solid rgba(34, 197, 94, 0.3);
+      border: 1px solid rgba(14, 159, 119, 0.25);
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
       flex-wrap: wrap;
-      font-size: 0.85rem;
+      font-size: 0.83rem;
     }
 
     /* Macros Bars */
     .macro-list {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 13px;
       margin-top: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 13px 15px;
     }
 
     .macro-row-head {
       display: flex;
       justify-content: space-between;
-      font-size: 0.84rem;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 0.83rem;
       font-weight: 700;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }
 
     .progress-track {
       width: 100%;
-      height: 10px;
-      background: var(--bg-card);
+      height: 8px;
+      background: rgba(148, 163, 184, 0.18);
       border-radius: 999px;
       overflow: hidden;
-      border: 1px solid var(--border);
     }
 
     .progress-fill {
       height: 100%;
       border-radius: 999px;
-      transition: width 0.35s ease;
+      transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     /* Water Tracker */
@@ -2106,7 +2141,7 @@
 
     html[data-auth-state="logged-out"] #modalAuthOverlay {
       display: flex !important;
-      background: linear-gradient(180deg, #cbe7fb 0%, #e7f4fd 48%, #ffffff 88%) !important;
+      background: radial-gradient(circle at 50% 18%, rgba(16, 185, 129, 0.16) 0%, transparent 54%), linear-gradient(165deg, #0b1215 0%, #111e22 52%, #0c1417 100%) !important;
       padding: 0 !important;
     }
 
@@ -2128,23 +2163,18 @@
     }
 
     #modalAuthOverlay[data-auth-mode="login-form"] .modal-inner {
-      background: rgba(255, 255, 255, 0.96) !important;
-      color: #131b26 !important;
-      border: 2px solid #dfe6f0 !important;
-      border-radius: 28px !important;
-      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18) !important;
+      background: var(--bg-elev) !important;
+      color: var(--text) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 24px !important;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45) !important;
       max-width: 420px !important;
       padding: 24px 22px !important;
     }
 
     @keyframes splashFloatSlow {
       0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-7px); }
-    }
-
-    @keyframes splashHeartRise {
-      0%, 100% { transform: translateY(0px) scale(1) rotate(-6deg); }
-      50% { transform: translateY(-6px) scale(1.08) rotate(6deg); }
+      50% { transform: translateY(-6px); }
     }
 
     .michu-splash-screen {
@@ -2155,60 +2185,66 @@
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
-      padding: 18px 20px 24px;
+      padding: 24px 22px 26px;
       user-select: none;
       overflow: hidden;
-      color: #181c20;
+      color: #f1f5f9;
     }
 
     .michu-splash-headline {
-      font-family: 'Fredoka', 'Nunito', sans-serif;
-      font-weight: 700;
-      font-size: clamp(3.15rem, 11.8vw, 4.35rem);
-      line-height: 0.96;
-      letter-spacing: -0.03em;
-      color: #181c20;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2.15rem, 8.2vw, 2.95rem);
+      line-height: 1.06;
+      letter-spacing: -0.035em;
+      color: #f8fafc;
       text-align: center;
       z-index: 3;
-      margin: auto 0;
-      padding: 10px 0;
+      margin: 0;
     }
 
     .michu-splash-start-btn {
-      background: #14171a;
+      width: min(320px, 92%);
+      background: linear-gradient(135deg, #14bd8e 0%, #0d8f6b 100%);
       color: #ffffff !important;
-      border: none;
-      border-radius: 999px;
-      padding: 16px 58px;
-      font-size: 1.12rem;
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      border-radius: 14px;
+      padding: 15px 28px;
+      font-size: 1.02rem;
       font-weight: 800;
+      letter-spacing: -0.01em;
       cursor: pointer;
-      box-shadow: 0 10px 24px rgba(20, 23, 26, 0.24);
-      transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.16s ease;
+      box-shadow: 0 10px 28px rgba(14, 159, 119, 0.35);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
     }
 
     .michu-splash-start-btn:hover {
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 14px 28px rgba(20, 23, 26, 0.3);
+      transform: translateY(-2px);
+      filter: brightness(1.06);
+      box-shadow: 0 14px 32px rgba(14, 159, 119, 0.44);
     }
 
     .michu-splash-start-btn:active {
-      transform: translateY(2px) scale(0.98);
+      transform: translateY(1px) scale(0.99);
     }
 
     .michu-splash-login-link {
-      background: transparent;
-      border: none;
-      color: #181c20 !important;
-      font-size: 1.03rem;
-      font-weight: 800;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      width: min(320px, 92%);
+      color: #e2e8f0 !important;
+      font-size: 0.94rem;
+      font-weight: 700;
       cursor: pointer;
-      padding: 8px 16px;
-      transition: opacity 0.15s ease;
+      padding: 12px 16px;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
 
     .michu-splash-login-link:hover {
-      opacity: 0.72;
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.22);
+      opacity: 1;
     }
   </style>
   <script>
@@ -2497,35 +2533,35 @@
         <span class="raccoon-status-badge" id="raccoonStateLabel" style="display:none;">🐱 En zona de déficit</span>
       </div>
 
-      <!-- Globo de historieta flotante (aparece recién cuando Michu frena y te mira) -->
-      <div class="raccoon-dialogue" id="michuFloatingBubbleWrap" style="gap:5px;max-width:min(330px, calc(100vw - 145px));pointer-events:auto;opacity:0;transform:scale(0.4) translateY(18px);transform-origin:left bottom;margin-bottom:18px;">
-        <div class="speech-bubble" style="padding:11px 14px;font-size:0.84rem;background:var(--bg-elev);border:2.5px solid var(--accent);border-radius:20px;box-shadow:0 6px 0 rgba(21,128,61,0.35), 0 14px 32px rgba(0,0,0,0.28);">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px;">
-            <strong style="font-size:0.76rem;color:var(--accent);">🐱 Michu</strong>
+      <!-- Tarjeta moderna estilo AI Coach (aparece cuando Michu se asoma) -->
+      <div class="raccoon-dialogue" id="michuFloatingBubbleWrap" style="gap:5px;max-width:min(340px, calc(100vw - 140px));pointer-events:auto;opacity:0;transform:scale(0.4) translateY(18px);transform-origin:left bottom;margin-bottom:18px;">
+        <div class="speech-bubble" style="padding:12px 15px;font-size:0.83rem;font-weight:600;background:var(--bg-elev);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1.5px solid rgba(14,159,119,0.42);border-radius:18px;box-shadow:0 16px 38px rgba(15,30,28,0.22);">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:5px;">
+            <strong style="font-size:0.69rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:800;">⚡ MICHU COACH • IA</strong>
             <div style="display:flex;gap:4px;align-items:center;">
-              <button type="button" class="btn btn-sm" id="btnQuickMuteMichu" title="Apagar apariciones automáticas de Michu" style="padding:1px 6px;font-size:0.65rem;">
-                🔕 Apagar
+              <button type="button" class="btn btn-sm" id="btnQuickMuteMichu" title="Apagar apariciones automáticas de Michu" style="padding:2px 7px;font-size:0.64rem;">
+                Silenciar
               </button>
-              <button type="button" class="btn btn-sm" id="btnCloseMichuPeek" title="Ocultar ahora" style="padding:1px 6px;font-size:0.68rem;">
+              <button type="button" class="btn btn-sm" id="btnCloseMichuPeek" title="Ocultar ahora" style="padding:2px 6px;font-size:0.68rem;">
                 ✕
               </button>
             </div>
           </div>
-          <div id="raccoonSpeechText" style="line-height:1.38;">
-            "A ver, humano... hoy venimos bien con el desayuno, pero no te hagas el distraído con la proteína que los músculos no viven de aire 🐱💪."
+          <div id="raccoonSpeechText" style="line-height:1.42;color:var(--text);">
+            "A ver... hoy venimos bien con el desayuno, pero no descuides la proteína que la masa magra se construye comida a comida."
           </div>
         </div>
       </div>
     </section>
 
-    <!-- BARRA COMPACTA DE ACCIONES RÁPIDAS (Siempre visible arriba sin ocupar media pantalla) -->
+    <!-- BARRA COMPACTA DE ACCIONES RÁPIDAS -->
     <div class="top-quick-actions-bar" style="display:flex;flex-direction:column;gap:8px;background:var(--bg-elev);border:1px solid var(--border);border-radius:18px;padding:11px 13px;margin-bottom:14px;box-shadow:var(--shadow);">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:7px;width:100%;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(136px, 1fr));gap:7px;width:100%;">
         <button type="button" class="btn btn-sm btn-primary" id="btnHeroAddFood" onclick="window.openFoodModal && window.openFoodModal()" style="justify-content:center;">
-          ➕ Registrar comida
+          ＋ Registrar comida
         </button>
         <button type="button" class="btn btn-sm" id="btnHeroSuggestedMenu" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="background:var(--accent-soft);border-color:rgba(14,159,119,0.28);color:var(--accent);font-weight:800;justify-content:center;">
-          🥗 Menú Sugerido
+          🥗 Menú IA
         </button>
         <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnHeroReto21" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;font-weight:800;justify-content:center;">
           🔥 Reto 21 Días
@@ -2533,22 +2569,22 @@
         <button type="button" class="btn btn-sm btn-purple" id="btnHeroScanAI" style="justify-content:center;">
           📸 Escáner IA
         </button>
-        <button type="button" class="btn btn-sm" id="btnHeroRandomQuip" title="Hacer que Michu se asome, salude y se vaya" style="justify-content:center;">
-          🐱 Llamar a Michu
+        <button type="button" class="btn btn-sm" id="btnHeroRandomQuip" title="Consultar feedback rápido de Coach Michu" style="justify-content:center;">
+          ⚡ Coach Michu
         </button>
       </div>
-      <span id="raccoonQuickSummary" style="font-size:0.74rem;color:var(--text-muted);font-weight:700;text-align:center;">Meta de hoy: 1,850 kcal</span>
+      <span id="raccoonQuickSummary" style="font-size:0.73rem;color:var(--text-muted);font-weight:700;text-align:center;font-variant-numeric:tabular-nums;">Meta de hoy: 1.850 kcal</span>
     </div>
 
     <!-- NAVIGATION TABS -->
     <nav class="nav-tabs" aria-label="Secciones principales">
       <button type="button" class="tab-btn active" data-tab="tab-diary">
-        🍽️ Diario y Déficit de Hoy
+        🍽️ Diario & Macros
       </button>
       <button type="button" class="tab-btn" data-tab="tab-fasting" id="navTabFasting">
-        <span>⏳ Ayuno Intermitente</span>
+        <span>⏳ Ayuno</span>
         <span style="display:inline-flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;">
-          <span id="navFastingBadge" style="display:none;font-size:0.65rem;padding:2px 5px;border-radius:999px;background:var(--purple-soft);color:var(--purple);font-weight:800;white-space:nowrap;">EN CURSO</span>
+          <span id="navFastingBadge" style="display:none;font-size:0.63rem;padding:2px 6px;border-radius:999px;background:var(--purple-soft);color:var(--purple);font-weight:800;white-space:nowrap;">ACTIVO</span>
           <label class="nav-if-switch" id="navFastingSlideLabel" onclick="event.stopPropagation();" title="Activar o desactivar Ayuno Intermitente">
             <input type="checkbox" id="navFastingSlideInput" aria-label="Activar o desactivar Ayuno Intermitente" />
             <span class="nav-if-slider"></span>
@@ -2556,7 +2592,7 @@
         </span>
       </button>
       <button type="button" class="tab-btn" data-tab="tab-progress">
-        📈 Seguimiento de Peso y Gráficos
+        📈 Progreso & Físico
       </button>
     </nav>
 
@@ -2569,14 +2605,19 @@
         <!-- Card Calorías & Macros -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title">🔥 Balance Calórico y Déficit</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <div class="card-title">🔥 Rendimiento Calórico</div>
+              <span id="dailyFitnessScorePill" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:0.72rem;font-weight:800;background:var(--accent-soft);color:var(--accent);border:1px solid rgba(14,159,119,0.28);font-variant-numeric:tabular-nums;">
+                ⚡ Score hoy: 0%
+              </span>
+            </div>
             <div class="date-nav" style="flex-wrap:wrap;gap:6px;">
               <button type="button" class="btn btn-sm" id="btnPrevDay" title="Día anterior">◀</button>
               <input type="date" id="currentDateInput" aria-label="Fecha seleccionada" />
               <button type="button" class="btn btn-sm" id="btnNextDay" title="Día siguiente">▶</button>
               <button type="button" class="btn btn-sm" id="btnToday">Hoy</button>
               <button type="button" class="btn btn-sm btn-primary" id="btnOpenSuggestedMenuDiary" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" title="Ver menú semanal personalizado según tus gustos y objetivo">
-                🥗 Menú Sugerido
+                🥗 Menú IA
               </button>
               <button type="button" class="btn btn-sm btn-purple admin-reto21-only" id="btnOpenReto21Diary" onclick="window.openReto21Modal && window.openReto21Modal()" style="display:none;" title="Programa interactivo Reto 21 Días (Comidas + Entrenamiento Gym/Casa)">
                 🔥 Reto 21 Días
@@ -2589,36 +2630,43 @@
 
           <div class="kcal-overview">
             <div class="ring-container">
-              <svg width="180" height="180" viewBox="0 0 180 180">
-                <circle cx="90" cy="90" r="74" fill="none" stroke="var(--bg-card)" stroke-width="15" />
-                <circle id="kcalRingProgress" cx="90" cy="90" r="74" fill="none" stroke="var(--accent)" stroke-width="15"
+              <svg width="184" height="184" viewBox="0 0 180 180">
+                <defs>
+                  <linearGradient id="michuPerfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#14bd8e" />
+                    <stop offset="55%" stop-color="#0e9f77" />
+                    <stop offset="100%" stop-color="#0284c7" />
+                  </linearGradient>
+                </defs>
+                <circle cx="90" cy="90" r="74" fill="none" stroke="rgba(148, 163, 184, 0.16)" stroke-width="14" />
+                <circle id="kcalRingProgress" cx="90" cy="90" r="74" fill="none" stroke="url(#michuPerfGrad)" stroke-width="14"
                   stroke-linecap="round" stroke-dasharray="465" stroke-dashoffset="200"
-                  transform="rotate(-90 90 90)" style="transition: stroke-dashoffset 0.45s ease, stroke 0.3s ease;" />
+                  transform="rotate(-90 90 90)" style="transition: stroke-dashoffset 0.5s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.3s ease;" />
               </svg>
               <div class="ring-center">
                 <span class="ring-kcal-left" id="kcalRemainingVal">1,540</span>
-                <span class="ring-kcal-label" id="kcalRemainingLabel">kcal restantes</span>
+                <span class="ring-kcal-label" id="kcalRemainingLabel">kcal disponibles</span>
               </div>
             </div>
 
             <div class="kcal-stats-list">
               <div class="stat-box">
-                <span class="label">🍽️ Consumidas hoy</span>
+                <span class="label">Consumido</span>
                 <span class="val" id="kcalEatenVal">310 kcal</span>
               </div>
               <div class="stat-box">
-                <span class="label">🎯 Meta Déficit</span>
+                <span class="label">Meta Objetivo</span>
                 <span class="val" id="kcalTargetVal">1,850 kcal</span>
               </div>
               <div class="stat-box">
-                <span class="label">⚡ Mantenimiento (TDEE)</span>
+                <span class="label">TDEE Base</span>
                 <span class="val" id="kcalTdeeVal">2,350 kcal</span>
               </div>
               <div class="stat-box">
-                <span class="label">🏃 Ejercicio extra</span>
+                <span class="label">Gasto Activo</span>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
                   <span class="val" id="kcalBurnedVal">0 kcal</span>
-                  <button type="button" class="btn btn-sm" id="btnEditExercise" onclick="window.openExerciseModal && window.openExerciseModal()" title="Sumar calorías quemadas por ejercicio">+ Sumar</button>
+                  <button type="button" class="btn btn-sm" id="btnEditExercise" onclick="window.openExerciseModal && window.openExerciseModal()" title="Sumar calorías quemadas por entrenamiento" style="padding:3px 8px;font-size:0.72rem;">+ Entreno</button>
                 </div>
               </div>
             </div>
@@ -2633,29 +2681,29 @@
           <div class="macro-list">
             <div>
               <div class="macro-row-head">
-                <span>🥩 Proteínas <small id="macroProteinSubLabel" style="color:var(--text-muted);font-weight:500;">(preserva músculo en déficit)</small></span>
-                <span id="macroProteinText">19 / 165 g</span>
+                <span>🥩 Proteína <small id="macroProteinSubLabel" style="color:var(--text-muted);font-weight:500;">(masa magra)</small></span>
+                <span id="macroProteinText" style="font-variant-numeric:tabular-nums;">19 / 165 g</span>
               </div>
               <div class="progress-track">
-                <div class="progress-fill" id="macroProteinBar" style="width:12%;background:#22c55e;"></div>
+                <div class="progress-fill" id="macroProteinBar" style="width:12%;background:linear-gradient(90deg, #0e9f77, #20c997);"></div>
               </div>
             </div>
             <div>
               <div class="macro-row-head">
-                <span>🍚 Carbohidratos <small style="color:var(--text-muted);font-weight:500;">(energía de entrenamiento)</small></span>
-                <span id="macroCarbsText">21 / 170 g</span>
+                <span>🍚 Carbohidratos <small style="color:var(--text-muted);font-weight:500;">(energía)</small></span>
+                <span id="macroCarbsText" style="font-variant-numeric:tabular-nums;">21 / 170 g</span>
               </div>
               <div class="progress-track">
-                <div class="progress-fill" id="macroCarbsBar" style="width:12%;background:#38bdf8;"></div>
+                <div class="progress-fill" id="macroCarbsBar" style="width:12%;background:linear-gradient(90deg, #0284c7, #38bdf8);"></div>
               </div>
             </div>
             <div>
               <div class="macro-row-head">
-                <span>🥑 Grasas saludables <small style="color:var(--text-muted);font-weight:500;">(hormonas y saciedad)</small></span>
-                <span id="macroFatText">15 / 58 g</span>
+                <span>🥑 Grasas <small style="color:var(--text-muted);font-weight:500;">(hormonal)</small></span>
+                <span id="macroFatText" style="font-variant-numeric:tabular-nums;">15 / 58 g</span>
               </div>
               <div class="progress-track">
-                <div class="progress-fill" id="macroFatBar" style="width:26%;background:#f59e0b;"></div>
+                <div class="progress-fill" id="macroFatBar" style="width:26%;background:linear-gradient(90deg, #d97706, #f59e0b);"></div>
               </div>
             </div>
           </div>
@@ -3618,190 +3666,121 @@
   </div>
 
   <!-- OVERLAY PANTALLA DE LOGIN / CREACIÓN DE CUENTA / SALA DE ESPERA DE APROBACIÓN -->
-  <div class="custom-modal-overlay" id="modalAuthOverlay" data-auth-mode="splash" role="dialog" aria-modal="true" style="background:linear-gradient(180deg, #cbe7fb 0%, #e7f4fd 48%, #ffffff 88%);">
+  <div class="custom-modal-overlay" id="modalAuthOverlay" data-auth-mode="splash" role="dialog" aria-modal="true" style="background:radial-gradient(circle at 50% 18%, rgba(16, 185, 129, 0.16) 0%, transparent 54%), linear-gradient(165deg, #0b1215 0%, #111e22 52%, #0c1417 100%);">
     <div class="modal-inner" style="max-width:480px;">
 
-      <!-- VISTA 0: PORTADA DE BIENVENIDA ESTILO EDITORIAL MICHU FIT -->
+      <!-- VISTA 0: PORTADA DE BIENVENIDA MODERNA FITNESS PERFORMANCE -->
       <div id="authSplashHeroView" class="michu-splash-screen">
-        <!-- Bowl superior izquierdo de granola y arándanos + etiqueta 310 kcal -->
-        <div style="position:absolute;top:-22px;left:16px;z-index:2;animation:splashFloatSlow 4.5s ease-in-out infinite;">
-          <svg width="168" height="168" viewBox="0 0 180 180" style="filter:drop-shadow(0 14px 24px rgba(15,23,42,0.14));">
-            <defs>
-              <radialGradient id="spBowlGrad" cx="50%" cy="45%" r="55%">
-                <stop offset="0%" stop-color="#ffffff"/>
-                <stop offset="82%" stop-color="#f1f5f9"/>
-                <stop offset="100%" stop-color="#cbd5e1"/>
-              </radialGradient>
-              <radialGradient id="spBerryGrad" cx="35%" cy="35%" r="65%">
-                <stop offset="0%" stop-color="#60a5fa"/>
-                <stop offset="55%" stop-color="#2563eb"/>
-                <stop offset="100%" stop-color="#1e3a8a"/>
-              </radialGradient>
-            </defs>
-            <!-- Plato cerámico blanco -->
-            <circle cx="90" cy="86" r="76" fill="url(#spBowlGrad)" stroke="#ffffff" stroke-width="4"/>
-            <circle cx="90" cy="86" r="64" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
-            <!-- Base de granola dorada crujiente y avena -->
-            <g>
-              <circle cx="72" cy="68" r="22" fill="#d97706" opacity="0.88"/>
-              <circle cx="105" cy="70" r="24" fill="#b45309" opacity="0.85"/>
-              <circle cx="68" cy="98" r="23" fill="#ca8a04" opacity="0.85"/>
-              <circle cx="104" cy="100" r="22" fill="#d97706" opacity="0.9"/>
-              <circle cx="88" cy="85" r="26" fill="#f59e0b" opacity="0.92"/>
-              <!-- Copos y almendras tostadas -->
-              <ellipse cx="62" cy="64" rx="8" ry="5" transform="rotate(-22 62 64)" fill="#fde68a"/>
-              <ellipse cx="95" cy="58" rx="9" ry="5" transform="rotate(15 95 58)" fill="#fcd34d"/>
-              <ellipse cx="116" cy="84" rx="8" ry="4.5" transform="rotate(38 116 84)" fill="#fde68a"/>
-              <ellipse cx="78" cy="112" rx="9" ry="5" transform="rotate(-14 78 112)" fill="#fcd34d"/>
-              <ellipse cx="86" cy="78" rx="7" ry="4" transform="rotate(28 86 78)" fill="#fef08a"/>
-              <ellipse cx="102" cy="92" rx="8" ry="4.5" transform="rotate(-30 102 92)" fill="#fde68a"/>
-              <circle cx="74" cy="84" r="4" fill="#78350f"/>
-              <circle cx="98" cy="74" r="3.5" fill="#78350f"/>
-              <circle cx="108" cy="104" r="4" fill="#78350f"/>
-              <circle cx="62" cy="92" r="3.5" fill="#92400e"/>
-            </g>
-            <!-- Arándanos frescos 3D -->
-            <g>
-              <circle cx="52" cy="54" r="10.5" fill="url(#spBerryGrad)"/><circle cx="49" cy="51" r="2.5" fill="#93c5fd" opacity="0.8"/>
-              <circle cx="68" cy="40" r="10" fill="url(#spBerryGrad)"/><circle cx="65" cy="37" r="2.2" fill="#93c5fd" opacity="0.8"/>
-              <circle cx="76" cy="74" r="11" fill="url(#spBerryGrad)"/><circle cx="73" cy="71" r="2.6" fill="#93c5fd" opacity="0.8"/>
-              <circle cx="96" cy="96" r="11" fill="url(#spBerryGrad)"/><circle cx="93" cy="93" r="2.6" fill="#93c5fd" opacity="0.8"/>
-              <circle cx="122" cy="78" r="10.5" fill="url(#spBerryGrad)"/><circle cx="119" cy="75" r="2.4" fill="#93c5fd" opacity="0.8"/>
-              <circle cx="88" cy="124" r="10.5" fill="url(#spBerryGrad)"/><circle cx="85" cy="121" r="2.4" fill="#93c5fd" opacity="0.8"/>
-            </g>
-          </svg>
-          <!-- Etiqueta inclinada 310 kcal -->
-          <div style="position:absolute;bottom:4px;right:10px;background:#ffffff;padding:6px 14px;border-radius:999px;font-weight:900;font-size:0.95rem;color:#c28135;box-shadow:0 8px 18px rgba(15,23,42,0.12);transform:rotate(-11deg);">
-            310 kcal
+        <!-- Encabezado de marca minimalista -->
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;z-index:3;">
+          <div style="display:inline-flex;align-items:center;gap:8px;">
+            <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg, #14bd8e, #0d8f6b);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(14,159,119,0.35);">
+              <svg viewBox="0 0 64 64" width="24" height="24">
+                <path d="M13 27 C10 15, 12 7, 15 6 C18 5, 25 11, 28 18 Z" fill="#686c73" stroke="#111318" stroke-width="2.4" stroke-linejoin="round"/>
+                <path d="M51 27 C54 15, 52 7, 49 6 C46 5, 39 11, 36 18 Z" fill="#686c73" stroke="#111318" stroke-width="2.4" stroke-linejoin="round"/>
+                <path d="M14 24 C19 15, 45 15, 50 24 C54 28, 57 32, 59 34 L54 36 L58 39 L53 41 L55 44 C50 51, 42 55, 32 55 C22 55, 14 51, 9 44 L11 41 L6 39 L10 36 L5 34 C7 32, 10 28, 14 24 Z" fill="#686c73" stroke="#111318" stroke-width="2.4" stroke-linejoin="round"/>
+                <path d="M13.5 47.5 L32 34.5 L50.5 47.5 C45.5 52.5, 39 54.5, 32 54.5 C25 54.5, 18.5 52.5, 13.5 47.5 Z" fill="#ffffff"/>
+                <circle cx="22" cy="33.5" r="5.5" fill="#a5c8f0" stroke="#111318" stroke-width="1.8"/><circle cx="22" cy="33.5" r="4" fill="#090d16"/>
+                <circle cx="42" cy="33.5" r="5.5" fill="#a5c8f0" stroke="#111318" stroke-width="1.8"/><circle cx="42" cy="33.5" r="4" fill="#090d16"/>
+              </svg>
+            </div>
+            <span style="font-weight:800;font-size:1.02rem;letter-spacing:-0.02em;color:#f8fafc;">Michu Fit</span>
+          </div>
+          <span style="padding:4px 10px;border-radius:999px;background:rgba(20,189,142,0.14);border:1px solid rgba(20,189,142,0.32);color:#34d399;font-size:0.68rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;">
+            AI Performance
+          </span>
+        </div>
+
+        <!-- Tarjeta central Glassmorphic de Telemetría Fitness + Emblema Michu -->
+        <div style="width:100%;max-width:360px;background:rgba(23, 33, 38, 0.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:18px;box-shadow:0 24px 48px rgba(0,0,0,0.42);display:flex;flex-direction:column;gap:14px;z-index:2;animation:splashFloatSlow 4.6s ease-in-out infinite;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <!-- Anillo de telemetría calórica -->
+              <div style="position:relative;width:68px;height:68px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="68" height="68" viewBox="0 0 68 68">
+                  <circle cx="34" cy="34" r="28" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="6.5"/>
+                  <circle cx="34" cy="34" r="28" fill="none" stroke="#20c997" stroke-width="6.5" stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="38" transform="rotate(-90 34 34)"/>
+                </svg>
+                <span style="position:absolute;font-family:'Outfit',sans-serif;font-weight:800;font-size:0.86rem;color:#f8fafc;">88%</span>
+              </div>
+              <div>
+                <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#94a3b8;">Score Diario</div>
+                <div style="font-family:'Outfit',sans-serif;font-size:1.38rem;font-weight:800;color:#ffffff;line-height:1.1;">1.850 <small style="font-size:0.75rem;color:#34d399;font-weight:700;">kcal</small></div>
+                <div style="font-size:0.73rem;color:#94a3b8;margin-top:2px;">Déficit en zona óptima</div>
+              </div>
+            </div>
+
+            <!-- Emblema circular oscuro con Michu Coach -->
+            <div style="width:66px;height:66px;border-radius:18px;background:linear-gradient(145deg, #1b282d, #11191d);border:1.5px solid rgba(52,211,153,0.38);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;box-shadow:0 8px 20px rgba(0,0,0,0.35);">
+              <svg viewBox="0 0 140 140" width="60" height="60">
+                <path d="M44 128 C20 120, 14 96, 20 76 C23 64, 12 63, 8 66 C4 68, 7 55, 18 55 C32 55, 38 69, 34 89 C31 104, 38 114, 48 118 Z" fill="#686c73" stroke="#111318" stroke-width="3.2" stroke-linejoin="round"/>
+                <ellipse cx="74" cy="120" rx="34" ry="26" fill="#686c73" stroke="#111318" stroke-width="3.4"/>
+                <path d="M54 90 C65 94, 83 94, 94 90 C91 108, 82 122, 74 127 C66 122, 57 108, 54 90 Z" fill="#ffffff" stroke="#111318" stroke-width="3.2" stroke-linejoin="round"/>
+                <path d="M38 48 C32 28, 35 14, 40 11 C45 9, 57 18, 64 31 Z" fill="#686c73" stroke="#111318" stroke-width="3.4" stroke-linejoin="round"/>
+                <path d="M42 43 C38 29, 40 19, 43 17 C46 16, 55 23, 60 33 Z" fill="#f4979c"/>
+                <path d="M110 48 C116 28, 113 14, 108 11 C103 9, 91 18, 84 31 Z" fill="#686c73" stroke="#111318" stroke-width="3.4" stroke-linejoin="round"/>
+                <path d="M106 43 C110 29, 108 19, 105 17 C102 16, 93 23, 88 33 Z" fill="#f4979c"/>
+                <path d="M41 40 C51 25, 97 25, 107 40 C113 47, 118 54, 123 59 L115 62 L122 67 L114 70 L118 75 C109 85, 94 91, 74 91 C54 91, 39 85, 30 75 L34 70 L26 67 L33 62 L25 59 C30 54, 35 47, 41 40 Z" fill="#686c73" stroke="#111318" stroke-width="3.4" stroke-linejoin="round"/>
+                <path d="M42 81 L74 60 L106 81 C97 87, 86 91, 74 91 C62 91, 51 87, 42 81 Z" fill="#ffffff"/>
+                <circle cx="56" cy="57" r="9.5" fill="#a5c8f0" stroke="#111318" stroke-width="2.6"/><circle cx="56" cy="57" r="6.8" fill="#090d16"/><circle cx="53.4" cy="54" r="2.4" fill="#ffffff"/>
+                <circle cx="92" cy="57" r="9.5" fill="#a5c8f0" stroke="#111318" stroke-width="2.6"/><circle cx="92" cy="57" r="6.8" fill="#090d16"/><circle cx="89.4" cy="54" r="2.4" fill="#ffffff"/>
+                <path d="M68.5 64 C71.5 62.5, 76.5 62.5, 79.5 64 C80.8 64.8, 77.5 69.5, 74 69.5 C70.5 69.5, 67.2 64.8, 68.5 64 Z" fill="#f48a94" stroke="#111318" stroke-width="2.2"/>
+                <path d="M74 69.5 L74 74 M64.5 73.5 C66 78, 74 77.5, 74 73.5 M74 73.5 C74 77.5, 82 78, 83.5 73.5" fill="none" stroke="#111318" stroke-width="2.4" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Micro-métricas de Macros y Ayuno -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);">
+            <div style="background:rgba(255,255,255,0.04);border-radius:11px;padding:8px 9px;">
+              <div style="font-size:0.65rem;color:#94a3b8;font-weight:700;text-transform:uppercase;">Proteína</div>
+              <div style="font-family:'Outfit',sans-serif;font-size:0.98rem;font-weight:800;color:#34d399;margin-top:1px;">148g</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border-radius:11px;padding:8px 9px;">
+              <div style="font-size:0.65rem;color:#94a3b8;font-weight:700;text-transform:uppercase;">Protocolo</div>
+              <div style="font-family:'Outfit',sans-serif;font-size:0.98rem;font-weight:800;color:#38bdf8;margin-top:1px;">16:8 IF</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border-radius:11px;padding:8px 9px;">
+              <div style="font-size:0.65rem;color:#94a3b8;font-weight:700;text-transform:uppercase;">Racha</div>
+              <div style="font-family:'Outfit',sans-serif;font-size:0.98rem;font-weight:800;color:#fbbf24;margin-top:1px;">🔥 14 días</div>
+            </div>
           </div>
         </div>
 
-        <!-- Corazones flotantes + Medallón circular de Michu + Nota manuscrita con flecha -->
-        <div style="position:absolute;top:16px;right:16px;z-index:2;display:flex;flex-direction:column;align-items:center;">
-          <!-- 3 Corazones coral flotando -->
-          <div style="position:relative;width:120px;height:82px;pointer-events:none;">
-            <svg width="38" height="38" viewBox="0 0 36 36" style="position:absolute;top:-4px;right:6px;animation:splashHeartRise 3.2s ease-in-out infinite;">
-              <path d="M18 31 C18 31 4 22 4 11.5 C4 6.5 8 3 12.5 3 C15.4 3 17.2 4.6 18 6.4 C18.8 4.6 20.6 3 23.5 3 C28 3 32 6.5 32 11.5 C32 22 18 31 18 31 Z" fill="#ff7eb3" stroke="#fb7185" stroke-width="1"/>
-            </svg>
-            <svg width="30" height="30" viewBox="0 0 36 36" style="position:absolute;top:24px;left:14px;animation:splashHeartRise 2.7s ease-in-out infinite 0.5s;">
-              <path d="M18 31 C18 31 4 22 4 11.5 C4 6.5 8 3 12.5 3 C15.4 3 17.2 4.6 18 6.4 C18.8 4.6 20.6 3 23.5 3 C28 3 32 6.5 32 11.5 C32 22 18 31 18 31 Z" fill="#fb7185"/>
-            </svg>
-            <svg width="22" height="22" viewBox="0 0 36 36" style="position:absolute;bottom:4px;left:42px;animation:splashHeartRise 2.4s ease-in-out infinite 1s;">
-              <path d="M18 31 C18 31 4 22 4 11.5 C4 6.5 8 3 12.5 3 C15.4 3 17.2 4.6 18 6.4 C18.8 4.6 20.6 3 23.5 3 C28 3 32 6.5 32 11.5 C32 22 18 31 18 31 Z" fill="#f43f5e"/>
-            </svg>
-          </div>
-
-          <!-- Medallón circular con Michu Unificado (Gato Gris y Blanco) -->
-          <div style="width:118px;height:118px;border-radius:50%;background:linear-gradient(145deg, #f28b7d, #e06d5e);border:4.5px solid #ffffff;box-shadow:0 14px 28px rgba(15,23,42,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;animation:splashFloatSlow 4s ease-in-out infinite 0.4s;">
-            <svg viewBox="0 0 140 140" width="114" height="114">
-              <!-- Cola en S con punta blanca a la izquierda -->
-              <path d="M44 128 C20 120, 14 96, 20 76 C23 64, 12 63, 8 66 C4 68, 7 55, 18 55 C32 55, 38 69, 34 89 C31 104, 38 114, 48 118 Z" fill="#686c73" stroke="#111318" stroke-width="3.2" stroke-linejoin="round"/>
-              <path d="M21 69 C23 63, 12 62, 8 66 C4 68, 7 55, 18 55 C26 55, 31 60, 33 67 C29 64, 24 65, 21 69 Z" fill="#ffffff" stroke="#111318" stroke-width="2.6" stroke-linejoin="round"/>
-              <!-- Cuerpo inferior gris y pechera blanca en V -->
-              <ellipse cx="74" cy="120" rx="34" ry="26" fill="#686c73" stroke="#111318" stroke-width="3.4"/>
-              <path d="M54 90 C65 94, 83 94, 94 90 C91 108, 82 122, 74 127 C66 122, 57 108, 54 90 Z" fill="#ffffff" stroke="#111318" stroke-width="3.2" stroke-linejoin="round"/>
-              <!-- Orejas puntiagudas grises con interior rosado -->
-              <path d="M38 48 C32 28, 35 14, 40 11 C45 9, 57 18, 64 31 Z" fill="#686c73" stroke="#111318" stroke-width="3.4" stroke-linejoin="round"/>
-              <path d="M42 43 C38 29, 40 19, 43 17 C46 16, 55 23, 60 33 Z" fill="#f4979c"/>
-              <path d="M110 48 C116 28, 113 14, 108 11 C103 9, 91 18, 84 31 Z" fill="#686c73" stroke="#111318" stroke-width="3.4" stroke-linejoin="round"/>
-              <path d="M106 43 C110 29, 108 19, 105 17 C102 16, 93 23, 88 33 Z" fill="#f4979c"/>
-              <!-- Cabeza gris con mechones laterales -->
-              <path d="M41 40 C51 25, 97 25, 107 40 C113 47, 118 54, 123 59 L115 62 L122 67 L114 70 L118 75 C109 85, 94 91, 74 91 C54 91, 39 85, 30 75 L34 70 L26 67 L33 62 L25 59 C30 54, 35 47, 41 40 Z" fill="#686c73" stroke="#111318" stroke-width="3.4" stroke-linejoin="round"/>
-              <!-- Triángulo blanco del hocico -->
-              <path d="M42 81 L74 60 L106 81 C97 87, 86 91, 74 91 C62 91, 51 87, 42 81 Z" fill="#ffffff"/>
-              <path d="M41 40 C51 25, 97 25, 107 40 C113 47, 118 54, 123 59 L115 62 L122 67 L114 70 L118 75 C109 85, 94 91, 74 91 C54 91, 39 85, 30 75 L34 70 L26 67 L33 62 L25 59 C30 54, 35 47, 41 40 Z" fill="none" stroke="#111318" stroke-width="3.4" stroke-linejoin="round"/>
-              <!-- Cejas ovaladas -->
-              <ellipse cx="56" cy="43" rx="6" ry="2.6" transform="rotate(-14 56 43)" fill="#2e3239" stroke="#111318" stroke-width="1.8"/>
-              <ellipse cx="92" cy="43" rx="6" ry="2.6" transform="rotate(14 92 43)" fill="#2e3239" stroke="#111318" stroke-width="1.8"/>
-              <!-- Ojos redondos grandes con aro celeste y brillo -->
-              <circle cx="56" cy="57" r="9.8" fill="#a5c8f0" stroke="#111318" stroke-width="2.8"/>
-              <circle cx="56" cy="57" r="7" fill="#090d16"/>
-              <circle cx="53.2" cy="53.8" r="2.6" fill="#ffffff"/>
-              <circle cx="92" cy="57" r="9.8" fill="#a5c8f0" stroke="#111318" stroke-width="2.8"/>
-              <circle cx="92" cy="57" r="7" fill="#090d16"/>
-              <circle cx="89.2" cy="53.8" r="2.6" fill="#ffffff"/>
-              <!-- Nariz rosada y sonrisa :3 -->
-              <path d="M68.5 64 C71.5 62.5, 76.5 62.5, 79.5 64 C80.8 64.8, 77.5 69.5, 74 69.5 C70.5 69.5, 67.2 64.8, 68.5 64 Z" fill="#f48a94" stroke="#111318" stroke-width="2.4" stroke-linejoin="round"/>
-              <path d="M74 69.5 L74 74 M64.5 73.5 C66 78, 74 77.5, 74 73.5 M74 73.5 C74 77.5, 82 78, 83.5 73.5" fill="none" stroke="#111318" stroke-width="2.6" stroke-linecap="round"/>
-              <!-- Patitas blancas juntas en el pecho -->
-              <ellipse cx="61" cy="112" rx="11.5" ry="7.5" transform="rotate(-14 61 112)" fill="#ffffff" stroke="#111318" stroke-width="3"/>
-              <ellipse cx="87" cy="112" rx="11.5" ry="7.5" transform="rotate(14 87 112)" fill="#ffffff" stroke="#111318" stroke-width="3"/>
-              <path d="M74 117 C74 117 67 112 67 108 C67 105.5 69 104 71.2 104 C72.8 104 73.6 105 74 106 C74.4 105 75.2 104 76.8 104 C79 104 81 105.5 81 108 C81 112 74 117 74 117 Z" fill="#fb7185"/>
-            </svg>
-          </div>
+        <!-- TITULAR ATLÉTICO Y SUBTÍTULO -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;max-width:360px;z-index:3;">
+          <h1 class="michu-splash-headline">
+            Nutrición de precisión.<br/><span style="color:#34d399;">Resultados reales.</span>
+          </h1>
+          <p style="font-size:0.88rem;color:#94a3b8;text-align:center;line-height:1.45;font-weight:500;">
+            Controlá tu déficit, macros por masa magra, ayuno y menús adaptados en tiempo real.
+          </p>
         </div>
 
-        <!-- Texto manuscrito "Con un lindo gatito fit" + flecha curva apuntando a Michu -->
-        <div style="position:absolute;top:148px;left:50%;transform:translateX(-58%) rotate(-6deg);z-index:2;text-align:center;pointer-events:none;">
-          <svg width="58" height="26" viewBox="0 0 64 28" style="margin-left:52px;margin-bottom:-6px;">
-            <path d="M4 22 Q30 2 56 14 M48 7 L57 14 L47 19" fill="none" stroke="#5b7892" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <div style="font-family:'Caveat', cursive;font-size:1.68rem;font-weight:700;color:#5b7892;line-height:0.98;">
-            Con un lindo<br/>gatito fit
-          </div>
-        </div>
-
-        <!-- Ícono flotante izquierdo: Hidratación (Vasos de agua +) -->
-        <div style="position:absolute;top:37%;left:12px;z-index:2;width:78px;height:78px;border-radius:50%;background:linear-gradient(145deg, #56abff, #2678ff);box-shadow:0 12px 26px rgba(38,120,255,0.28);display:flex;align-items:center;justify-content:center;animation:splashFloatSlow 3.8s ease-in-out infinite 0.2s;">
-          <svg width="54" height="54" viewBox="0 0 54 54">
-            <!-- Vaso lateral semitransparente -->
-            <path d="M6 16 L18 16 L16 40 C16 42 14 43 12 43 L6 43 Z" fill="rgba(255,255,255,0.45)"/>
-            <!-- Vaso central con signo + -->
-            <path d="M23 14 L43 14 L40 41 C40 43 38.5 44 36.5 44 L29.5 44 C27.5 44 26 43 26 41 Z" fill="rgba(255,255,255,0.32)" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/>
-            <path d="M25 22 L41 22 L39.5 40 C39.5 41.5 38 42.5 36.5 42.5 L29.5 42.5 C28 42.5 26.5 41.5 26.5 40 Z" fill="rgba(255,255,255,0.88)"/>
-            <path d="M33 27 L33 35 M29 31 L37 31" stroke="#2563eb" stroke-width="2.4" stroke-linecap="round"/>
-          </svg>
-        </div>
-
-        <!-- Ícono flotante derecho: Anillo de Ayuno Intermitente 16:8 -->
-        <div style="position:absolute;top:45%;right:14px;z-index:2;width:78px;height:78px;border-radius:50%;background:#ffffff;box-shadow:0 12px 28px rgba(15,23,42,0.12);display:flex;align-items:center;justify-content:center;transform:rotate(8deg);animation:splashFloatSlow 4.2s ease-in-out infinite 0.8s;">
-          <svg width="70" height="70" viewBox="0 0 70 70">
-            <circle cx="35" cy="35" r="26" fill="none" stroke="#e2e8f0" stroke-width="7"/>
-            <circle cx="35" cy="35" r="26" fill="none" stroke="#22c55e" stroke-width="7" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="54" transform="rotate(-75 35 35)"/>
-            <text x="35" y="39" text-anchor="middle" font-family="'Fredoka', sans-serif" font-size="13.5" font-weight="700" fill="#64748b">16:8</text>
-          </svg>
-          <div style="position:absolute;bottom:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;font-size:0.7rem;">
-            🍴
-          </div>
-        </div>
-
-        <!-- Esfera desenfocada decorativa inferior izquierda (profundidad de campo) -->
-        <div style="position:absolute;bottom:175px;left:18%;width:74px;height:74px;border-radius:50%;background:radial-gradient(circle, rgba(163,190,140,0.55) 0%, rgba(210,180,140,0.35) 60%, transparent 100%);filter:blur(10px);pointer-events:none;z-index:1;"></div>
-
-        <!-- Espaciador superior para centrar el titular -->
-        <div style="height:175px;flex-shrink:0;"></div>
-
-        <!-- TITULAR GIGANTE CENTRAL -->
-        <h1 class="michu-splash-headline">
-          Alcanza<br/>tus<br/>metas de<br/>peso
-        </h1>
-
-        <!-- BOTONERA INFERIOR: "Empezar" + Huella + "Ya tengo una cuenta" -->
-        <div style="display:flex;flex-direction:column;align-items:center;gap:11px;width:100%;z-index:3;padding-top:8px;">
+        <!-- BOTONERA INFERIOR: "Comenzar mi plan" + Huella + "Ya tengo una cuenta" -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;z-index:3;">
           <button type="button" class="michu-splash-start-btn" id="btnSplashStartRegister">
-            Empezar
+            Comenzar mi plan →
           </button>
-          <button type="button" id="btnSplashBiometricLogin" style="display:none;align-items:center;justify-content:center;gap:8px;width:min(280px, 86%);padding:13px 20px;border-radius:999px;border:2px solid #22c55e;background:#f0fdf4;color:#15803d;font-family:'Nunito',sans-serif;font-size:0.96rem;font-weight:900;cursor:pointer;box-shadow:0 8px 20px rgba(34,197,94,0.18);transition:transform 0.15s ease;">
+          <button type="button" id="btnSplashBiometricLogin" style="display:none;align-items:center;justify-content:center;gap:8px;width:min(320px, 92%);padding:12px 20px;border-radius:12px;border:1px solid rgba(52,211,153,0.45);background:rgba(16,185,129,0.12);color:#34d399;font-size:0.92rem;font-weight:800;cursor:pointer;transition:transform 0.15s ease;">
             🫆 <span id="btnSplashBiometricText">Ingresar con Huella</span>
           </button>
           <button type="button" class="michu-splash-login-link" id="btnSplashOpenLogin">
             Ya tengo una cuenta
           </button>
-          <div style="font-size:0.72rem;color:#94a3b8;text-align:center;line-height:1.35;margin-top:4px;">
-            Al continuar, aceptas nuestros<br/>
-            <strong style="color:#475569;font-weight:700;">Términos de uso</strong> y <strong style="color:#475569;font-weight:700;">Aviso de privacidad</strong>
+          <div style="font-size:0.7rem;color:#64748b;text-align:center;line-height:1.35;margin-top:2px;">
+            Al continuar, aceptás nuestros <strong style="color:#94a3b8;font-weight:600;">Términos</strong> y <strong style="color:#94a3b8;font-weight:600;">Privacidad</strong>
           </div>
         </div>
       </div>
 
-      <div id="authModalHeaderIntro" style="display:none;text-align:center;margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <button type="button" class="btn btn-sm" id="btnBackToSplashFromLogin" style="padding:4px 10px;font-size:0.76rem;">← Volver</button>
-          <span style="font-size:0.75rem;color:#64748b;font-weight:800;">🐱 Michu Fit</span>
+      <div id="authModalHeaderIntro" style="display:none;text-align:center;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <button type="button" class="btn btn-sm" id="btnBackToSplashFromLogin" style="padding:5px 11px;font-size:0.76rem;">← Volver</button>
+          <span style="font-size:0.74rem;color:var(--accent);font-weight:800;letter-spacing:0.04em;text-transform:uppercase;">⚡ Michu Fit</span>
         </div>
-        <div style="font-size:2.3rem;line-height:1;">🐱</div>
-        <h2 style="font-size:1.3rem;font-weight:900;margin-top:4px;color:#181c20;">¡Qué bueno verte de nuevo!</h2>
-        <p style="font-size:0.8rem;color:#64748b;">Ingresá tu usuario o email para continuar con tu plan</p>
+        <h2 style="font-size:1.35rem;font-weight:800;color:var(--text);letter-spacing:-0.025em;">Bienvenido de nuevo</h2>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-top:3px;">Ingresá tus credenciales para continuar con tu progreso</p>
       </div>
 
       <!-- Vista 1: Formularios de Login y Registro -->
@@ -6405,13 +6384,50 @@
       const ring = document.getElementById("kcalRingProgress");
       ring.style.strokeDashoffset = String(Math.round(offset));
       if (targets.isSurplus) {
-        ring.style.stroke = ratio >= 0.92 ? "var(--accent)" : "var(--info)";
+        ring.style.stroke = ratio >= 0.92 ? "url(#michuPerfGrad)" : "var(--info)";
       } else if (remaining < 0) {
         ring.style.stroke = "var(--danger)";
-      } else if (ratio > 0.88) {
+      } else if (ratio > 0.92) {
         ring.style.stroke = "var(--warn)";
       } else {
-        ring.style.stroke = "var(--accent)";
+        ring.style.stroke = "url(#michuPerfGrad)";
+      }
+
+      // Score de Ejecución Fitness del Día (0 a 100%) — feedback inmediato y adictivo
+      const scoreEl = document.getElementById("dailyFitnessScorePill");
+      if (scoreEl) {
+        const waterGoal = Math.max(1, Number(appData.profile && appData.profile.waterGoal) || 8);
+        const protScore = Math.min(1, totals.p / Math.max(1, targets.proteinG)) * 40;
+        let kcalScore = 0;
+        if (totals.kcal > 0) {
+          const kRatio = totals.kcal / Math.max(1, effectiveTarget);
+          if (kRatio <= 1.04) {
+            kcalScore = Math.min(1, kRatio / 0.85) * 40;
+          } else {
+            const overPenalty = Math.max(0, 1 - (kRatio - 1.04) * 2.2);
+            kcalScore = 40 * overPenalty;
+          }
+        }
+        const waterScore = Math.min(1, (totals.water || 0) / waterGoal) * 12;
+        const activeScore = totals.exerciseKcal > 0 ? Math.min(8, (totals.exerciseKcal / 180) * 8) : (totals.kcal > 0 ? 4 : 0);
+        const totalScore = Math.min(100, Math.round(protScore + kcalScore + waterScore + activeScore));
+        const scoreTier = totalScore >= 85
+          ? "Nivel Atleta"
+          : (totalScore >= 55 ? "En ritmo" : (totalScore > 0 ? "En progreso" : "Iniciá tu día"));
+        scoreEl.textContent = `⚡ Score: ${totalScore}% · ${scoreTier}`;
+        if (totalScore >= 80) {
+          scoreEl.style.background = "var(--accent-soft)";
+          scoreEl.style.color = "var(--accent)";
+          scoreEl.style.borderColor = "rgba(14, 159, 119, 0.35)";
+        } else if (totalScore >= 45) {
+          scoreEl.style.background = "var(--info-soft)";
+          scoreEl.style.color = "var(--info)";
+          scoreEl.style.borderColor = "rgba(2, 132, 199, 0.28)";
+        } else {
+          scoreEl.style.background = "var(--bg-card)";
+          scoreEl.style.color = "var(--text-muted)";
+          scoreEl.style.borderColor = "var(--border)";
+        }
       }
 
       // Banner de balance energético real vs TDEE (Déficit o Superávit)
@@ -6422,42 +6438,46 @@
         if (realDeficitVsTdee <= 0) {
           const surplusToday = Math.abs(realDeficitVsTdee);
           banner.style.background = "var(--accent-soft)";
-          banner.style.borderColor = "rgba(34, 197, 94, 0.35)";
-          defText.innerHTML = `💪 <strong>Superávit activo hoy vs. mantenimiento:</strong> +${surplusToday.toLocaleString("es-AR")} kcal (en zona de hipertrofia)`;
+          banner.style.borderColor = "rgba(14, 159, 119, 0.28)";
+          defText.innerHTML = `💪 <strong>Superávit activo vs. TDEE:</strong> +${surplusToday.toLocaleString("es-AR")} kcal`;
           fatEq.style.color = "var(--accent)";
-          fatEq.textContent = `Energía extra disponible para síntesis de masa muscular`;
+          fatEq.textContent = `Zona óptima de hipertrofia`;
         } else {
           banner.style.background = "var(--info-soft)";
-          banner.style.borderColor = "rgba(56, 189, 248, 0.35)";
-          defText.innerHTML = `🍽️ <strong>Faltan calorías para entrar en superávit:</strong> -${realDeficitVsTdee.toLocaleString("es-AR")} kcal debajo de tu TDEE`;
+          banner.style.borderColor = "rgba(2, 132, 199, 0.28)";
+          defText.innerHTML = `🍽️ <strong>Para superávit:</strong> faltan ${realDeficitVsTdee.toLocaleString("es-AR")} kcal sobre TDEE`;
           fatEq.style.color = "var(--info)";
-          fatEq.textContent = `Sumá comidas ricas en proteína y carbos para activar el volumen muscular`;
+          fatEq.textContent = `Sumá proteína e hidratos complejos`;
         }
       } else if (realDeficitVsTdee >= 0) {
         const gramsFat = Math.round((realDeficitVsTdee / 7700) * 1000);
         banner.style.background = "var(--accent-soft)";
-        banner.style.borderColor = "rgba(34, 197, 94, 0.35)";
-        defText.innerHTML = `📉 <strong>Balance neto hoy vs. mantenimiento:</strong> -${realDeficitVsTdee.toLocaleString("es-AR")} kcal (en déficit)`;
+        banner.style.borderColor = "rgba(14, 159, 119, 0.28)";
+        defText.innerHTML = `📉 <strong>Balance neto vs. TDEE:</strong> -${realDeficitVsTdee.toLocaleString("es-AR")} kcal`;
         fatEq.style.color = "var(--accent)";
-        fatEq.textContent = `≈ ${gramsFat}g de tejido adiposo oxidado hoy`;
+        fatEq.textContent = `≈ ${gramsFat}g de tejido adiposo oxidado`;
       } else {
         banner.style.background = "var(--danger-soft)";
-        banner.style.borderColor = "rgba(239, 68, 68, 0.35)";
-        defText.innerHTML = `📈 <strong>Superávit hoy vs. mantenimiento:</strong> +${Math.abs(realDeficitVsTdee).toLocaleString("es-AR")} kcal`;
+        banner.style.borderColor = "rgba(225, 29, 72, 0.28)";
+        defText.innerHTML = `📈 <strong>Sobre mantenimiento:</strong> +${Math.abs(realDeficitVsTdee).toLocaleString("es-AR")} kcal`;
         fatEq.style.color = "var(--danger)";
-        fatEq.textContent = `Pasaste el TDEE de mantenimiento`;
+        fatEq.textContent = `Superaste el TDEE diario`;
       }
 
-      // Barras de Macros
+      // Barras de Macros con micro-metas restantes en tiempo real
       const protSubEl = document.getElementById("macroProteinSubLabel");
       if (protSubEl) {
         protSubEl.innerHTML = targets.usingLeanMass
-          ? `(según <strong>${targets.leanKg} kg</strong> de masa magra • ${targets.proteinPerKgLbm}g/kg)`
-          : `(preserva músculo en déficit • según peso total)`;
+          ? `(<strong>${targets.leanKg} kg</strong> magros • ${targets.proteinPerKgLbm}g/kg)`
+          : `(síntesis muscular)`;
       }
-      document.getElementById("macroProteinText").textContent = `${totals.p} / ${targets.proteinG} g`;
-      document.getElementById("macroCarbsText").textContent = `${totals.c} / ${targets.carbsG} g`;
-      document.getElementById("macroFatText").textContent = `${totals.f} / ${targets.fatG} g`;
+      const remP = Math.max(0, Math.round(targets.proteinG - totals.p));
+      const remC = Math.max(0, Math.round(targets.carbsG - totals.c));
+      const remF = Math.max(0, Math.round(targets.fatG - totals.f));
+
+      document.getElementById("macroProteinText").innerHTML = `${totals.p} / ${targets.proteinG}g <small style="color:${remP === 0 ? 'var(--accent)' : 'var(--text-muted)'};font-weight:700;margin-left:4px;">${remP === 0 ? '✓ Meta' : `· faltan ${remP}g`}</small>`;
+      document.getElementById("macroCarbsText").innerHTML = `${totals.c} / ${targets.carbsG}g <small style="color:var(--text-muted);font-weight:600;margin-left:4px;">${remC === 0 ? '✓' : `· restan ${remC}g`}</small>`;
+      document.getElementById("macroFatText").innerHTML = `${totals.f} / ${targets.fatG}g <small style="color:var(--text-muted);font-weight:600;margin-left:4px;">${remF === 0 ? '✓' : `· restan ${remF}g`}</small>`;
 
       document.getElementById("macroProteinBar").style.width = `${Math.min(100, Math.round((totals.p / Math.max(1, targets.proteinG)) * 100))}%`;
       document.getElementById("macroCarbsBar").style.width = `${Math.min(100, Math.round((totals.c / Math.max(1, targets.carbsG)) * 100))}%`;
@@ -6483,6 +6503,7 @@
           day.water = (day.water === i) ? i - 1 : i;
           saveToServer();
           renderWaterTracker();
+          renderDailySummary();
           setRaccoonSpeech(generateContextualRaccoonComment({ type: "water" }));
         });
         grid.appendChild(btn);
