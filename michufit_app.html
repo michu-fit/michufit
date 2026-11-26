@@ -8243,9 +8243,14 @@
     function renderQuickCatalog() {
       const rawQuery = (document.getElementById("quickCatalogSearch").value || "").trim();
       const normQ = typeof normalizeFoodText === "function" ? normalizeFoodText(rawQuery) : rawQuery.toLowerCase();
-      const extraFromDb = normQ
+      const cleanFoodQ = (normQ && typeof extractFoodSearchQuery === "function") ? extractFoodSearchQuery(rawQuery) : normQ;
+      const mQuickGrams = rawQuery.match(/(\d+(?:[.,]\d+)?)\s*(?:g|gr|grs|gramos|ml|cc)\b/i);
+      const customGramsWanted = mQuickGrams ? parseFloat(mQuickGrams[1].replace(",", ".")) : null;
+
+      const extraFromDb = (normQ || cleanFoodQ)
         ? [...(window.michuLearnedFoods || []), ...(typeof OFFLINE_FOOD_DB !== "undefined" ? OFFLINE_FOOD_DB : [])].map(e => ({
             name: `${e.name} (${e.unitG || 100}g)`,
+            baseUnitG: e.unitG || (e.isUnit ? 100 : 140),
             kcal: e.isUnit ? Math.round(e.kcal * (e.defaultMult || 1)) : Math.round((e.kcal * (e.unitG || 140)) / 100),
             p: e.isUnit ? Math.round(e.p * (e.defaultMult || 1) * 10) / 10 : Math.round(((e.p * (e.unitG || 140)) / 100) * 10) / 10,
             c: e.isUnit ? Math.round(e.c * (e.defaultMult || 1) * 10) / 10 : Math.round(((e.c * (e.unitG || 140)) / 100) * 10) / 10,
@@ -8263,13 +8268,33 @@
         seenNames.add(k);
         return true;
       });
-      const filtered = allFoods.filter(f => {
+      const filteredRaw = allFoods.filter(f => {
         if (!normQ) return true;
         const target = typeof normalizeFoodText === "function"
           ? normalizeFoodText(`${f.name} ${f.searchKeys || ""}`)
           : (f.name || "").toLowerCase();
-        return target.includes(normQ) || (normQ.endsWith("s") && target.includes(normQ.replace(/s$/, "")));
+        if (target.includes(normQ) || (normQ.endsWith("s") && target.includes(normQ.replace(/s$/, "")))) return true;
+        if (cleanFoodQ && cleanFoodQ.length >= 2) {
+          return target.includes(cleanFoodQ) || (cleanFoodQ.endsWith("s") && target.includes(cleanFoodQ.replace(/s$/, "")));
+        }
+        return false;
       });
+      const filtered = customGramsWanted && customGramsWanted > 0
+        ? filteredRaw.map(f => {
+            const mInName = String(f.name || "").match(/\((\d+(?:[.,]\d+)?)\s*(?:g|gr|ml|cc)/i);
+            const refG = f.baseUnitG || (mInName ? parseFloat(mInName[1].replace(",", ".")) : 100);
+            const ratio = customGramsWanted / Math.max(1, refG);
+            const cleanTitle = String(f.name || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+            return {
+              ...f,
+              name: `${Math.round(customGramsWanted)}g ${cleanTitle}`,
+              kcal: Math.max(1, Math.round((Number(f.kcal) || 0) * ratio)),
+              p: Math.round((Number(f.p) || 0) * ratio * 10) / 10,
+              c: Math.round((Number(f.c) || 0) * ratio * 10) / 10,
+              f: Math.round((Number(f.f) || 0) * ratio * 10) / 10
+            };
+          })
+        : filteredRaw;
 
       const container = document.getElementById("quickCatalogContainer");
       const prevScroll = container.scrollTop;
@@ -9126,17 +9151,34 @@
     function getAllSearchableFoodEntries() {
       const customAsEntries = (appData && Array.isArray(appData.customFoods) ? appData.customFoods : [])
         .filter(cf => cf && cf.name)
-        .map(cf => ({
-          keys: [normalizeFoodText(cf.name)],
-          name: cf.name,
-          kcal: Number(cf.kcal) || 150,
-          p: Number(cf.p) || 0,
-          c: Number(cf.c) || 0,
-          f: Number(cf.f) || 0,
-          emoji: cf.emoji || "🍽️",
-          isUnit: true,
-          unitG: 100
-        }));
+        .map(cf => {
+          const rawName = String(cf.name || "");
+          const mUnitG = rawName.match(/\(?\b(\d+(?:[.,]\d+)?)\s*(?:g|gr|ml|cc)\b/i);
+          const detectedUnitG = Number(cf.unitG) || (mUnitG ? parseFloat(mUnitG[1].replace(",", ".")) : 100);
+          const noParens = rawName.replace(/\([^)]*\)/g, " ").trim();
+          const keySet = new Set([normalizeFoodText(rawName)]);
+          if (noParens) {
+            const npNorm = normalizeFoodText(noParens);
+            if (npNorm.length >= 2) keySet.add(npNorm);
+            if (!rawName.includes("+")) {
+              const strippedQual = normalizeFoodText(
+                noParens.replace(/\b(sin sal|al agua|al natural|en agua|escurrido|escurrida|descremado|descremada)\b/gi, " ")
+              );
+              if (strippedQual.length >= 3) keySet.add(strippedQual);
+            }
+          }
+          return {
+            keys: Array.from(keySet).filter(Boolean),
+            name: noParens || rawName,
+            kcal: Number(cf.kcal) || 150,
+            p: Number(cf.p) || 0,
+            c: Number(cf.c) || 0,
+            f: Number(cf.f) || 0,
+            emoji: cf.emoji || "🍽️",
+            isUnit: true,
+            unitG: detectedUnitG
+          };
+        });
       return [...customAsEntries, ...(window.michuLearnedFoods || []), ...OFFLINE_FOOD_DB];
     }
 
