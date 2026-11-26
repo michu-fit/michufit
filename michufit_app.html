@@ -7395,6 +7395,99 @@
       }
     }
 
+    function estimateMealDietaryVitDUi(meal) {
+      if (!meal || !isMealConsumed(meal)) return 0;
+      const nm = String(meal.name || "").toLowerCase();
+      let ui = 0;
+
+      // Suplemento explícito (ej: "Vitamina D3 2000 UI")
+      if (/vitamina\s*d/.test(nm)) {
+        const mUi = nm.match(/(\d{3,5})\s*ui/);
+        ui += mUi ? Number(mUi[1]) : 1000;
+      }
+      // Leche proteica Vida Activa Las Tres Niñas (2.0 ug = 80 UI cada 200ml según envase)
+      if (/leche proteica|vida activa|las tres ni/.test(nm)) {
+        const mMl = nm.match(/(\d{2,4})\s*(?:ml|cc)/);
+        const mult = mMl ? (Number(mMl[1]) / 200) : 1;
+        ui += Math.round(80 * mult);
+      } else if (/\bleche\b|cafe con leche|café con leche/.test(nm) && !/almendra|avena|coco/.test(nm)) {
+        ui += 45;
+      }
+      // Huevos enteros (~44 UI por yema)
+      if (/huevo|omelette|revuelto/.test(nm)) {
+        const mEgg = nm.match(/(\d+)\s*huevos?/);
+        const eggCount = mEgg ? Number(mEgg[1]) : (/omelette/.test(nm) ? 2 : 1);
+        ui += eggCount * 44;
+      }
+      // Pescados grasos y atún
+      if (/salmon|salmón|caballa|sardina|arenque|trucha/.test(nm)) {
+        ui += 480;
+      } else if (/atun|atún|jurel|jaurel/.test(nm)) {
+        ui += 110;
+      }
+      return ui;
+    }
+
+    function computeWeeklyVitDStats(refDateKey) {
+      const baseStr = refDateKey || todayStr();
+      const parts = baseStr.split("-").map(Number);
+      const refDt = parts.length === 3 ? new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0) : new Date();
+      // Obtener Lunes de la semana actual (Lun=0 .. Dom=6)
+      const dow = (refDt.getDay() + 6) % 7;
+      const monDt = new Date(refDt);
+      monDt.setDate(refDt.getDate() - dow);
+
+      const dayShortLabels = ["L", "M", "M", "J", "V", "S", "D"];
+      const dayFullNames = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+      const weekDays = [];
+      let solarUiWeek = 0;
+      let foodUiWeek = 0;
+      let solarDaysDone = 0;
+      const todayKeyNow = todayStr();
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monDt);
+        d.setDate(monDt.getDate() + i);
+        const dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const rec = (appData.days && appData.days[dKey]) || {};
+        const sunDone = Boolean(rec.vitD && rec.vitD.done);
+        const sunUi = sunDone ? (Number(rec.vitD.uiEst) || 1000) : 0;
+        const meals = Array.isArray(rec.meals) ? rec.meals : [];
+        const dietUi = meals.reduce((acc, m) => acc + estimateMealDietaryVitDUi(m), 0);
+
+        if (sunDone) solarDaysDone++;
+        solarUiWeek += sunUi;
+        foodUiWeek += dietUi;
+
+        weekDays.push({
+          key: dKey,
+          short: dayShortLabels[i],
+          name: dayFullNames[i],
+          isToday: dKey === todayKeyNow,
+          isSelected: dKey === baseStr,
+          sunDone,
+          sunUi,
+          dietUi,
+          totalUi: sunUi + dietUi
+        });
+      }
+
+      const weeklyTargetUi = 7000; // ~1000 UI/día promedio óptimo en reserva liposoluble
+      const totalWeekUi = solarUiWeek + foodUiWeek;
+      const pctWeek = Math.min(100, Math.round((totalWeekUi / weeklyTargetUi) * 100));
+      const remUi = Math.max(0, weeklyTargetUi - totalWeekUi);
+      return {
+        weekDays,
+        solarUiWeek,
+        foodUiWeek,
+        totalWeekUi,
+        weeklyTargetUi,
+        pctWeek,
+        remUi,
+        solarDaysDone
+      };
+    }
+
     function renderVitDTracker() {
       const pill = document.getElementById("vitDSummaryPill");
       const inner = document.getElementById("vitDModuleInner");
@@ -7424,19 +7517,21 @@
         ensureVitDIntervalRunning();
       }
 
-      // Actualizar píldora superior colapsada
+      const wkStats = computeWeeklyVitDStats(selectedDate);
+
+      // Actualizar píldora superior colapsada (muestra hoy + avance semanal)
       if (isTimerRunning) {
         const remS = Math.max(0, Math.ceil((timerSt.endMs - Date.now()) / 1000));
         pill.textContent = `⏱️ ${String(Math.floor(remS / 60)).padStart(2, "0")}:${String(remS % 60).padStart(2, "0")} al sol`;
         pill.style.color = "var(--warn)";
       } else if (vitDRec && vitDRec.done) {
-        pill.textContent = `✅ Cumplida (${vitDRec.minutes}m • ~${vitDRec.uiEst || 1000} UI)`;
+        pill.textContent = `✅ Hoy • Semana ${wkStats.pctWeek}% (${wkStats.solarDaysDone}/4 ☀️)`;
         pill.style.color = "var(--accent)";
       } else {
         pill.textContent = currentUv >= 2.2
-          ? `UV ${currentUv} ahora • ${targetMins} min`
-          : `${solarModel.seasonLabel.split(" ")[0]} Ventana: ${solarModel.windowStr.split(" ")[0]}`;
-        pill.style.color = currentUv >= 2.2 ? "var(--warn)" : "var(--text-muted)";
+          ? `UV ${currentUv} (${targetMins}m) • Sem ${wkStats.pctWeek}%`
+          : `Sem ${wkStats.pctWeek}% (${wkStats.solarDaysDone}/4 ☀️)`;
+        pill.style.color = wkStats.pctWeek >= 100 ? "var(--accent)" : (currentUv >= 2.2 ? "var(--warn)" : "var(--text-muted)");
       }
 
       // Analizar sinergia alimentaria de Vitamina D + Grasas en las comidas de hoy
@@ -7460,6 +7555,42 @@
 
       inner.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:11px;">
+          <!-- Medidor de Reserva Semanal Liposoluble (Lun a Dom: Sol + Comidas) -->
+          <div style="background:var(--bg-card);border:1.5px solid ${wkStats.pctWeek >= 100 ? 'rgba(14,159,119,0.5)' : 'var(--border)'};border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+              <strong style="font-size:0.78rem;color:var(--text);">📅 Reserva Semanal de Vitamina D</strong>
+              <span style="font-family:'Outfit',sans-serif;font-size:0.8rem;font-weight:800;color:${wkStats.pctWeek >= 100 ? 'var(--accent)' : 'var(--warn)'};">
+                ${wkStats.totalWeekUi.toLocaleString("es-AR")} / ${wkStats.weeklyTargetUi.toLocaleString("es-AR")} UI (${wkStats.pctWeek}%)
+              </span>
+            </div>
+            <div class="progress-track" style="height:8px;">
+              <div class="progress-fill" style="width:${wkStats.pctWeek}%;background:${wkStats.pctWeek >= 100 ? 'linear-gradient(90deg, #0e9f77, #20c997)' : 'linear-gradient(90deg, #f59e0b, #10b981)'};"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;margin-top:1px;">
+              ${wkStats.weekDays.map(wd => {
+                const bg = wd.sunDone
+                  ? "rgba(245,158,11,0.18)"
+                  : (wd.dietUi >= 60 ? "var(--info-soft)" : "var(--bg-elev)");
+                const bdr = wd.isSelected
+                  ? "var(--accent)"
+                  : (wd.sunDone ? "rgba(245,158,11,0.55)" : (wd.dietUi >= 60 ? "rgba(56,189,248,0.4)" : "var(--border)"));
+                const icon = wd.sunDone ? "☀️" : (wd.dietUi >= 60 ? "🥛" : "·");
+                return `
+                  <button type="button" data-vitd-jumpdate="${wd.key}" title="${wd.name}: ${wd.totalUi} UI (${wd.sunUi} sol + ${wd.dietUi} comidas)" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 2px;border-radius:9px;border:1.5px solid ${bdr};background:${bg};cursor:pointer;color:var(--text);">
+                    <span style="font-size:0.65rem;font-weight:${wd.isToday ? '900' : '700'};color:${wd.isToday ? 'var(--accent)' : 'var(--text-muted)'};">${wd.short}</span>
+                    <span style="font-size:0.82rem;line-height:1;">${icon}</span>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;font-size:0.71rem;color:var(--text-muted);">
+              <span>☀️ Sol: <strong>${wkStats.solarUiWeek.toLocaleString("es-AR")} UI</strong> (${wkStats.solarDaysDone}/4 días) • 🥛🥚 Dieta: <strong>${wkStats.foodUiWeek.toLocaleString("es-AR")} UI</strong></span>
+              <span style="color:${wkStats.remUi === 0 ? 'var(--accent)' : 'var(--text-muted)'};font-weight:700;">
+                ${wkStats.remUi === 0 ? "🏆 ¡Meta semanal cubierta!" : `Faltan ${wkStats.remUi.toLocaleString("es-AR")} UI esta semana`}
+              </span>
+            </div>
+          </div>
+
           <!-- Barra de telemetría estacional y UV en vivo -->
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:9px 11px;">
             <div style="font-size:0.76rem;line-height:1.38;">
@@ -7605,6 +7736,17 @@
         </div>
       `;
 
+      inner.querySelectorAll("[data-vitd-jumpdate]").forEach(b => {
+        b.addEventListener("click", () => {
+          const dk = b.getAttribute("data-vitd-jumpdate");
+          if (dk) {
+            selectedDate = dk;
+            const datePicker = document.getElementById("diaryDateInput");
+            if (datePicker) datePicker.value = dk;
+            renderAll();
+          }
+        });
+      });
       inner.querySelectorAll("[data-vitd-skin]").forEach(b => {
         b.addEventListener("click", () => {
           appData.profile.vitDSkinTone = Number(b.getAttribute("data-vitd-skin")) || 2;
