@@ -2,7 +2,7 @@
 <html lang="es" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#f3f6f5" id="metaThemeColor" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -117,7 +117,7 @@
       max-width: 1160px;
       width: 100%;
       margin: 0 auto;
-      padding: 18px 14px 40px;
+      padding: calc(16px + var(--michu-safe-top, env(safe-area-inset-top, 0px))) 14px calc(40px + var(--michu-safe-bottom, env(safe-area-inset-bottom, 0px)));
       box-sizing: border-box;
       overflow-x: hidden;
     }
@@ -2220,10 +2220,21 @@
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
-      padding: 24px 22px 26px;
+      padding: calc(20px + var(--michu-safe-top, env(safe-area-inset-top, 0px))) 22px calc(22px + var(--michu-safe-bottom, env(safe-area-inset-bottom, 0px)));
+      box-sizing: border-box;
       user-select: none;
       overflow: hidden;
       color: #f1f5f9;
+    }
+
+    html.michu-legacy-wv-edge {
+      --michu-safe-top: 34px;
+      --michu-safe-bottom: 48px;
+    }
+
+    #modalAuthOverlay[data-auth-mode="register"] .modal-inner {
+      padding-top: calc(14px + var(--michu-safe-top, env(safe-area-inset-top, 0px))) !important;
+      padding-bottom: calc(14px + var(--michu-safe-bottom, env(safe-area-inset-bottom, 0px))) !important;
     }
 
     .michu-splash-headline {
@@ -2488,7 +2499,7 @@
     #michuUndoToastBar {
       position: fixed;
       left: 50%;
-      bottom: 18px;
+      bottom: calc(18px + var(--michu-safe-bottom, env(safe-area-inset-bottom, 0px)));
       transform: translateX(-50%) translateY(20px);
       opacity: 0;
       pointer-events: none;
@@ -4151,20 +4162,16 @@
           </p>
         </div>
 
-        <!-- BOTONERA INFERIOR: "Comenzar mi plan" + Google + Huella + "Ya tengo una cuenta" -->
-        <div style="display:flex;flex-direction:column;align-items:center;gap:9px;width:100%;z-index:3;">
+        <!-- BOTONERA INFERIOR LIMPIA: "Comenzar mi plan" + Huella opcional + "Ya tengo una cuenta" -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;z-index:3;">
           <button type="button" class="michu-splash-start-btn" id="btnSplashStartRegister">
             Comenzar mi plan →
-          </button>
-          <button type="button" id="btnSplashGoogleLogin" style="display:inline-flex;align-items:center;justify-content:center;gap:10px;width:min(320px, 92%);padding:11px 18px;border-radius:12px;border:1px solid rgba(255,255,255,0.22);background:#ffffff;color:#0f172a;font-size:0.9rem;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.22);transition:transform 0.15s ease;">
-            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-            <span>Continuar con Google</span>
           </button>
           <button type="button" id="btnSplashBiometricLogin" style="display:none;align-items:center;justify-content:center;gap:8px;width:min(320px, 92%);padding:12px 20px;border-radius:12px;border:1px solid rgba(52,211,153,0.45);background:rgba(16,185,129,0.12);color:#34d399;font-size:0.92rem;font-weight:800;cursor:pointer;transition:transform 0.15s ease;">
             🫆 <span id="btnSplashBiometricText">Ingresar con Huella</span>
           </button>
           <button type="button" class="michu-splash-login-link" id="btnSplashOpenLogin">
-            Ya tengo una cuenta con Email
+            Ya tengo una cuenta
           </button>
           <div style="font-size:0.72rem;color:#94a3b8;text-align:center;line-height:1.45;margin-top:3px;">
             Al continuar, aceptás nuestros
@@ -4296,6 +4303,11 @@
             ✏️ Corregir email / Volver
           </button>
         </div>
+      </div>
+
+      <!-- Vista 2b: Decisión inteligente ante Cuenta Google No Registrada o Cuenta Ya Existente -->
+      <div id="authGoogleDecisionView" style="display:none;text-align:center;padding:6px 4px;">
+        <div id="googleDecisionCardBox" style="background:var(--bg-card);border:1.5px solid var(--accent);border-radius:18px;padding:18px 16px;display:flex;flex-direction:column;gap:10px;"></div>
       </div>
 
       <!-- Vista 3: Sala de Espera legacy cuando una cuenta antigua estuviera 'pending' -->
@@ -6052,13 +6064,15 @@
           return sbJsonResponse({ ok: true, email, name: target.name });
         }
 
-        // 4d. POST /api/auth/google-login (Inicio o alta instantánea con cuenta verificada de Google)
+        // 4d. POST /api/auth/google-login (Inicio o alta con controles inteligentes de cuenta inexistente o ya existente)
         if (method === "POST" && path.endsWith("/api/auth/google-login")) {
           const accessToken = (body.accessToken || "").trim();
           const wizardProf = body.profile || null;
           const wizardName = (body.name || "").trim();
           const reqRole = body.roleRequested || "patient";
           const inviteCode = (body.inviteCode || "").trim().toUpperCase();
+          const intentMode = body.intentMode === "register" ? "register" : "login";
+          const conflictResolution = String(body.conflictResolution || "").trim();
 
           if (!accessToken) {
             return sbJsonResponse({ ok: false, error: "No se recibió el token de Google." }, 400);
@@ -6080,6 +6094,17 @@
             if (target.status === "blocked") {
               return sbJsonResponse({ ok: false, error: "Esta cuenta se encuentra pausada por el administrador." }, 403);
             }
+            // Control #2: Si hizo todo el Wizard para darse de alta y ese Gmail YA tiene usuario, preguntar antes de tocar nada
+            if (intentMode === "register" && !conflictResolution) {
+              return sbJsonResponse({
+                ok: true,
+                requiresGoogleDecision: "already_exists",
+                googleEmail: gEmail,
+                existingName: target.name || gEmail,
+                accessToken
+              });
+            }
+
             let changed = false;
             if (target.status !== "approved") {
               target.status = "approved";
@@ -6093,27 +6118,57 @@
               target.googleSub = gInfo.sub;
               changed = true;
             }
-            // Si venía recién del Wizard en una cuenta nueva sin comidas cargadas, aplicar las metas del Wizard
-            if (wizardProf && Object.keys(wizardProf).length > 0) {
-              const existingDays = target.trackerData?.days || {};
-              const hasLoggedMeals = Object.values(existingDays).some(d => Array.isArray(d?.meals) && d.meals.length > 0);
-              if (!hasLoggedMeals) {
-                const updName = wizardName || target.name || gInfo.given_name || gEmail.split("@")[0];
-                target.name = updName;
-                target.trackerData = sbCreateEmptyTrackerData(
-                  updName,
-                  wizardProf.sex,
-                  wizardProf.age,
-                  wizardProf.weight,
-                  wizardProf.goalWeight,
-                  wizardProf.height,
-                  wizardProf
-                );
-                changed = true;
-              }
+            // Solo si el usuario eligió expresamente «Actualizar las metas de mi cuenta con este plan nuevo» (conservando todo su historial)
+            if (conflictResolution === "update_goals" && wizardProf && Object.keys(wizardProf).length > 0) {
+              target.trackerData = target.trackerData || sbCreateEmptyTrackerData(target.name);
+              const existingProf = target.trackerData.profile || {};
+              const updName = wizardName || existingProf.name || target.name || gEmail.split("@")[0];
+              target.name = updName;
+              target.trackerData.profile = {
+                ...existingProf,
+                name: updName,
+                sex: wizardProf.sex || existingProf.sex || "male",
+                age: Number(wizardProf.age) || existingProf.age || 30,
+                height: Number(wizardProf.height) || existingProf.height || 172,
+                weight: Number(wizardProf.weight) || existingProf.weight || 78,
+                goalWeight: Number(wizardProf.goalWeight) || existingProf.goalWeight || 72,
+                activity: Number(wizardProf.activity) || existingProf.activity || 1.375,
+                metabolicMode: wizardProf.metabolicMode || existingProf.metabolicMode || "standard",
+                deficitType: wizardProf.deficitType || existingProf.deficitType || "recommended",
+                customDeficit: Number(wizardProf.customDeficit) || existingProf.customDeficit || 500,
+                macroPreset: wizardProf.macroPreset || existingProf.macroPreset || "high_protein",
+                dietType: wizardProf.dietType || wizardProf.macroPreset || existingProf.dietType || "high_protein",
+                waterGoal: Number(wizardProf.waterGoal) || existingProf.waterGoal || 8,
+                waterHabit: wizardProf.waterHabit || existingProf.waterHabit || "yes",
+                moodMode: wizardProf.moodMode || existingProf.moodMode || "sarcastic",
+                talkStyle: wizardProf.talkStyle || existingProf.talkStyle || "direct",
+                MascotName: wizardProf.mascotName || existingProf.MascotName || "Michu",
+                mealsPerDay: Number(wizardProf.mealsPerDay) || existingProf.mealsPerDay || 3,
+                eatingWindowStart: wizardProf.eatingStart || existingProf.eatingWindowStart || "10:00",
+                eatingWindowEnd: wizardProf.eatingEnd || existingProf.eatingWindowEnd || "20:00",
+                allergies: Array.isArray(wizardProf.allergies) ? wizardProf.allergies : (existingProf.allergies || []),
+                extraGoals: Array.isArray(wizardProf.extraGoals) ? wizardProf.extraGoals : (existingProf.extraGoals || []),
+                weekendEatMore: wizardProf.weekendEatMore ?? existingProf.weekendEatMore ?? null,
+                cravingsFreq: wizardProf.cravingsFreq ?? existingProf.cravingsFreq ?? null,
+                weeklyRateKg: Number(wizardProf.weeklyRateKg) || existingProf.weeklyRateKg || 0.5,
+                aiWizardSummary: wizardProf.aiWizardSummary || existingProf.aiWizardSummary || ""
+              };
+              changed = true;
             }
             if (changed) await sbUpsertUser(target);
           } else {
+            // Control #1: Si entró por «Ya tengo una cuenta» y ese Gmail NO está registrado, NO crear cuenta genérica: preguntar primero
+            if (intentMode === "login" && conflictResolution !== "force_create") {
+              const gSuggestedName = gInfo.given_name || gInfo.name || gEmail.split("@")[0];
+              return sbJsonResponse({
+                ok: true,
+                requiresGoogleDecision: "not_registered",
+                googleEmail: gEmail,
+                googleName: gSuggestedName,
+                accessToken
+              });
+            }
+
             const nutriUser = inviteCode
               ? users.find(u => ["nutritionist", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === inviteCode)
               : null;
@@ -14527,6 +14582,7 @@
       const splashView = document.getElementById("authSplashHeroView");
       const formsView = document.getElementById("authFormsView");
       const verifyOtpView = document.getElementById("authVerifyOtpView");
+      const googleDecView = document.getElementById("authGoogleDecisionView");
       const pendingView = document.getElementById("authPendingView");
       const loginForm = document.getElementById("authLoginForm");
       const regForm = document.getElementById("authRegisterForm");
@@ -14536,12 +14592,22 @@
       const switchTabs = document.getElementById("authModalSwitchTabs");
 
       showAuthAlert("");
-      if (mode === "verify-otp") {
+      if (mode === "google-decision") {
         if (overlayEl) overlayEl.setAttribute("data-auth-mode", "login-form");
         if (splashView) splashView.style.display = "none";
         if (headerIntro) headerIntro.style.display = "none";
         if (switchTabs) switchTabs.style.display = "none";
         if (formsView) formsView.style.display = "none";
+        if (verifyOtpView) verifyOtpView.style.display = "none";
+        if (pendingView) pendingView.style.display = "none";
+        if (googleDecView) googleDecView.style.display = "block";
+      } else if (mode === "verify-otp") {
+        if (overlayEl) overlayEl.setAttribute("data-auth-mode", "login-form");
+        if (splashView) splashView.style.display = "none";
+        if (headerIntro) headerIntro.style.display = "none";
+        if (switchTabs) switchTabs.style.display = "none";
+        if (formsView) formsView.style.display = "none";
+        if (googleDecView) googleDecView.style.display = "none";
         if (pendingView) pendingView.style.display = "none";
         if (verifyOtpView) verifyOtpView.style.display = "block";
         setTimeout(() => document.getElementById("otpCodeInput")?.focus(), 80);
@@ -14552,6 +14618,7 @@
         if (switchTabs) switchTabs.style.display = "none";
         if (formsView) formsView.style.display = "none";
         if (verifyOtpView) verifyOtpView.style.display = "none";
+        if (googleDecView) googleDecView.style.display = "none";
         if (pendingView) pendingView.style.display = "block";
         const summaryTxt = document.getElementById("pendingUserSummaryText");
         if (summaryTxt && currentUserInfo) {
@@ -14561,6 +14628,7 @@
         if (overlayEl) overlayEl.setAttribute("data-auth-mode", "login-form");
         if (splashView) splashView.style.display = "none";
         if (verifyOtpView) verifyOtpView.style.display = "none";
+        if (googleDecView) googleDecView.style.display = "none";
         if (pendingView) pendingView.style.display = "none";
         if (formsView) formsView.style.display = "block";
         if (headerIntro) headerIntro.style.display = "block";
@@ -14572,6 +14640,7 @@
         if (overlayEl) overlayEl.setAttribute("data-auth-mode", "register");
         if (splashView) splashView.style.display = "none";
         if (verifyOtpView) verifyOtpView.style.display = "none";
+        if (googleDecView) googleDecView.style.display = "none";
         if (pendingView) pendingView.style.display = "none";
         if (formsView) formsView.style.display = "block";
         if (headerIntro) headerIntro.style.display = "none";
@@ -14588,6 +14657,7 @@
         if (splashView) splashView.style.display = "flex";
         if (formsView) formsView.style.display = "none";
         if (verifyOtpView) verifyOtpView.style.display = "none";
+        if (googleDecView) googleDecView.style.display = "none";
         if (pendingView) pendingView.style.display = "none";
         if (headerIntro) headerIntro.style.display = "none";
       }
@@ -16057,9 +16127,93 @@
         return DEFAULT_GOOGLE_OAUTH_CLIENT_ID;
       }
 
-      async function exchangeGoogleAccessTokenForSession(accessToken, wizardPayload = null) {
+      function openGoogleDecisionScreen(type, payloadInfo) {
+        const box = document.getElementById("googleDecisionCardBox");
+        if (!box) return;
+        if (type === "not_registered") {
+          const safeMail = escapeHtml(payloadInfo.email || "");
+          box.style.borderColor = "var(--accent)";
+          box.innerHTML = `
+            <div style="font-size:2.2rem;">🐾🔍</div>
+            <strong style="font-size:1.05rem;color:var(--text);">No encontramos una cuenta con<br/><span style="color:var(--accent);">${safeMail}</span></strong>
+            <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.45;margin:0;">
+              ¿Tocaste otra cuenta de Google sin querer o querés empezar tu plan personalizado con este correo?
+            </p>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;">
+              <button type="button" class="btn btn-primary" id="btnGoogleDecCreatePlan" style="justify-content:center;padding:12px;font-weight:800;">
+                🚀 Crear mi plan nuevo con este correo →
+              </button>
+              <button type="button" class="btn" id="btnGoogleDecBack" style="justify-content:center;padding:10px;">
+                🔄 Elegir otra cuenta / Volver al login
+              </button>
+            </div>
+          `;
+          showAuthModal("google-decision");
+          document.getElementById("btnGoogleDecCreatePlan")?.addEventListener("click", () => {
+            window._preverifiedGoogleSignup = {
+              accessToken: payloadInfo.accessToken,
+              email: payloadInfo.email,
+              name: payloadInfo.name || ""
+            };
+            if (payloadInfo.name && !bpState.userName) {
+              bpState.userName = String(payloadInfo.name).trim().slice(0, 32);
+            }
+            bpState.email = payloadInfo.email || "";
+            showAuthModal("register");
+          });
+          document.getElementById("btnGoogleDecBack")?.addEventListener("click", () => {
+            showAuthModal("login-form");
+          });
+          return;
+        }
+
+        if (type === "already_exists") {
+          const safeMail = escapeHtml(payloadInfo.email || "");
+          const safeName = escapeHtml(payloadInfo.existingName || "tu cuenta");
+          box.style.borderColor = "var(--warn)";
+          box.innerHTML = `
+            <div style="font-size:2.2rem;">⚠️🐱</div>
+            <strong style="font-size:1.04rem;color:var(--text);">Ya existe una cuenta activa con<br/><span style="color:var(--warn);">${safeMail}</span> (${safeName})</strong>
+            <p style="font-size:0.81rem;color:var(--text-muted);line-height:1.45;margin:0;">
+              Tus respuestas del plan siguen guardadas en memoria. ¿Qué preferís hacer?
+            </p>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;">
+              <button type="button" class="btn" id="btnGoogleDecBack" style="justify-content:center;padding:11px;border-color:var(--accent);color:var(--accent);font-weight:800;">
+                🔄 Elegir otro correo / cuenta de Google
+              </button>
+              <button type="button" class="btn btn-primary" id="btnGoogleDecKeepExisting" style="justify-content:center;padding:11px;font-weight:800;">
+                🔑 Entrar a mi cuenta existente tal cual está
+              </button>
+              <button type="button" class="btn" id="btnGoogleDecUpdateGoals" style="justify-content:center;padding:11px;font-size:0.81rem;">
+                ♻️ Actualizar metas de mi cuenta con este plan nuevo
+              </button>
+            </div>
+          `;
+          showAuthModal("google-decision");
+          document.getElementById("btnGoogleDecBack")?.addEventListener("click", () => {
+            window._keepWizardStepOnReturn = true;
+            showAuthModal("register");
+          });
+          document.getElementById("btnGoogleDecKeepExisting")?.addEventListener("click", async (ev) => {
+            const b = ev.currentTarget;
+            b.disabled = true;
+            b.textContent = "⏳ Ingresando...";
+            await exchangeGoogleAccessTokenForSession(payloadInfo.accessToken, payloadInfo.wizardPayload, "keep_existing");
+          });
+          document.getElementById("btnGoogleDecUpdateGoals")?.addEventListener("click", async (ev) => {
+            const b = ev.currentTarget;
+            b.disabled = true;
+            b.textContent = "⏳ Actualizando metas...";
+            await exchangeGoogleAccessTokenForSession(payloadInfo.accessToken, payloadInfo.wizardPayload, "update_goals");
+          });
+        }
+      }
+
+      async function exchangeGoogleAccessTokenForSession(accessToken, wizardPayload = null, conflictResolution = "") {
         const bodyObj = {
           accessToken,
+          intentMode: wizardPayload ? "register" : "login",
+          conflictResolution,
           ...(wizardPayload ? {
             name: wizardPayload.name || "",
             roleRequested: wizardPayload.roleRequested || "patient",
@@ -16075,9 +16229,30 @@
         const data = await res.json();
         if (!res.ok || !data.ok) {
           window._googleOAuthInProgress = false;
+          showAuthModal(wizardPayload ? "register" : "login-form");
           showAuthAlert(data.error || "No se pudo iniciar sesión con Google.");
           return false;
         }
+        if (data.requiresGoogleDecision === "not_registered") {
+          window._googleOAuthInProgress = false;
+          openGoogleDecisionScreen("not_registered", {
+            email: data.googleEmail,
+            name: data.googleName,
+            accessToken: data.accessToken || accessToken
+          });
+          return true;
+        }
+        if (data.requiresGoogleDecision === "already_exists") {
+          window._googleOAuthInProgress = false;
+          openGoogleDecisionScreen("already_exists", {
+            email: data.googleEmail,
+            existingName: data.existingName,
+            accessToken: data.accessToken || accessToken,
+            wizardPayload
+          });
+          return true;
+        }
+        window._preverifiedGoogleSignup = null;
         window._googleOAuthInProgress = false;
         completeSessionLoginFromData(data);
         return true;
@@ -18330,33 +18505,53 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
 
             <!-- Datos de acceso para guardar la cuenta -->
             <div style="background:var(--bg-card);border:1.5px solid var(--purple);border-radius:16px;padding:11px 13px;display:flex;flex-direction:column;gap:8px;">
-              <strong style="font-size:0.82rem;color:var(--purple);">🔐 Guardá y activá tu plan al instante:</strong>
-              <button type="button" id="btnWizardGoogleSignup" style="width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:10px 12px;border-radius:11px;border:1.5px solid var(--border);background:#ffffff;color:#1f2937;font-weight:800;font-size:0.84rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
-                <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                <span>Continuar con Google (1 toque)</span>
-              </button>
-              <div style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:0.7rem;font-weight:700;">
-                <span style="flex:1;height:1px;background:var(--border);"></span>
-                <span>o con tu correo (recibirás un código de 6 dígitos)</span>
-                <span style="flex:1;height:1px;background:var(--border);"></span>
-              </div>
-              <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:7px;">
-                <div class="field" style="grid-column:1 / -1;">
-                  <input type="email" id="bpFinalEmailInp" placeholder="Tu correo electrónico (ej: nombre@gmail.com)" value="${bpState.email}" autocomplete="email" enterkeyhint="next" />
+              ${window._preverifiedGoogleSignup ? `
+                <div style="background:var(--accent-soft);border:1px solid rgba(14,159,119,0.4);border-radius:11px;padding:9px 11px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <div style="font-size:0.79rem;color:var(--text);">
+                    ✅ <strong>Google conectado:</strong> <span style="color:var(--accent);font-weight:800;">${escapeHtml(window._preverifiedGoogleSignup.email)}</span>
+                  </div>
+                  <button type="button" id="btnClearPreverifiedGoogle" style="background:none;border:none;padding:0;font-size:0.73rem;color:var(--text-muted);text-decoration:underline;cursor:pointer;">Cambiar</button>
                 </div>
-                <div class="field">
-                  <input type="password" id="bpFinalPwdInp" placeholder="Contraseña (mín. 4)" value="${bpState.password}" autocomplete="new-password" enterkeyhint="go" />
+                <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:7px;">
+                  <div class="field">
+                    <select id="bpFinalRoleSel">
+                      <option value="patient" ${bpState.roleRequested === "patient" ? "selected" : ""}>🐱 Paciente</option>
+                      <option value="nutritionist" ${bpState.roleRequested === "nutritionist" ? "selected" : ""}>🩺 Nutricionista</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <input type="text" id="bpFinalInviteInp" placeholder="🩺 Código Nutri (Opcional)" value="${bpState.inviteCode}" style="text-transform:uppercase;" />
+                  </div>
                 </div>
-                <div class="field">
-                  <select id="bpFinalRoleSel">
-                    <option value="patient" ${bpState.roleRequested === "patient" ? "selected" : ""}>🐱 Paciente</option>
-                    <option value="nutritionist" ${bpState.roleRequested === "nutritionist" ? "selected" : ""}>🩺 Nutricionista</option>
-                  </select>
+              ` : `
+                <strong style="font-size:0.82rem;color:var(--purple);">🔐 Guardá y activá tu plan al instante:</strong>
+                <button type="button" id="btnWizardGoogleSignup" style="width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:10px 12px;border-radius:11px;border:1.5px solid var(--border);background:#ffffff;color:#1f2937;font-weight:800;font-size:0.84rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+                  <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                  <span>Continuar con Google (1 toque)</span>
+                </button>
+                <div style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:0.7rem;font-weight:700;">
+                  <span style="flex:1;height:1px;background:var(--border);"></span>
+                  <span>o con tu correo (recibirás un código de 6 dígitos)</span>
+                  <span style="flex:1;height:1px;background:var(--border);"></span>
                 </div>
-                <div class="field" style="grid-column:1 / -1;">
-                  <input type="text" id="bpFinalInviteInp" placeholder="🩺 Código de Nutricionista (Opcional)" value="${bpState.inviteCode}" style="text-transform:uppercase;" />
+                <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:7px;">
+                  <div class="field" style="grid-column:1 / -1;">
+                    <input type="email" id="bpFinalEmailInp" placeholder="Tu correo electrónico (ej: nombre@gmail.com)" value="${bpState.email}" autocomplete="email" enterkeyhint="next" />
+                  </div>
+                  <div class="field">
+                    <input type="password" id="bpFinalPwdInp" placeholder="Contraseña (mín. 4)" value="${bpState.password}" autocomplete="new-password" enterkeyhint="go" />
+                  </div>
+                  <div class="field">
+                    <select id="bpFinalRoleSel">
+                      <option value="patient" ${bpState.roleRequested === "patient" ? "selected" : ""}>🐱 Paciente</option>
+                      <option value="nutritionist" ${bpState.roleRequested === "nutritionist" ? "selected" : ""}>🩺 Nutricionista</option>
+                    </select>
+                  </div>
+                  <div class="field" style="grid-column:1 / -1;">
+                    <input type="text" id="bpFinalInviteInp" placeholder="🩺 Código de Nutricionista (Opcional)" value="${bpState.inviteCode}" style="text-transform:uppercase;" />
+                  </div>
                 </div>
-              </div>
+              `}
               <div style="font-size:0.71rem;color:var(--text-muted);text-align:center;line-height:1.35;">
                 Al crear tu cuenta aceptás los
                 <button type="button" onclick="window.openLegalModal && window.openLegalModal('terms')" style="background:none;border:none;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer;font-size:inherit;">Términos y Aviso de Salud</button>
@@ -18365,6 +18560,11 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
               </div>
             </div>
           `;
+
+          document.getElementById("btnClearPreverifiedGoogle")?.addEventListener("click", () => {
+            window._preverifiedGoogleSignup = null;
+            renderBpWizardScreen();
+          });
 
           const emInp = document.getElementById("bpFinalEmailInp");
           const pwInp = document.getElementById("bpFinalPwdInp");
@@ -18453,6 +18653,27 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
       async function submitBpRegistration() {
         if (bpRegSubmitting) return;
         const payload = buildBpWizardPayloadObject();
+        if (window._preverifiedGoogleSignup && window._preverifiedGoogleSignup.accessToken) {
+          bpRegSubmitting = true;
+          const nextBtn = document.getElementById("bpWizNextBtn");
+          const prevTxt = nextBtn ? nextBtn.innerHTML : "🚀 Comprometerme y Crear mi Cuenta";
+          if (nextBtn) {
+            nextBtn.disabled = true;
+            nextBtn.style.opacity = "0.65";
+            nextBtn.innerHTML = "⏳ Activando tu plan...";
+          }
+          try {
+            await exchangeGoogleAccessTokenForSession(window._preverifiedGoogleSignup.accessToken, payload, "force_create");
+          } finally {
+            bpRegSubmitting = false;
+            if (nextBtn) {
+              nextBtn.disabled = false;
+              nextBtn.style.opacity = "1";
+              nextBtn.innerHTML = prevTxt;
+            }
+          }
+          return;
+        }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(payload.email)) {
           showAuthAlert("Ingresá un correo electrónico válido (ej: nombre@gmail.com) para enviarte el código de verificación.");
@@ -23926,7 +24147,10 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         if (fn) fn();
       });
 
-      // 2. Ajuste automático al teclado virtual móvil (visualViewport) para que nunca tape «Continuar ›»
+      // 2. Ajuste automático al teclado virtual móvil (visualViewport) y safe-area para WebView Android 15/16
+      if (window.MichuAndroidHealth && typeof window.MichuAndroidHealth.hasNativeEdgeInsets !== "function") {
+        document.documentElement.classList.add("michu-legacy-wv-edge");
+      }
       function syncMobileKeyboardViewport() {
         const vv = window.visualViewport;
         if (!vv) return;
@@ -24061,6 +24285,12 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             return;
           }
           if (authMode !== "splash") {
+            const gDecView = document.getElementById("authGoogleDecisionView");
+            if (gDecView && gDecView.style.display === "block") {
+              document.getElementById("btnGoogleDecBack")?.click();
+              setTimeout(ensureMichuBackGuard, 25);
+              return;
+            }
             const otpView = document.getElementById("authVerifyOtpView");
             if (otpView && otpView.style.display === "block") {
               document.getElementById("btnBackFromOtpView")?.click();
