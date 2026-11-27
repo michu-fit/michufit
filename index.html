@@ -2537,6 +2537,27 @@
       white-space: nowrap;
       flex-shrink: 0;
     }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(148, 163, 184, 0.44) !important;
+      font-weight: 400 !important;
+      opacity: 1 !important;
+      letter-spacing: 0 !important;
+    }
+
+    html[data-theme="light"] input::placeholder,
+    html[data-theme="light"] textarea::placeholder {
+      color: #b4c0c7 !important;
+      font-weight: 400 !important;
+      opacity: 1 !important;
+      letter-spacing: 0 !important;
+    }
+
+    .custom-modal-overlay {
+      padding-top: calc(16px + var(--michu-safe-top, env(safe-area-inset-top, 0px)));
+      padding-bottom: calc(16px + var(--michu-safe-bottom, env(safe-area-inset-bottom, 0px)));
+    }
   </style>
   <script>
     (function () {
@@ -4224,7 +4245,7 @@
                 ¿Olvidaste tu clave?
               </button>
             </div>
-            <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" />
+            <input type="password" id="loginPassword" placeholder="Ingresá tu contraseña" required autocomplete="current-password" />
           </div>
           <button type="submit" class="btn btn-primary" style="justify-content:center;padding:12px;margin-top:4px;">
             🚀 Entrar a Michu Fit
