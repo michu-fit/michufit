@@ -16558,19 +16558,14 @@
             keepBridgeOnlyScreen = true;
             const handoffId = stateParam.slice(3);
             const rowId = `gh-${handoffId}`;
-            let existingWizFromApp = null;
+            const fallbackStayUrl = "https://michu-fit.github.io/michufit/?michu_app_return=1";
+            const appReturnIntentUrl = `intent://auth?access_token=${encodeURIComponent(accessToken)}#Intent;scheme=michufit;package=app.michufit;S.browser_fallback_url=${encodeURIComponent(fallbackStayUrl)};end`;
+
+            // 1) Guardar respaldo en Supabase en segundo plano con keepalive:true SIN bloquear con await (para no perder el gesto automático del navegador)
             try {
-              const rGet = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.${encodeURIComponent(rowId)}&select=user_doc`, {
-                headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Cache-Control": "no-store" }
-              }, 6000);
-              if (rGet.ok) {
-                const rRows = await rGet.json();
-                existingWizFromApp = rRows?.[0]?.user_doc?.wizardPayload || null;
-              }
-            } catch (_) {}
-            try {
-              await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
+              _nativeFetch(SUPABASE_TABLE_URL, {
                 method: "POST",
+                keepalive: true,
                 headers: {
                   "apikey": SUPABASE_KEY,
                   "Authorization": `Bearer ${SUPABASE_KEY}`,
@@ -16584,39 +16579,26 @@
                   name: "Google Auth Handoff",
                   role: "system",
                   status: "system_catalog",
-                  user_doc: { id: rowId, completed: true, accessToken, wizardPayload: existingWizFromApp, completedAt: Date.now() },
+                  user_doc: { id: rowId, completed: true, accessToken, completedAt: Date.now() },
                   updated_at: new Date().toISOString()
                 }])
-              }, 10000);
+              }).catch(() => {});
             } catch (_) {}
 
-            // NO iniciar sesión en el navegador web: saltar directo al deep-link michufit://auth (con S.browser_fallback_url para que JAMÁS abra Google Play Store)
-            const fallbackStayUrl = "https://michu-fit.github.io/michufit/?michu_app_return=1";
-            const appReturnIntentUrl = `intent://auth?access_token=${encodeURIComponent(accessToken)}#Intent;scheme=michufit;package=app.michufit;S.browser_fallback_url=${encodeURIComponent(fallbackStayUrl)};end`;
-            loadingToast.innerHTML = `
-              <div style="max-width:340px;background:#131d21;border:2px solid #14bd8e;border-radius:22px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
-                <div style="font-size:2.6rem;line-height:1;">✅📲</div>
-                <strong style="font-size:1.12rem;color:#ffffff;">¡Cuenta verificada con éxito!</strong>
-                <p style="font-size:0.84rem;color:#cbd5e1;font-weight:600;line-height:1.45;margin:0;">
-                  Tu sesión ya quedó activa exclusivamente en tu <strong>app Michu Fit</strong>.
-                </p>
-                <a href="${appReturnIntentUrl}" id="btnReturnNativeMichuApp" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#14bd8e,#0d8f6b);color:#ffffff;text-decoration:none;font-weight:900;font-size:0.95rem;padding:14px 18px;border-radius:14px;box-shadow:0 8px 24px rgba(20,189,142,0.35);">
-                  🐾 Abrir Michu Fit ahora
-                </a>
-                <small style="font-size:0.75rem;color:#94a3b8;">O deslizá «Atrás» en tu celu para volver a la ventana abierta</small>
-              </div>
-            `;
-            document.getElementById("btnReturnNativeMichuApp")?.addEventListener("click", () => {
-              setTimeout(() => { try { window.close(); } catch (_) {} }, 500);
-            });
-            document.addEventListener("visibilitychange", () => {
-              if (document.visibilityState === "hidden") {
-                try { window.close(); } catch (_) {}
-              }
-            });
+            // 2) Disparar salto nativo michufit://auth en 0 ms sincrónico (en v17+ cierra la pestaña Custom Tab sola y vuelve directo a la App)
             try {
               window.location.replace(appReturnIntentUrl);
             } catch (_) {}
+
+            loadingToast.innerHTML = `
+              <div style="max-width:340px;background:#131d21;border:2px solid #14bd8e;border-radius:22px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+                <div style="font-size:2.6rem;line-height:1;">✅📲</div>
+                <strong style="font-size:1.12rem;color:#ffffff;">¡Volviendo a Michu Fit!</strong>
+                <a href="${appReturnIntentUrl}" id="btnReturnNativeMichuApp" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#14bd8e,#0d8f6b);color:#ffffff;text-decoration:none;font-weight:900;font-size:0.95rem;padding:14px 18px;border-radius:14px;box-shadow:0 8px 24px rgba(20,189,142,0.35);">
+                  🐾 Volver a la app Michu Fit
+                </a>
+              </div>
+            `;
             return;
           }
 
