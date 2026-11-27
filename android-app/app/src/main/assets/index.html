@@ -4668,67 +4668,65 @@
   <div class="custom-modal-overlay" id="modalSamsungHealthSync" role="dialog" aria-modal="true">
     <div class="modal-inner" style="max-width:540px;">
       <div class="card-header">
-        <div class="card-title">⌚ Sincronizar Samsung Health y Google Fit</div>
+        <div class="card-title">⌚ Sincronizar Samsung Health / Pasos</div>
         <button type="button" class="btn btn-sm" data-close-modal="modalSamsungHealthSync">✕</button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:13px;font-size:0.85rem;">
-        <div id="nativeApkHealthBox" style="display:none;background:var(--accent-soft);border:1.5px solid var(--accent);padding:13px;border-radius:12px;">
-          <strong style="color:var(--accent);display:block;margin-bottom:4px;">🟢 App Android Nativa Detectada</strong>
-          <p style="font-size:0.79rem;color:var(--text);margin-bottom:10px;">
-            Estás usando la versión nativa de Michu Fit. Tocá abajo para leer tus pasos y ejercicios de hoy directamente desde <strong>Samsung Health / Health Connect</strong>:
+      <div style="display:flex;flex-direction:column;gap:12px;font-size:0.85rem;">
+        <div id="pedometerPlayStoreInfoBox" style="display:none;background:var(--accent-soft);border:1.5px solid var(--accent);padding:11px 13px;border-radius:12px;font-size:0.79rem;line-height:1.42;">
+          <strong style="color:var(--accent);display:block;margin-bottom:3px;">👟 Podómetro Nativo Activo (Google Play)</strong>
+          El sensor de Android suma automáticamente tus pasos nuevos desde que abrís Michu Fit cada día. Si hoy ya caminaste antes de abrir la app, <strong>igualá acá abajo tus pasos actuales de Samsung Health</strong> (escribiéndolos o subiendo captura) y seguirá sumando arriba de ese número.
+        </div>
+
+        <div style="background:var(--bg-card);border:1.5px solid var(--accent);padding:13px 14px;border-radius:12px;">
+          <strong style="display:block;margin-bottom:5px;font-size:0.9rem;">
+            👟 Sincronizar / Igualar Pasos de Hoy
+          </strong>
+          <p style="font-size:0.77rem;color:var(--text-muted);margin-bottom:9px;line-height:1.4;">
+            Ingresá los pasos que te marca hoy <strong>Samsung Health</strong>, Google Fit o tu reloj (o subí captura de pantalla para leer pasos, minutos y kcal exactas):
           </p>
-          <button type="button" class="btn btn-primary" id="btnTriggerNativeHealthRead" style="width:100%;justify-content:center;">
-            🔄 Leer Pasos y Ejercicios de Samsung Health Ahora
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="number" id="quickSamsungStepsInput" min="50" max="100000" step="1" inputmode="numeric" placeholder="Ej: 3468"
+              style="flex:1;min-width:130px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.95rem;font-weight:800;" />
+            <button type="button" class="btn btn-primary" id="btnApplyQuickSamsungSteps">
+              ✅ Guardar Pasos
+            </button>
+          </div>
+          <div style="margin-top:9px;padding-top:9px;border-top:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <input type="file" id="healthScreenshotFileInput" accept="image/*" style="display:none;" />
+            <button type="button" class="btn btn-sm btn-purple" id="btnScanHealthScreenshot" style="width:100%;justify-content:center;padding:8px 12px;font-weight:800;">
+              📸 Leer captura de Samsung Health / Reloj con IA
+            </button>
+            <div id="healthScreenshotStatusMsg" style="display:none;width:100%;font-size:0.76rem;padding:7px 10px;border-radius:8px;"></div>
+          </div>
+        </div>
+
+        <div id="nativeApkHealthBox" style="display:none;background:var(--bg-card);border:1px solid var(--border);padding:11px 13px;border-radius:12px;">
+          <button type="button" class="btn btn-sm" id="btnTriggerNativeHealthRead" style="width:100%;justify-content:center;">
+            🔄 Consultar sensor podómetro del teléfono ahora
           </button>
         </div>
 
         <div id="webDownloadApkBox" style="background:var(--purple-soft);border:1.5px solid rgba(168,85,247,0.45);padding:13px 14px;border-radius:12px;">
-          <strong style="color:var(--purple);display:block;margin-bottom:5px;font-size:0.92rem;">
-            🤖 1️⃣ Sincronización Automática con App Android (.apk)
+          <strong style="color:var(--purple);display:block;margin-bottom:5px;font-size:0.88rem;">
+            🤖 ¿Usás navegador Web en Android?
           </strong>
-          <p style="font-size:0.79rem;color:var(--text);line-height:1.45;margin-bottom:10px;">
-            Instalá <strong>MichuFit.apk</strong> en tu Android para que lea automáticamente tus pasos y entrenamientos desde <strong>Samsung Health / Health Connect</strong> (solo lectura, 100% privado en tu teléfono):
+          <p style="font-size:0.77rem;color:var(--text);line-height:1.42;margin-bottom:8px;">
+            Si tenés instalada la app de Michu Fit en tu Android, abrila desde el ícono del teléfono para activar el podómetro automático:
           </p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <a href="https://michu-fit.github.io/michufit/MichuFit.apk?v=13" download="MichuFit.apk" class="btn btn-purple" style="flex:1;justify-content:center;text-decoration:none;">
-              ⬇️ Descargar MichuFit.apk (Android)
+            <a href="https://michu-fit.github.io/michufit/MichuFit.apk?v=13" download="MichuFit.apk" class="btn btn-sm btn-purple" style="flex:1;justify-content:center;text-decoration:none;">
+              ⬇️ Descargar MichuFit.apk directo (con Health Connect)
             </a>
           </div>
-          <small style="display:block;margin-top:8px;font-size:0.74rem;color:var(--text-muted);">
-            📌 En tu Samsung: abrí <em>Samsung Health → Ajustes → Health Connect</em> y activalo una sola vez.
-          </small>
         </div>
 
-        <div style="background:var(--bg-card);border:1px solid var(--border);padding:13px 14px;border-radius:12px;">
-          <strong style="display:block;margin-bottom:5px;font-size:0.88rem;">
-            🍎 2️⃣ ¿Tenés iPhone? Sincronizá Apple Health (Salud) con 1 toque
+        <div id="iphoneHealthShortcutBox" style="background:var(--bg-card);border:1px solid var(--border);padding:12px 14px;border-radius:12px;">
+          <strong style="display:block;margin-bottom:4px;font-size:0.84rem;">
+            🍎 ¿Tenés iPhone? Atajo de Salud (Apple Health) en 1 toque
           </strong>
-          <p style="font-size:0.77rem;color:var(--text-muted);line-height:1.45;margin-bottom:8px;">
-            En iPhone no se usan archivos <code>.apk</code>: instalá Michu Fit desde <strong>Safari → Compartir → Agregar a inicio</strong> y conectá la app <strong>Salud (Apple Health)</strong> creando un Atajo en la app <em>Atajos (Shortcuts)</em> de tu iPhone:
-          </p>
-          <ol style="margin:0 0 8px 18px;font-size:0.75rem;color:var(--text);line-height:1.45;">
-            <li>En la app <strong>Atajos</strong> de iPhone: agregá <em>"Buscar muestras de Salud"</em> (Tipo: <strong>Pasos</strong>, Fecha de inicio: <em>es hoy</em>) + <em>"Calcular estadística"</em> (<strong>Suma</strong>).</li>
-            <li>Agregá la acción <em>"Abrir URLs"</em> pegando este enlace con la variable <em>Suma</em> al final:</li>
-          </ol>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <code style="flex:1;padding:7px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--border);font-size:0.73rem;word-break:break-all;">https://michu-fit.github.io/michufit/?syncSteps=</code>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
+            <code style="flex:1;padding:6px 9px;border-radius:8px;background:var(--bg);border:1px solid var(--border);font-size:0.72rem;word-break:break-all;">https://michu-fit.github.io/michufit/?syncSteps=</code>
             <button type="button" class="btn btn-sm" id="btnCopyIphoneShortcutUrl">📋 Copiar URL</button>
-          </div>
-        </div>
-
-        <div style="background:var(--bg-card);border:1px solid var(--border);padding:13px 14px;border-radius:12px;">
-          <strong style="display:block;margin-bottom:6px;font-size:0.88rem;">
-            👟 3️⃣ Sincronización Rápida de Pasos de Hoy (Android o iPhone)
-          </strong>
-          <p style="font-size:0.77rem;color:var(--text-muted);margin-bottom:9px;">
-            Ingresá cuántos pasos te marca hoy Samsung Health, Google Fit o Salud de iPhone y Michu actualiza el gasto calórico exacto para tu peso actual:
-          </p>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <input type="number" id="quickSamsungStepsInput" min="100" max="100000" step="50" placeholder="Ej: 8500 pasos"
-              style="flex:1;min-width:140px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.9rem;font-weight:700;" />
-            <button type="button" class="btn btn-primary" id="btnApplyQuickSamsungSteps">
-              ✅ Sincronizar Pasos
-            </button>
           </div>
         </div>
       </div>
@@ -20723,7 +20721,29 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
     // PUENTE NATIVO ANDROID (.APK) CON SAMSUNG HEALTH / HEALTH CONNECT
     // =========================================================================
     (function setupSamsungHealthBridge() {
-      function applySyncedStepsAndExercises(dateKey, stepsCount, activeKcalFromHc, sessionsList, sourceLabel = "Samsung Health", isManualQuickInput = false) {
+      let _manualSyncBtnRequested = false;
+
+      function configureSamsungModalVisibility() {
+        const hasNativeBridge = Boolean(window.MichuAndroidHealth && typeof window.MichuAndroidHealth.requestAndReadTodayHealth === "function");
+        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent || "");
+        const playInfo = document.getElementById("pedometerPlayStoreInfoBox");
+        const nativeBox = document.getElementById("nativeApkHealthBox");
+        const webBox = document.getElementById("webDownloadApkBox");
+        const iosBox = document.getElementById("iphoneHealthShortcutBox");
+        if (playInfo) playInfo.style.display = hasNativeBridge ? "block" : "none";
+        if (nativeBox) nativeBox.style.display = hasNativeBridge ? "block" : "none";
+        if (webBox) webBox.style.display = (!hasNativeBridge && !isIos) ? "block" : "none";
+        if (iosBox) iosBox.style.display = (!hasNativeBridge && isIos) ? "block" : "none";
+        const inp = document.getElementById("quickSamsungStepsInput");
+        if (inp) {
+          const day = ensureDayRecord(selectedDate || todayStr());
+          if (Number(day.manualStepsOverride) >= 50 && !inp.value) {
+            inp.placeholder = `Actual: ${Number(day.manualStepsOverride).toLocaleString("es-AR")} pasos`;
+          }
+        }
+      }
+
+      function applySyncedStepsAndExercises(dateKey, stepsCount, activeKcalFromHc, sessionsList, sourceLabel = "Samsung Health", isManualQuickInput = false, explicitMinutes = 0) {
         const effDate = dateKey || selectedDate || todayStr();
         const day = ensureDayRecord(effDate);
         day.exercises = day.exercises || [];
@@ -20733,21 +20753,45 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
 
         let updatedAnything = false;
         const rawSteps = Math.round(Number(stepsCount) || 0);
+        const isPedometerSensor = /pod[oó]metro/i.test(String(sourceLabel || ""));
         let steps = rawSteps;
+
+        if (isPedometerSensor) {
+          window._lastAndroidSensorSteps = rawSteps;
+        }
 
         if (isManualQuickInput && rawSteps >= 50) {
           day.manualStepsOverride = rawSteps;
           day.manualStepsBaseHc = Math.max(Number(day.lastRawHcSteps) || 0, rawSteps);
+          day.pedometerSensorAtCalib = Number(window._lastAndroidSensorSteps) || 0;
+          if (Number(activeKcalFromHc) > 0) day.manualStepsExactKcal = Math.round(Number(activeKcalFromHc));
+          else delete day.manualStepsExactKcal;
+          if (Number(explicitMinutes) > 0) day.manualStepsExactMins = Math.round(Number(explicitMinutes));
+          else delete day.manualStepsExactMins;
           day.manualStepsUpdatedAt = Date.now();
+        } else if (isPedometerSensor) {
+          // El sensor nativo de Google Play mide pasos reales 1:1 desde que se abrió la app hoy (nunca dividir a la mitad)
+          if (Number(day.manualStepsOverride) > 0) {
+            const sensorBase = Number(day.pedometerSensorAtCalib) || 0;
+            const extraWalked = Math.max(0, rawSteps - sensorBase);
+            steps = Number(day.manualStepsOverride) + extraWalked;
+            if (extraWalked > 0) {
+              day.manualStepsOverride = steps;
+              day.pedometerSensorAtCalib = rawSteps;
+              delete day.manualStepsExactKcal;
+              delete day.manualStepsExactMins;
+              day.manualStepsUpdatedAt = Date.now();
+            }
+          } else {
+            steps = rawSteps;
+          }
         } else if (rawSteps >= 50) {
           day.lastRawHcSteps = Math.max(Number(day.lastRawHcSteps) || 0, rawSteps);
           if (Number(day.manualStepsOverride) > 0) {
             const baseHc = Number(day.manualStepsBaseHc) || rawSteps;
             if (rawSteps <= baseHc) {
-              // Si Health Connect sigue reportando el mismo total con duplicados (ej: 12.579), respetamos los 6.505 corregidos por el usuario
               steps = Number(day.manualStepsOverride);
             } else {
-              // Si caminó pasos nuevos después de editar, sumamos solo la mitad del incremento (descontando el duplicado de A56)
               const extraWalked = Math.round((rawSteps - baseHc) / 2);
               steps = Number(day.manualStepsOverride) + extraWalked;
               day.manualStepsOverride = steps;
@@ -20755,7 +20799,6 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
               day.manualStepsUpdatedAt = Date.now();
             }
           } else {
-            // Si aún no había override manual en el día (o si se había borrado antes), aplicamos la proporción calibrada Samsung Health vs (Samsung Health + A56)
             const ratio = Number(appData?.profile?.hcStepsRatio) || (6505 / 12579);
             steps = Math.round(rawSteps * ratio);
             day.manualStepsOverride = steps;
@@ -20765,20 +20808,25 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         }
 
         if (steps >= 50) {
-          const estMinutes = Math.max(5, Math.round(steps / 105));
+          const estMinutes = Number(day.manualStepsExactMins) > 0
+            ? Number(day.manualStepsExactMins)
+            : (Number(explicitMinutes) > 0 ? Math.round(Number(explicitMinutes)) : Math.max(5, Math.round(steps / 105)));
           const calcKcal = Math.max(10, Math.round(2.9 * weightKg * (estMinutes / 60)));
-          const finalKcal = calcKcal;
+          const finalKcal = Number(day.manualStepsExactKcal) > 0
+            ? Number(day.manualStepsExactKcal)
+            : (Number(activeKcalFromHc) > 0 ? Math.round(Number(activeKcalFromHc)) : calcKcal);
           const stepItemId = "ex-sh-steps-" + effDate;
+          const displaySource = isPedometerSensor && Number(day.manualStepsOverride) > 0 ? "Samsung Health + Podómetro" : sourceLabel;
 
           if (Array.isArray(appData.deletedItemIds)) {
             appData.deletedItemIds = appData.deletedItemIds.filter(id => id !== stepItemId);
           }
 
           // Reemplaza el registro de pasos sincronizado previo del mismo día para no duplicar
-          day.exercises = day.exercises.filter(ex => !String(ex.id || "").startsWith("ex-sh-steps") && !/pasos.*samsung|pasos.*health/i.test(ex.name || ""));
+          day.exercises = day.exercises.filter(ex => !String(ex.id || "").startsWith("ex-sh-steps") && !/pasos.*samsung|pasos.*health|pasos.*pod[oó]metro/i.test(ex.name || ""));
           day.exercises.unshift({
             id: stepItemId,
-            name: `${steps.toLocaleString("es-AR")} pasos (${sourceLabel})`,
+            name: `${steps.toLocaleString("es-AR")} pasos (${displaySource})`,
             kcal: finalKcal,
             minutes: estMinutes,
             emoji: "👟",
@@ -20795,7 +20843,6 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         );
 
         if (Array.isArray(sessionsList) && sessionsList.length > 0) {
-          // Excluye sesiones de "Caminata / Walking" cuando ya se contabilizan los pasos totales del día para no duplicar calorías
           const nonDuplicateSessions = sessionsList.filter(sess => {
             const t = String(sess.title || "").trim().toLowerCase();
             if (steps >= 50 && /caminata|walk|paseo|senderismo|hiking/.test(t)) {
@@ -20806,8 +20853,8 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           nonDuplicateSessions.forEach((sess, idx) => {
             const mins = Math.max(5, Math.round(Number(sess.minutes || sess.durationMinutes) || 30));
             const title = (sess.title || "Entrenamiento Samsung Health").trim();
-            const kcal = Number(sess.kcal) > 0
-              ? Math.round(Number(sess.kcal))
+            const kcal = Number(sess.kcal || sess.calories) > 0
+              ? Math.round(Number(sess.kcal || sess.calories))
               : Math.max(20, Math.round(5.0 * weightKg * (mins / 60)));
             day.exercises.push({
               id: `ex-sh-sess-${idx}-${Date.now()}`,
@@ -20825,13 +20872,16 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           day.exerciseKcal = day.exercises.reduce((acc, x) => acc + (Number(x.kcal) || 0), 0);
           saveToServer();
           renderAll();
-          setRaccoonSpeech(`"⌚ ¡Sincronizado con ${sourceLabel}! Sumaste ${steps.toLocaleString("es-AR")} pasos y un total de -${day.exerciseKcal} kcal activas hoy 🐱🔥."`);
+          setRaccoonSpeech(`"⌚ ¡Sincronizado! Sumaste ${steps.toLocaleString("es-AR")} pasos y un total de -${day.exerciseKcal} kcal activas hoy 🐱🔥."`);
         }
+        return { updatedAnything, finalSteps: steps };
       }
 
-      // Callback global que invoca la App Android nativa (MainActivity.kt) al leer Health Connect / Sensor
+      // Callback global que invoca la App Android nativa al leer Health Connect / Sensor
       window.onMichuHealthDataReceived = function (payload) {
         try {
+          const wasUserTap = _manualSyncBtnRequested;
+          _manualSyncBtnRequested = false;
           const data = typeof payload === "string" ? JSON.parse(payload) : payload;
           if (!data) return;
           if (data.error) {
@@ -20839,31 +20889,41 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             return;
           }
           const targetDate = data.date || selectedDate || todayStr();
-          applySyncedStepsAndExercises(
+          const src = String(data.source || "Samsung Health");
+          const isPedometer = /pod[oó]metro/i.test(src);
+          const dayBefore = ensureDayRecord(targetDate);
+          const prevOverride = Number(dayBefore.manualStepsOverride) || 0;
+
+          const res = applySyncedStepsAndExercises(
             targetDate,
             data.steps || 0,
             data.activeCalories || 0,
             data.exercises || [],
-            data.source || "Samsung Health"
+            src
           );
+
+          // Si el usuario tocó "⌚ Samsung Health / Pasos" en la versión Google Play (Podómetro) y aún tiene 0 pasos nuevos (o quiere igualar con Samsung Health), abrimos el modal para igualar o escanear captura
+          if (wasUserTap && isPedometer && (!res.updatedAnything || res.finalSteps === prevOverride)) {
+            configureSamsungModalVisibility();
+            openModal("modalSamsungHealthSync");
+            return;
+          }
           closeModal("modalSamsungHealthSync");
         } catch (e) {
-          console.warn("Error procesando datos de Health Connect:", e);
+          console.warn("Error procesando datos de salud:", e);
         }
       };
 
       window.syncSamsungHealthSteps = function () {
+        configureSamsungModalVisibility();
         const hasNativeBridge = Boolean(window.MichuAndroidHealth && typeof window.MichuAndroidHealth.requestAndReadTodayHealth === "function");
-        const nativeBox = document.getElementById("nativeApkHealthBox");
-        const webBox = document.getElementById("webDownloadApkBox");
-        if (nativeBox) nativeBox.style.display = hasNativeBridge ? "block" : "none";
-        if (webBox) webBox.style.display = hasNativeBridge ? "none" : "block";
-
         if (hasNativeBridge) {
           try {
+            _manualSyncBtnRequested = true;
             window.MichuAndroidHealth.requestAndReadTodayHealth(selectedDate || todayStr());
             return;
           } catch (e) {
+            _manualSyncBtnRequested = false;
             console.warn("Error llamando puente nativo:", e);
           }
         }
@@ -20874,6 +20934,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
       if (btnNativeRead) {
         btnNativeRead.addEventListener("click", () => {
           if (window.MichuAndroidHealth && typeof window.MichuAndroidHealth.requestAndReadTodayHealth === "function") {
+            _manualSyncBtnRequested = false;
             window.MichuAndroidHealth.requestAndReadTodayHealth(selectedDate || todayStr());
           }
         });
@@ -20883,14 +20944,164 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
       if (btnQuickSteps) {
         btnQuickSteps.addEventListener("click", () => {
           const inp = document.getElementById("quickSamsungStepsInput");
-          const steps = Math.round(Number(inp?.value) || 0);
+          const cleanDigits = String(inp?.value || "").replace(/[.,\s]/g, "");
+          const steps = Math.round(Number(cleanDigits) || 0);
           if (steps < 50) {
-            alert("Ingresá una cantidad de pasos válida (ej: 6500).");
+            alert("Ingresá una cantidad de pasos válida (ej: 3468).");
             return;
           }
           applySyncedStepsAndExercises(selectedDate || todayStr(), steps, 0, [], "Samsung Health", true);
           if (inp) inp.value = "";
           closeModal("modalSamsungHealthSync");
+        });
+      }
+
+      // Escáner IA de captura de pantalla de Samsung Health / Google Fit / Reloj
+      const btnScanHealthImg = document.getElementById("btnScanHealthScreenshot");
+      const healthFileInp = document.getElementById("healthScreenshotFileInput");
+      const healthStatusMsg = document.getElementById("healthScreenshotStatusMsg");
+      if (btnScanHealthImg && healthFileInp) {
+        btnScanHealthImg.addEventListener("click", () => {
+          healthFileInp.value = "";
+          healthFileInp.click();
+        });
+        healthFileInp.addEventListener("change", async () => {
+          const file = healthFileInp.files && healthFileInp.files[0];
+          if (!file) return;
+          btnScanHealthImg.disabled = true;
+          btnScanHealthImg.textContent = "⏳ Leyendo captura de Samsung Health...";
+          if (healthStatusMsg) {
+            healthStatusMsg.style.display = "block";
+            healthStatusMsg.style.background = "var(--bg-elev)";
+            healthStatusMsg.style.color = "var(--text-muted)";
+            healthStatusMsg.textContent = "Analizando pasos, minutos y calorías activas de tu captura...";
+          }
+          try {
+            const dataUrl = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                  const maxD = 1100;
+                  let w = img.width, h = img.height;
+                  if (w > maxD || h > maxD) {
+                    const sc = maxD / Math.max(w, h);
+                    w = Math.round(w * sc);
+                    h = Math.round(h * sc);
+                  }
+                  const cv = document.createElement("canvas");
+                  cv.width = w;
+                  cv.height = h;
+                  cv.getContext("2d").drawImage(img, 0, 0, w, h);
+                  resolve(cv.toDataURL("image/jpeg", 0.84));
+                };
+                img.onerror = reject;
+                img.src = ev.target.result;
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+            const cleanB64 = String(dataUrl).replace(/^data:[^;]+;base64,/, "").trim();
+            await ensureCloudVisionConfigLoaded();
+            const activeKey = (localStorage.getItem("michufit_gemini_key") || window._michuCloudVisionKey || "").trim();
+            const healthSchema = {
+              type: "object",
+              properties: {
+                steps: { type: "number", description: "Cantidad total de pasos diarios visibles en la pantalla (ej: 3468)." },
+                minutes: { type: "number", description: "Minutos de actividad diaria visibles (ej: 32)." },
+                activeKcal: { type: "number", description: "Calorías activas diarias quemadas visibles (ej: 188)." },
+                extraWorkouts: {
+                  type: "array",
+                  description: "Entrenamientos distintos a caminata (ej: pesas, ciclismo, natación, funcional). Dejar vacío si solo hay pasos/caminata.",
+                  items: {
+                    type: "object",
+                    properties: {
+                      title: { type: "string" },
+                      minutes: { type: "number" },
+                      kcal: { type: "number" }
+                    },
+                    required: ["title", "minutes", "kcal"]
+                  }
+                }
+              },
+              required: ["steps", "minutes", "activeKcal"]
+            };
+            const healthPrompt = "Leé esta captura de Samsung Health, Google Fit, Apple Fitness, Garmin o Strava. Extraé el total de pasos del día (steps, atención a comas o puntos de miles como 3,468 = 3468), los minutos de actividad diaria (minutes) y las calorías activas diarias (activeKcal). No dupliques entrenamientos semanales ('Entrenos esta semana').";
+
+            let parsedHealth = null;
+            if (activeKey) {
+              const models = await resolveAvailableGeminiVisionModels(activeKey);
+              for (const mName of models) {
+                try {
+                  const rV1 = await _nativeFetch(`https://generativelanguage.googleapis.com/v1/interactions?key=${encodeURIComponent(activeKey)}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      model: mName,
+                      store: false,
+                      input: [
+                        { type: "text", text: healthPrompt },
+                        { type: "image", data: cleanB64, mime_type: "image/jpeg" }
+                      ],
+                      response_format: { type: "text", mime_type: "application/json", schema: healthSchema }
+                    })
+                  });
+                  if (rV1.ok) {
+                    const j = await rV1.json();
+                    parsedHealth = safeParseVisionJson(extractGeminiInteractionText(j));
+                    if (parsedHealth && Number(parsedHealth.steps) > 0) break;
+                  }
+                } catch (_) {}
+              }
+            }
+            if (!parsedHealth) {
+              const hookUrl = (window._michuVisionWebhookUrl || (currentUserInfo && currentUserInfo.adminWebhookUrl) || localStorage.getItem("michufit_admin_webhook_url") || DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL || "").trim();
+              if (hookUrl) {
+                const pRes = await sbFetchWithTimeout(hookUrl, {
+                  method: "POST",
+                  headers: { "Content-Type": "text/plain;charset=utf-8" },
+                  redirect: "follow",
+                  body: JSON.stringify({ action: "analyze_food_vision", prompt: healthPrompt, imageBase64: cleanB64, mimeType: "image/jpeg", schema: healthSchema })
+                }, 20000);
+                const txtBody = await pRes.text();
+                if (pRes.ok && txtBody && !/UrlFetchApp\.fetch/i.test(txtBody)) {
+                  const pObj = JSON.parse(txtBody);
+                  if (pObj && pObj.ok && pObj.interaction) {
+                    parsedHealth = safeParseVisionJson(extractGeminiInteractionText(pObj.interaction));
+                  }
+                }
+              }
+            }
+
+            if (parsedHealth && (Number(parsedHealth.steps) >= 50 || (Array.isArray(parsedHealth.extraWorkouts) && parsedHealth.extraWorkouts.length > 0))) {
+              applySyncedStepsAndExercises(
+                selectedDate || todayStr(),
+                Math.round(Number(parsedHealth.steps) || 0),
+                Math.round(Number(parsedHealth.activeKcal) || 0),
+                parsedHealth.extraWorkouts || [],
+                "Samsung Health",
+                true,
+                Math.round(Number(parsedHealth.minutes) || 0)
+              );
+              if (healthStatusMsg) healthStatusMsg.style.display = "none";
+              closeModal("modalSamsungHealthSync");
+            } else {
+              if (healthStatusMsg) {
+                healthStatusMsg.style.background = "var(--warn-soft)";
+                healthStatusMsg.style.color = "var(--warn)";
+                healthStatusMsg.innerHTML = "⚠️ Para leer capturas automáticamente tocá <strong>🧪 Probar y Activar acá</strong> en 👑 Admin en tu PC (o escribí los pasos arriba, ej: <strong>3468</strong>).";
+              }
+            }
+          } catch (_) {
+            if (healthStatusMsg) {
+              healthStatusMsg.style.background = "var(--warn-soft)";
+              healthStatusMsg.style.color = "var(--warn)";
+              healthStatusMsg.textContent = "No pudimos leer la imagen. Podés escribir los pasos directamente arriba (ej: 3468).";
+            }
+          } finally {
+            btnScanHealthImg.disabled = false;
+            btnScanHealthImg.textContent = "📸 Leer captura de Samsung Health / Reloj con IA";
+          }
         });
       }
 
