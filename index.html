@@ -2456,12 +2456,62 @@
       margin-bottom: 4px !important;
     }
 
+    .meal-yesterday-box {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      padding: 9px 11px;
+      margin-top: 2px;
+      margin-bottom: 4px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      border: 1px dashed rgba(14, 159, 119, 0.38);
+    }
+
+    .meal-yesterday-box.freq-mode {
+      background: var(--bg-elev);
+      border-color: var(--border);
+    }
+
+    .meal-yesterday-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .meal-yesterday-label {
+      font-size: 0.73rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 0.01em;
+    }
+
+    .meal-yesterday-box.freq-mode .meal-yesterday-label {
+      color: var(--text-muted);
+    }
+
+    .meal-yesterday-repeat-all-btn {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(14, 159, 119, 0.45);
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 0.71rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.13s ease, opacity 0.15s ease;
+    }
+
+    .meal-yesterday-repeat-all-btn:active {
+      transform: scale(0.97);
+    }
+
     .meal-quick-chips-row {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      margin-top: 2px;
-      margin-bottom: 2px;
     }
 
     .meal-quick-chip {
@@ -2472,7 +2522,7 @@
       border-radius: 999px;
       font-size: 0.73rem;
       font-weight: 700;
-      border: 1px solid var(--border);
+      border: 1px solid rgba(14, 159, 119, 0.28);
       background: var(--bg-card);
       color: var(--text);
       cursor: pointer;
@@ -2480,20 +2530,16 @@
       transition: transform 0.13s ease, border-color 0.15s ease, background 0.15s ease;
     }
 
+    .meal-yesterday-box.freq-mode .meal-quick-chip {
+      border-color: var(--border);
+    }
+
     .meal-quick-chip:hover {
       border-color: var(--accent);
-      background: var(--accent-soft);
     }
 
     .meal-quick-chip:active {
       transform: scale(0.97);
-    }
-
-    .meal-quick-chip.yesterday {
-      background: var(--accent-soft);
-      border-color: rgba(14, 159, 119, 0.36);
-      color: var(--accent);
-      font-weight: 800;
     }
 
     #michuUndoToastBar {
@@ -9551,25 +9597,29 @@
     }
 
     function getQuickSuggestionsForMealSlot(slotKey, currentEatenItems) {
-      const eatenNamesToday = new Set(
-        (currentEatenItems || []).map(m => String(m.name || "").trim().toLowerCase()).filter(Boolean)
-      );
+      // Si ya se agregó comida en este turno hoy, no mostrar sugerencias de ayer para no confundir
+      if (Array.isArray(currentEatenItems) && currentEatenItems.length > 0) {
+        return { yestMissingItems: [], topFreq: [] };
+      }
+
       const dPrev = new Date((selectedDate || todayStr()) + "T12:00:00");
       dPrev.setDate(dPrev.getDate() - 1);
       const yestKey = `${dPrev.getFullYear()}-${String(dPrev.getMonth() + 1).padStart(2, "0")}-${String(dPrev.getDate()).padStart(2, "0")}`;
 
       const yestDay = appData?.days?.[yestKey];
       const yestMissingItems = Array.isArray(yestDay?.meals)
-        ? yestDay.meals.filter(m =>
-            m && m.mealType === slotKey && isMealConsumed(m) &&
-            !eatenNamesToday.has(String(m.name || "").trim().toLowerCase())
-          )
+        ? yestDay.meals.filter(m => m && m.mealType === slotKey && isMealConsumed(m))
         : [];
 
-      // Frecuentes históricos en este horario (últimos 45 días registrados)
+      // Si ayer hubo comidas en este turno, mostramos únicamente la sección unificada de Ayer (sin mezclar chips sueltos afuera)
+      if (yestMissingItems.length > 0) {
+        return { yestMissingItems, topFreq: [] };
+      }
+
+      // Solo si ayer estuvo vacío en este turno, buscar frecuentes reales (repetidos >= 2 días) en los últimos 45 días
       const freqMap = new Map();
       const sortedDates = Object.keys(appData?.days || {})
-        .filter(dk => dk !== selectedDate)
+        .filter(dk => dk !== selectedDate && dk !== yestKey)
         .sort()
         .slice(-45);
 
@@ -9580,7 +9630,7 @@
           if (!m || m.mealType !== slotKey || !isMealConsumed(m)) continue;
           const cleanName = String(m.name || "").trim();
           const norm = cleanName.toLowerCase();
-          if (!norm || eatenNamesToday.has(norm)) continue;
+          if (!norm) continue;
           const prev = freqMap.get(norm);
           freqMap.set(norm, {
             count: (prev ? prev.count : 0) + 1,
@@ -9597,17 +9647,13 @@
         }
       }
 
-      const singleYestNorm = yestMissingItems.length === 1
-        ? String(yestMissingItems[0].name || "").trim().toLowerCase()
-        : "";
-
       const topFreq = Array.from(freqMap.values())
-        .filter(entry => entry.item.name.trim().toLowerCase() !== singleYestNorm)
+        .filter(entry => entry.count >= 2)
         .sort((a, b) => (b.count - a.count) || b.lastDate.localeCompare(a.lastDate))
-        .slice(0, 2)
+        .slice(0, 3)
         .map(entry => entry.item);
 
-      return { yestMissingItems, topFreq };
+      return { yestMissingItems: [], topFreq };
     }
 
     function renderMealSections() {
@@ -9670,31 +9716,49 @@
 
         const quickData = getQuickSuggestionsForMealSlot(sec.key, eatenItems);
         quickSlotLookup[sec.key] = quickData;
+        const slotShortTitle = sec.title.split(" ").slice(1).join(" ") || sec.title;
         let quickChipsHtml = "";
-        if (quickData.yestMissingItems.length > 0 || quickData.topFreq.length > 0) {
-          const chipsParts = [];
-          if (quickData.yestMissingItems.length > 0) {
-            const yKcal = quickData.yestMissingItems.reduce((acc, m) => acc + Math.round(Number(m.kcal) || 0), 0);
-            const firstLabel = String(quickData.yestMissingItems[0].name || "").trim();
-            const shortFirst = firstLabel.length > 22 ? firstLabel.slice(0, 21) + "…" : firstLabel;
-            const ySummary = quickData.yestMissingItems.length === 1
-              ? `🔁 Ayer: ${escapeHtml(shortFirst)} (${yKcal} kcal)`
-              : `🔁 Igual que ayer (${quickData.yestMissingItems.length} ítems • ${yKcal} kcal)`;
-            chipsParts.push(`
-              <button type="button" class="meal-quick-chip yesterday" data-repeat-yesterday-slot="${sec.key}" title="Copiar en 1 toque lo que comiste ayer en ${sec.title}">
-                <span>${ySummary}</span>
+        if (quickData.yestMissingItems.length > 0) {
+          const yKcal = quickData.yestMissingItems.reduce((acc, m) => acc + Math.round(Number(m.kcal) || 0), 0);
+          const yItemsChips = quickData.yestMissingItems.map((yItem, idx) => {
+            const rawN = String(yItem.name || "").trim();
+            const shortN = rawN.length > 28 ? rawN.slice(0, 27) + "…" : rawN;
+            const kVal = Math.round(Number(yItem.kcal) || 0);
+            return `
+              <button type="button" class="meal-quick-chip" data-quick-yest-item-slot="${sec.key}" data-quick-yest-item-idx="${idx}" title="Sumar de ayer: ${escapeHtml(rawN)} (${kVal} kcal)">
+                <span>+ ${yItem.emoji || "🍽️"} ${escapeHtml(shortN)} • ${kVal} kcal</span>
               </button>
-            `);
-          }
-          quickData.topFreq.forEach((fItem, idx) => {
-            const shortN = fItem.name.length > 22 ? fItem.name.slice(0, 21) + "…" : fItem.name;
-            chipsParts.push(`
+            `;
+          }).join("");
+
+          quickChipsHtml = `
+            <div class="meal-yesterday-box">
+              <div class="meal-yesterday-head">
+                <span class="meal-yesterday-label">🔁 Ayer en ${escapeHtml(slotShortTitle)} (${yKcal} kcal)</span>
+                ${quickData.yestMissingItems.length > 1
+                  ? `<button type="button" class="meal-yesterday-repeat-all-btn" data-repeat-yesterday-slot="${sec.key}">+ Repetir todo</button>`
+                  : ""}
+              </div>
+              <div class="meal-quick-chips-row">${yItemsChips}</div>
+            </div>
+          `;
+        } else if (quickData.topFreq.length > 0) {
+          const freqChips = quickData.topFreq.map((fItem, idx) => {
+            const shortN = fItem.name.length > 26 ? fItem.name.slice(0, 25) + "…" : fItem.name;
+            return `
               <button type="button" class="meal-quick-chip" data-quick-freq-slot="${sec.key}" data-quick-freq-idx="${idx}" title="Sumar en 1 toque: ${escapeHtml(fItem.name)} (${fItem.kcal} kcal • ${fItem.p}g P)">
-                <span>${fItem.emoji || "⚡"} ${escapeHtml(shortN)} • ${fItem.kcal} kcal</span>
+                <span>+ ${fItem.emoji || "⚡"} ${escapeHtml(shortN)} • ${fItem.kcal} kcal</span>
               </button>
-            `);
-          });
-          quickChipsHtml = `<div class="meal-quick-chips-row">${chipsParts.join("")}</div>`;
+            `;
+          }).join("");
+          quickChipsHtml = `
+            <div class="meal-yesterday-box freq-mode">
+              <div class="meal-yesterday-head">
+                <span class="meal-yesterday-label">⚡ Tus frecuentes en ${escapeHtml(slotShortTitle)}</span>
+              </div>
+              <div class="meal-quick-chips-row">${freqChips}</div>
+            </div>
+          `;
         }
 
         card.innerHTML = `
@@ -9759,6 +9823,24 @@
               }
             );
           }
+        });
+      });
+
+      grid.querySelectorAll("[data-quick-yest-item-slot]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const slotKey = btn.getAttribute("data-quick-yest-item-slot");
+          const idx = Number(btn.getAttribute("data-quick-yest-item-idx")) || 0;
+          const yItem = quickSlotLookup[slotKey]?.yestMissingItems?.[idx];
+          if (!yItem) return;
+          addFoodItemToDay(selectedDate, {
+            mealType: slotKey,
+            name: yItem.name,
+            kcal: Math.round(Number(yItem.kcal) || 0),
+            p: Math.round((Number(yItem.p) || 0) * 10) / 10,
+            c: Math.round((Number(yItem.c) || 0) * 10) / 10,
+            f: Math.round((Number(yItem.f) || 0) * 10) / 10,
+            emoji: yItem.emoji || "🍽️"
+          });
         });
       });
 
