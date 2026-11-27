@@ -10989,16 +10989,36 @@
       required: ["mealName", "items", "raccoonCommentSarcastic", "raccoonCommentCute"]
     };
 
+    async function resolveAvailableGeminiVisionModels(apiKey) {
+      const preferred = ["gemini-4-hydrogen", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+      try {
+        const r = await _nativeFetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+        if (r.ok) {
+          const d = await r.json();
+          const available = new Set(
+            (d.models || []).map(m => String(m.name || "").replace(/^models\//, "").trim()).filter(Boolean)
+          );
+          const matched = preferred.filter(m => available.has(m));
+          if (matched.length > 0) return matched;
+          const fallbackAny = Array.from(available).filter(n =>
+            /^gemini-/i.test(n) && !/embedding|tts|transcribe|imagen|veo|aqa|decision/i.test(n)
+          );
+          if (fallbackAny.length > 0) return fallbackAny.slice(0, 3);
+        }
+      } catch (_) {}
+      return preferred;
+    }
+
     async function callGeminiInteractionsVisionDirect(apiKey, promptText, cleanB64, cleanMime) {
-      const modelsToTry = ["gemini-4-hydrogen", "gemini-3.5-flash-lite"];
+      const modelsToTry = await resolveAvailableGeminiVisionModels(apiKey);
+      const endpointUrl = `https://generativelanguage.googleapis.com/v1beta/interactions?key=${encodeURIComponent(apiKey)}`;
       for (const modelName of modelsToTry) {
         try {
-          const res = await _nativeFetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+          // Solo enviamos Content-Type: application/json y ?key= en la URL para pasar siempre el CORS del navegador sin bloqueo 403
+          const res = await _nativeFetch(endpointUrl, {
             method: "POST",
             headers: {
-              "x-goog-api-key": apiKey,
-              "Content-Type": "application/json",
-              "Api-Revision": "2026-05-20"
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
               model: modelName,
@@ -15738,31 +15758,25 @@
             btnTestAdminGemKey.textContent = "⏳ Verificando...";
             try {
               localStorage.setItem("michufit_gemini_key", kVal);
-              const pingRes = await _nativeFetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
-                method: "POST",
-                headers: {
-                  "x-goog-api-key": kVal,
-                  "Content-Type": "application/json",
-                  "Api-Revision": "2026-05-20"
-                },
-                body: JSON.stringify({
-                  model: "gemini-4-hydrogen",
-                  store: false,
-                  input: "Respondé únicamente OK."
-                })
-              });
+              // Usamos GET /v1beta/models?key=... sin headers extra para evitar el bloqueo CORS 403 del navegador y gastar 0 tokens
+              const pingRes = await _nativeFetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(kVal)}`);
               if (emailStatusMsg) {
                 emailStatusMsg.style.display = "block";
                 if (pingRes.ok) {
                   emailStatusMsg.style.background = "var(--accent-soft)";
                   emailStatusMsg.style.color = "var(--accent)";
                   emailStatusMsg.style.border = "1px solid var(--accent)";
-                  emailStatusMsg.innerHTML = "✅ <strong>¡Clave Gemini Vision verificada y activa!</strong> Ahora podés tocar <strong>📋 Copiar código para Google Script</strong> arriba y pegarlo en tu Apps Script para habilitarla para todos los usuarios sin exponer la clave.";
+                  emailStatusMsg.innerHTML = "✅ <strong>¡Clave Gemini Vision verificada y activa!</strong> Ahora tocá <strong>📋 Copiar código para Google Script</strong> acá arriba y pegalo en tu Apps Script para habilitarla para todos los usuarios.";
                 } else {
+                  let errDetail = `HTTP ${pingRes.status}`;
+                  try {
+                    const errJson = await pingRes.json();
+                    if (errJson?.error?.message) errDetail = errJson.error.message;
+                  } catch (_) {}
                   emailStatusMsg.style.background = "var(--warn-soft)";
                   emailStatusMsg.style.color = "var(--warn)";
                   emailStatusMsg.style.border = "1px solid var(--warn)";
-                  emailStatusMsg.innerHTML = `⚠️ Guardada en el dispositivo, pero Google devolvió HTTP ${pingRes.status}. Revisá que la clave AIzaSy... de Google AI Studio esté completa.`;
+                  emailStatusMsg.innerHTML = `⚠️ Google rechazó la clave (${escapeHtml(errDetail)}). Revisá haber copiado la clave AIzaSy... completa sin espacios.`;
                 }
               }
             } catch (_) {
@@ -15845,16 +15859,27 @@
     if (!gemKey) {
       return ContentService.createTextOutput(JSON.stringify({ ok: false, error: "missing_gemini_key" })).setMimeType(ContentService.MimeType.JSON);
     }
-    var models = ["gemini-4-hydrogen", "gemini-3.5-flash-lite"];
+    var models = ["gemini-4-hydrogen", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+    try {
+      var listResp = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + encodeURIComponent(gemKey), { muteHttpExceptions: true });
+      if (listResp.getResponseCode() === 200) {
+        var listData = JSON.parse(listResp.getContentText());
+        var avail = {};
+        (listData.models || []).forEach(function(m) { avail[String(m.name || "").replace(/^models\\//, "")] = true; });
+        var filtered = models.filter(function(m) { return avail[m]; });
+        if (filtered.length > 0) {
+          models = filtered;
+        } else {
+          var dyn = Object.keys(avail).filter(function(n) { return /^gemini-/i.test(n) && !/embedding|tts|transcribe|imagen|veo|aqa|decision/i.test(n); });
+          if (dyn.length > 0) models = dyn.slice(0, 3);
+        }
+      }
+    } catch (eList) {}
     for (var i = 0; i < models.length; i++) {
       var mName = models[i];
-      var resp = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+      var resp = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/v1beta/interactions?key=" + encodeURIComponent(gemKey), {
         method: "post",
         contentType: "application/json",
-        headers: {
-          "x-goog-api-key": gemKey,
-          "Api-Revision": "2026-05-20"
-        },
         payload: JSON.stringify({
           model: mName,
           store: false,
@@ -17932,18 +17957,19 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         const localKey = (localStorage.getItem("michufit_gemini_key") || "").trim();
         if (localKey) {
           try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(localKey)}`;
-            const res = await fetch(url, {
+            const url = `https://generativelanguage.googleapis.com/v1beta/interactions?key=${encodeURIComponent(localKey)}`;
+            const res = await _nativeFetch(url, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.45, maxOutputTokens: 220 }
+                model: "gemini-4-hydrogen",
+                store: false,
+                input: prompt
               })
             });
             if (res.ok) {
               const data = await res.json();
-              const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+              const txt = extractGeminiInteractionText(data);
               if (txt && txt.length > 30) {
                 bpGeminiWizardCache = { sig, text: txt.replace(/\*\*/g, ""), source: "gemini" };
                 return bpGeminiWizardCache;
