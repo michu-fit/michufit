@@ -2281,6 +2281,139 @@
       border-color: rgba(255, 255, 255, 0.22);
       opacity: 1;
     }
+
+    /* =========================================================================
+       ONBOARDING GUIADO: CHECKLIST DÍA 1, CENTRO GUÍA RÁPIDA Y TOUR SPOTLIGHT
+       ========================================================================= */
+    .michu-help-top-btn {
+      font-size: 0.96rem !important;
+      font-weight: 900 !important;
+      background: var(--accent-soft) !important;
+      border-color: rgba(14, 159, 119, 0.34) !important;
+      color: var(--accent) !important;
+    }
+
+    .michu-day1-card {
+      background: linear-gradient(145deg, var(--bg-elev) 0%, var(--bg-card) 100%);
+      border: 1.5px solid rgba(14, 159, 119, 0.42);
+      border-radius: 20px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(14, 159, 119, 0.10);
+      animation: michuDay1FadeIn 0.28s ease-out;
+    }
+
+    @keyframes michuDay1FadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .michu-day1-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .michu-day1-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 11px;
+      border-radius: 13px;
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      color: var(--text);
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .michu-day1-item:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .michu-day1-item.done {
+      background: var(--accent-soft);
+      border-color: rgba(14, 159, 119, 0.38);
+      opacity: 0.92;
+    }
+
+    .michu-day1-check {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      border: 2px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 900;
+      flex-shrink: 0;
+      background: var(--bg-card);
+      color: transparent;
+    }
+
+    .michu-day1-item.done .michu-day1-check {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .quick-guide-topic-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color 0.16s ease;
+    }
+
+    .quick-guide-topic-card:hover {
+      border-color: rgba(14, 159, 119, 0.45);
+    }
+
+    #michuSpotlightOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100045;
+      display: none;
+      pointer-events: auto;
+    }
+
+    #michuSpotlightHole {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 18px;
+      box-shadow: 0 0 0 9999px rgba(8, 15, 26, 0.78), 0 0 0 3px #14bd8e, 0 0 26px rgba(20, 189, 142, 0.55);
+      pointer-events: none;
+      transition: top 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                  left 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                  width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                  height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #michuSpotlightBubble {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(368px, calc(100vw - 24px));
+      background: var(--bg-elev);
+      color: var(--text);
+      border: 2px solid #14bd8e;
+      border-radius: 20px;
+      padding: 15px 16px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.48);
+      z-index: 100046;
+      transition: top 0.26s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+    }
   </style>
   <script>
     (function () {
@@ -2348,6 +2481,11 @@
           <span id="navPendingUsersBadge" style="display:none;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--danger);color:#fff;font-size:0.7rem;font-weight:900;line-height:19px;text-align:center;">0</span>
         </button>
 
+        <!-- Botón Guía Rápida ❓ -->
+        <button type="button" class="hamburger-btn michu-help-top-btn" id="btnOpenQuickGuideTop" onclick="window.openQuickGuideModal && window.openQuickGuideModal()" title="Guía rápida y recorrido interactivo" aria-label="Abrir guía rápida de Michu Fit">
+          ❓
+        </button>
+
         <!-- Botón Hamburguesa -->
         <button type="button" class="hamburger-btn" id="btnToggleHamburger" aria-label="Abrir menú de opciones" aria-expanded="false">
           ☰
@@ -2365,6 +2503,9 @@
         <button type="button" class="btn btn-sm" id="btnOpenAccountModal" onclick="window.openModal && window.openModal('modalAccount')" style="background:var(--bg-card);border-color:var(--border);color:var(--text);">
           <span>👤 Perfil / Cuenta</span>
           <strong id="currentUserTopLabel" style="margin-left:auto;font-size:0.78rem;color:var(--accent);">Mi Cuenta</strong>
+        </button>
+        <button type="button" class="btn btn-sm" onclick="window.openQuickGuideModal && window.openQuickGuideModal()" style="background:var(--accent-soft);border-color:rgba(14,159,119,0.32);color:var(--accent);font-weight:800;">
+          ❓ Guía Rápida y Recorrido
         </button>
         <button type="button" class="btn btn-sm btn-primary" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="flex:0 0 auto;">
           🥗 Menú Sugerido y Hábitos
@@ -2644,9 +2785,12 @@
       <!-- Nota del Nutricionista / Coach si tiene una asignada -->
       <div id="coachNoteBannerWrap"></div>
 
+      <!-- Checklist Gamificado de Primeros Pasos (Día 1 — se oculta solo al completar 4/4) -->
+      <div id="day1OnboardingChecklistWrap"></div>
+
       <div class="dashboard-grid">
         <!-- Card Calorías & Macros -->
-        <div class="card">
+        <div class="card" id="diaryMainKcalCard">
           <div class="card-header">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
               <div class="card-title">🔥 Rendimiento Calórico</div>
@@ -3603,6 +3747,10 @@
           </div>
         </div>
 
+        <button type="button" class="btn btn-sm" onclick="window.closeModal && window.closeModal('modalAccount'); window.openQuickGuideModal && window.openQuickGuideModal();" style="justify-content:center;background:var(--accent-soft);border-color:rgba(14,159,119,0.35);color:var(--accent);font-weight:800;">
+          ❓ Cómo usar Michu Fit (Guía rápida y Tour)
+        </button>
+
         <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;" />
 
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -4441,6 +4589,138 @@
 
       <div style="display:flex;justify-content:flex-end;margin-top:12px;">
         <button type="button" class="btn btn-primary btn-sm" data-close-modal="modalLegalDocs">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CENTRO DE GUÍA RÁPIDA DE MICHU FIT (RECORRIDO SPOTLIGHT + TARJETAS EXPRESS) -->
+  <div class="custom-modal-overlay" id="modalQuickGuide" role="dialog" aria-modal="true" style="z-index:100028;">
+    <div class="modal-inner" style="max-width:580px;">
+      <div class="card-header" style="align-items:center;margin-bottom:10px;">
+        <div>
+          <div class="card-title">❓ Guía Rápida de Michu Fit</div>
+          <small style="color:var(--text-muted);font-size:0.76rem;">
+            Dominá todas las funciones en menos de 30 segundos
+          </small>
+        </div>
+        <button type="button" class="btn btn-sm" data-close-modal="modalQuickGuide">✕</button>
+      </div>
+
+      <!-- Banner superior para lanzar el Tour Interactivo en vivo -->
+      <div style="background:linear-gradient(135deg, rgba(20,189,142,0.16) 0%, rgba(2,132,199,0.12) 100%);border:1.5px solid rgba(14,159,119,0.45);border-radius:16px;padding:13px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <strong style="font-size:0.92rem;color:var(--text);display:block;margin-bottom:3px;">🎯 Recorrido Interactivo en Pantalla (5 toques)</strong>
+          <span style="font-size:0.77rem;color:var(--text-muted);line-height:1.38;display:block;">
+            Michu ilumina cada botón real de tu Diario paso a paso para mostrarte dónde está todo.
+          </span>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-primary btn-sm" id="btnLaunchTourFromGuide" style="font-weight:800;padding:9px 14px;">
+            ▶️ Iniciar Recorrido (25s)
+          </button>
+          <button type="button" class="btn btn-sm" id="btnRestoreDay1Checklist" title="Volver a mostrar la tarjeta de Primeros Pasos en el Diario">
+            📋 Misiones Día 1
+          </button>
+        </div>
+      </div>
+
+      <!-- Grilla de tarjetas express por función -->
+      <div style="display:flex;flex-direction:column;gap:9px;max-height:56vh;overflow-y:auto;padding-right:3px;">
+        <div class="quick-guide-topic-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <strong style="font-size:0.87rem;color:var(--text);">📸🎙️ 1. Cargar comidas sin buscar en listas</strong>
+            <button type="button" class="btn btn-sm" data-guide-action="add-food" style="padding:4px 10px;font-size:0.73rem;">Probar ›</button>
+          </div>
+          <span style="font-size:0.78rem;color:var(--text-muted);line-height:1.42;">
+            Tocá <strong>+ Agregar</strong> en Desayuno, Almuerzo, Merienda o Cena: podés escribir natural como en WhatsApp (<em>«200g de pollo con ensalada y 1 huevo»</em>), dictar por voz o subir foto del plato. Michu calcula calorías y proteínas solo.
+          </span>
+        </div>
+
+        <div class="quick-guide-topic-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <strong style="font-size:0.87rem;color:var(--text);">🔥🥩 2. Anillo Calórico, Proteína y Quema de Grasa</strong>
+            <button type="button" class="btn btn-sm" data-guide-action="go-diary" style="padding:4px 10px;font-size:0.73rem;">Ver Diario ›</button>
+          </div>
+          <span style="font-size:0.78rem;color:var(--text-muted);line-height:1.42;">
+            El anillo central muestra cuántas calorías te quedan hoy. Cuidá llegar a tu barra de <strong>Proteína</strong> para proteger músculo mientras el banner traduce tu déficit del día en gramos reales de grasa oxidada.
+          </span>
+        </div>
+
+        <div class="quick-guide-topic-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <strong style="font-size:0.87rem;color:var(--text);">🥗🛒 3. Menú Semanal IA con lo que tenés en casa</strong>
+            <button type="button" class="btn btn-sm" data-guide-action="open-menu" style="padding:4px 10px;font-size:0.73rem;">Abrir Menú IA ›</button>
+          </div>
+          <span style="font-size:0.78rem;color:var(--text-muted);line-height:1.42;">
+            ¿No sabés qué comer? Elegí tus ingredientes habituales y Michu te arma los 7 días cuadrando tus calorías y proteínas exactas, con lista del súper lista para tildar.
+          </span>
+        </div>
+
+        <div class="quick-guide-topic-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <strong style="font-size:0.87rem;color:var(--text);">💧☀️ 4. Hidratación y Alarma Solar de Vitamina D</strong>
+            <button type="button" class="btn btn-sm" data-guide-action="open-water-vitd" style="padding:4px 10px;font-size:0.73rem;">Abrir ›</button>
+          </div>
+          <span style="font-size:0.78rem;color:var(--text-muted);line-height:1.42;">
+            Sumá vasos de 250 ml con un toque y activá el cronómetro solar inteligente: calcula los minutos exactos según tu piel e índice UV en vivo y te avisa con alarma sonora.
+          </span>
+        </div>
+
+        <div class="quick-guide-topic-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <strong style="font-size:0.87rem;color:var(--text);">⏳📈 5. Ayuno, Curva de Peso y % de Grasa (U.S. Navy)</strong>
+            <button type="button" class="btn btn-sm" data-guide-action="go-progress" style="padding:4px 10px;font-size:0.73rem;">Ir a Progreso ›</button>
+          </div>
+          <span style="font-size:0.78rem;color:var(--text-muted);line-height:1.42;">
+            Activá tu ventana de <strong>Ayuno</strong> con el interruptor superior y registrá tu peso y cintura/cuello en <strong>Progreso</strong> para distinguir retención de líquido de pérdida real de grasa.
+          </span>
+        </div>
+
+        <div class="quick-guide-topic-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <strong style="font-size:0.87rem;color:var(--text);">📋🏆 6. Reporte Ejecutivo Semanal (Nota 0 a 100)</strong>
+            <button type="button" class="btn btn-sm" data-guide-action="go-report" style="padding:4px 10px;font-size:0.73rem;">Ver Reporte ›</button>
+          </div>
+          <span style="font-size:0.78rem;color:var(--text-muted);line-height:1.42;">
+            Mirá tu puntaje integral de ejecución, diferencia Lunes–Jueves vs. Fin de semana, plato estrella, cuellos de botella y plan de 3 pasos listo para compartir por WhatsApp.
+          </span>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:0.74rem;color:var(--text-muted);">💡 Tip: en 👤 Mi Cuenta podés activar Huella Dactilar o vincular el código de tu Nutricionista.</span>
+        <button type="button" class="btn btn-primary btn-sm" data-close-modal="modalQuickGuide">¡Listo!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERLAY SPOTLIGHT INTERACTIVO DE 5 PASOS (TOUR GUIADO EN VIVO) -->
+  <div id="michuSpotlightOverlay" role="dialog" aria-modal="true" aria-label="Recorrido interactivo de Michu Fit">
+    <div id="michuSpotlightHole"></div>
+    <div id="michuSpotlightBubble">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+        <span id="michuSpotStepBadge" class="chip" style="background:var(--accent-soft);color:var(--accent);font-weight:900;font-size:0.72rem;">
+          🐾 Paso 1 de 5
+        </span>
+        <button type="button" id="btnMichuSpotSkip" style="background:none;border:none;color:var(--text-muted);font-size:0.76rem;font-weight:800;cursor:pointer;padding:2px 6px;">
+          Saltar ✕
+        </button>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;">
+        <div style="width:42px;height:42px;border-radius:12px;background:var(--accent-soft);border:1px solid rgba(14,159,119,0.35);display:flex;align-items:center;justify-content:center;font-size:1.45rem;flex-shrink:0;">
+          🐱
+        </div>
+        <div style="min-width:0;flex:1;">
+          <strong id="michuSpotTitle" style="font-size:0.95rem;color:var(--text);display:block;margin-bottom:4px;line-height:1.25;"></strong>
+          <div id="michuSpotBody" style="font-size:0.81rem;color:var(--text-muted);line-height:1.45;"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div id="michuSpotDots" style="display:flex;gap:5px;align-items:center;"></div>
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="btn btn-sm" id="btnMichuSpotPrev" style="padding:7px 11px;font-size:0.78rem;">‹ Atrás</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btnMichuSpotNext" style="padding:7px 14px;font-size:0.8rem;font-weight:800;">Siguiente ›</button>
+        </div>
       </div>
     </div>
   </div>
@@ -7173,6 +7453,9 @@
       renderProgressCharts();
       renderFastingTab();
       renderUserSessionAndCoachUI();
+      if (typeof window.renderDay1ChecklistAndMaybeTour === "function") {
+        window.renderDay1ChecklistAndMaybeTour();
+      }
     }
 
     function renderDailySummary() {
@@ -12259,6 +12542,9 @@
       if (tabId === "tab-report" && typeof renderWeeklyExecutiveReport === "function") {
         renderWeeklyExecutiveReport();
       }
+      if ((tabId === "tab-progress" || tabId === "tab-report") && typeof window.markOnboardingActionDone === "function") {
+        window.markOnboardingActionDone("seenProgressOrReport");
+      }
 
       if (isAdminMode) {
         refreshAdminUsersTable();
@@ -15158,6 +15444,8 @@
       // =========================================================================
       // INICIO EN 1 TOQUE CON GOOGLE (WEB GIS + PUENTE CLOUD PARA GOOGLE PLAY WEBVIEW)
       // =========================================================================
+      const DEFAULT_GOOGLE_OAUTH_CLIENT_ID = "396274030534-gflh181b880lgqqu4mrqf2s32341mkqp.apps.googleusercontent.com";
+
       async function resolveGoogleClientId() {
         const cached = (window._michuGoogleClientId || localStorage.getItem("michufit_google_client_id") || "").trim();
         if (cached) return cached;
@@ -15168,7 +15456,7 @@
               "Authorization": `Bearer ${SUPABASE_KEY}`,
               "Cache-Control": "no-store"
             }
-          }, 8000);
+          }, 6000);
           if (r.ok) {
             const rows = await r.json();
             const cid = rows?.[0]?.user_doc?.googleClientId ? String(rows[0].user_doc.googleClientId).trim() : "";
@@ -15179,7 +15467,7 @@
             }
           }
         } catch (_) {}
-        return "";
+        return DEFAULT_GOOGLE_OAUTH_CLIENT_ID;
       }
 
       async function exchangeGoogleAccessTokenForSession(accessToken, wizardPayload = null) {
@@ -20888,6 +21176,9 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
       }
 
       window.openSuggestedMenuModal = function (startMode = false) {
+        if (typeof window.markOnboardingActionDone === "function") {
+          window.markOnboardingActionDone("seenMenuAi");
+        }
         const prefs = ensureMenuPrefs();
         if (startMode === "mood") {
           sugMenuState.mode = "mood";
@@ -22369,6 +22660,508 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         renderReto21Modal();
         openModal("modalReto21Dias");
       };
+    })();
+
+    // =========================================================================
+    // ONBOARDING PARA NUEVOS USUARIOS: TOUR SPOTLIGHT (5 PASOS) + CHECKLIST DÍA 1 + GUÍA ❓
+    // =========================================================================
+    (function () {
+      const SPOTLIGHT_STEPS = [
+        {
+          selector: "#diaryMainKcalCard",
+          title: "🎯 Tu Anillo Diario y Quema Real",
+          body: "De un vistazo ves cuántas <strong>calorías te quedan hoy</strong>, tu barra de <strong>proteína</strong> para cuidar músculo y el equivalente real en gramos de grasa."
+        },
+        {
+          selector: "#mealsSectionsGrid .meal-card",
+          title: "📸🎙️ Cargar Comidas sin Buscar en Listas",
+          body: "Tocá <strong>+ Agregar</strong> en cualquier comida: sacale foto al plato, hablale al micrófono o escribí como en WhatsApp y calculo calorías y macros solo."
+        },
+        {
+          selector: "#waterCardContainer",
+          title: "💧 Agua y ☀️ Alarma Solar de Vitamina D",
+          body: "Sumá tus vasos de 250 ml con 1 toque y usá el cronómetro solar con <strong>alarma sonora</strong> según tu piel e índice UV en vivo."
+        },
+        {
+          selector: "#btnOpenSuggestedMenuDiary",
+          title: "🥗 Menú Semanal IA con lo que Tenés",
+          body: "¿No sabés qué cocinar? Tocá <strong>🥗 Menú IA</strong> y te armo los 7 días cuadrando tus calorías y proteínas con tus propios ingredientes y lista del súper."
+        },
+        {
+          selector: "nav.nav-tabs",
+          title: "⏳ Ayuno, 📈 Progreso y 📋 Reporte (0–100)",
+          body: "Acá activás tu <strong>Ayuno</strong>, seguís peso/medidas reales y mirás tu <strong>📋 Reporte Ejecutivo</strong> semanal. ¡Cuando quieras repetir esta guía tocá <strong>❓</strong> arriba!"
+        }
+      ];
+
+      let spotIdx = 0;
+      let spotActive = false;
+      let spotRepositionTimers = [];
+      let autoTourScheduledForUid = null;
+      let celebratingDay1ForUid = null;
+
+      function getOnbUid() {
+        return (currentUserInfo && currentUserInfo.id) ? String(currentUserInfo.id) : "";
+      }
+
+      function getSmartMealKeyByHour() {
+        const h = new Date().getHours();
+        if (h < 11) return "breakfast";
+        if (h < 16) return "lunch";
+        if (h < 20) return "merienda";
+        return "dinner";
+      }
+
+      function countUserStats() {
+        const daysObj = (appData && appData.days) ? appData.days : {};
+        let totalMeals = 0;
+        let hasWater = false;
+        for (const d of Object.values(daysObj)) {
+          if (!d) continue;
+          if ((Number(d.water) || 0) >= 1) hasWater = true;
+          const mArr = Array.isArray(d.meals) ? d.meals : [];
+          for (const m of mArr) {
+            if (typeof isMealConsumed === "function" ? isMealConsumed(m) : (!m.planned || m.checked)) {
+              totalMeals += 1;
+            }
+          }
+        }
+        const uid = getOnbUid();
+        const prof = (appData && appData.profile) ? appData.profile : {};
+        const seenMenu = Boolean(
+          prof.onboardingSeenMenuAi ||
+          (uid && localStorage.getItem("michufit_onb_menu_" + uid) === "1") ||
+          (appData && appData.menuPrefs && appData.menuPrefs.configured)
+        );
+        const seenProgOrRep = Boolean(
+          prof.onboardingSeenProgressOrReport ||
+          (uid && localStorage.getItem("michufit_onb_prog_" + uid) === "1") ||
+          ((appData && Array.isArray(appData.weightLog) ? appData.weightLog.length : 0) >= 2) ||
+          ((appData && Array.isArray(appData.measurementsLog) ? appData.measurementsLog.length : 0) >= 1)
+        );
+        return { totalMeals, hasWater, seenMenu, seenProgOrRep };
+      }
+
+      window.markOnboardingActionDone = function (actionKey) {
+        const uid = getOnbUid();
+        if (!appData || !appData.profile) return;
+        let changed = false;
+        if (actionKey === "seenMenuAi" && !appData.profile.onboardingSeenMenuAi) {
+          appData.profile.onboardingSeenMenuAi = true;
+          if (uid) { try { localStorage.setItem("michufit_onb_menu_" + uid, "1"); } catch (_) {} }
+          changed = true;
+        } else if (actionKey === "seenProgressOrReport" && !appData.profile.onboardingSeenProgressOrReport) {
+          appData.profile.onboardingSeenProgressOrReport = true;
+          if (uid) { try { localStorage.setItem("michufit_onb_prog_" + uid, "1"); } catch (_) {} }
+          changed = true;
+        }
+        if (changed) {
+          if (typeof saveToServer === "function") saveToServer();
+          renderDay1ChecklistAndMaybeTour();
+        }
+      };
+
+      function clearSpotTimers() {
+        spotRepositionTimers.forEach(t => clearTimeout(t));
+        spotRepositionTimers = [];
+      }
+
+      function positionSpotlightCurrentStep(doScroll = true) {
+        if (!spotActive) return;
+        const step = SPOTLIGHT_STEPS[spotIdx];
+        const hole = document.getElementById("michuSpotlightHole");
+        const bubble = document.getElementById("michuSpotlightBubble");
+        if (!step || !hole || !bubble) return;
+
+        const targetEl = document.querySelector(step.selector);
+        if (!targetEl) {
+          hole.style.top = "50%";
+          hole.style.left = "50%";
+          hole.style.width = "0px";
+          hole.style.height = "0px";
+          bubble.style.top = "50%";
+          bubble.style.bottom = "auto";
+          bubble.style.transform = "translate(-50%, -50%)";
+          return;
+        }
+
+        if (doScroll) {
+          try {
+            targetEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+          } catch (_) {
+            targetEl.scrollIntoView(true);
+          }
+        }
+
+        const applyCoords = () => {
+          if (!spotActive) return;
+          const rect = targetEl.getBoundingClientRect();
+          const vw = window.innerWidth || document.documentElement.clientWidth;
+          const vh = window.innerHeight || document.documentElement.clientHeight;
+          const pad = 7;
+          const maxHighlightH = Math.min(rect.height + pad * 2, Math.round(vh * 0.56));
+          const topPos = Math.max(6, Math.min(vh - 44, rect.top - pad));
+          const leftPos = Math.max(6, rect.left - pad);
+          const widthPos = Math.min(vw - 12, rect.width + pad * 2);
+
+          hole.style.top = `${Math.round(topPos)}px`;
+          hole.style.left = `${Math.round(leftPos)}px`;
+          hole.style.width = `${Math.round(widthPos)}px`;
+          hole.style.height = `${Math.round(maxHighlightH)}px`;
+
+          bubble.style.transform = "translateX(-50%)";
+          const bRect = bubble.getBoundingClientRect();
+          const bH = bRect.height || 185;
+          const holeBottom = topPos + maxHighlightH;
+          const spaceBelow = vh - holeBottom;
+          const spaceAbove = topPos;
+
+          if (spaceBelow >= bH + 20 || spaceBelow >= spaceAbove) {
+            const desiredTop = Math.min(vh - bH - 12, Math.max(12, holeBottom + 14));
+            bubble.style.top = `${Math.round(desiredTop)}px`;
+            bubble.style.bottom = "auto";
+          } else {
+            const desiredTop = Math.max(12, topPos - bH - 14);
+            bubble.style.top = `${Math.round(desiredTop)}px`;
+            bubble.style.bottom = "auto";
+          }
+        };
+
+        applyCoords();
+        if (doScroll) {
+          clearSpotTimers();
+          spotRepositionTimers.push(setTimeout(applyCoords, 150));
+          spotRepositionTimers.push(setTimeout(applyCoords, 340));
+        }
+      }
+
+      function renderSpotlightStep(doScroll = true) {
+        const step = SPOTLIGHT_STEPS[spotIdx];
+        if (!step) return;
+        const badge = document.getElementById("michuSpotStepBadge");
+        const title = document.getElementById("michuSpotTitle");
+        const body = document.getElementById("michuSpotBody");
+        const dots = document.getElementById("michuSpotDots");
+        const prevBtn = document.getElementById("btnMichuSpotPrev");
+        const nextBtn = document.getElementById("btnMichuSpotNext");
+
+        if (badge) badge.textContent = `🐾 Paso ${spotIdx + 1} de ${SPOTLIGHT_STEPS.length}`;
+        if (title) title.textContent = step.title;
+        if (body) body.innerHTML = step.body;
+        if (dots) {
+          dots.innerHTML = SPOTLIGHT_STEPS.map((_, i) => `
+            <span style="width:${i === spotIdx ? '18px' : '7px'};height:7px;border-radius:999px;background:${i === spotIdx ? '#14bd8e' : 'rgba(148,163,184,0.38)'};transition:all 0.2s ease;"></span>
+          `).join("");
+        }
+        if (prevBtn) {
+          prevBtn.style.visibility = spotIdx === 0 ? "hidden" : "visible";
+        }
+        if (nextBtn) {
+          nextBtn.innerHTML = spotIdx === SPOTLIGHT_STEPS.length - 1 ? "¡Empezar! 🚀" : "Siguiente ›";
+        }
+        positionSpotlightCurrentStep(doScroll);
+      }
+
+      function finishMichuSpotlightTour(celebrate = false) {
+        spotActive = false;
+        clearSpotTimers();
+        const ov = document.getElementById("michuSpotlightOverlay");
+        if (ov) ov.style.display = "none";
+        const uid = getOnbUid();
+        if (uid) {
+          try { localStorage.setItem("michufit_tour_seen_" + uid, "1"); } catch (_) {}
+        }
+        if (appData && appData.profile && !appData.profile.onboardingTourSeen) {
+          appData.profile.onboardingTourSeen = true;
+          if (typeof saveToServer === "function") saveToServer();
+        }
+        if (celebrate && typeof window.fireCartoonConfetti === "function") {
+          window.fireCartoonConfetti("normal");
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      window.startMichuSpotlightTour = function () {
+        const drop = document.getElementById("topHamburgerDropdown");
+        if (drop) drop.classList.remove("open");
+        if (typeof closeModal === "function") closeModal("modalQuickGuide");
+        if (typeof switchTab === "function") switchTab("tab-diary");
+
+        spotIdx = 0;
+        spotActive = true;
+        const ov = document.getElementById("michuSpotlightOverlay");
+        if (ov) ov.style.display = "block";
+        setTimeout(() => renderSpotlightStep(true), 60);
+      };
+
+      document.getElementById("btnMichuSpotSkip")?.addEventListener("click", () => finishMichuSpotlightTour(false));
+      document.getElementById("btnMichuSpotPrev")?.addEventListener("click", () => {
+        if (spotIdx > 0) {
+          spotIdx -= 1;
+          renderSpotlightStep(true);
+        }
+      });
+      document.getElementById("btnMichuSpotNext")?.addEventListener("click", () => {
+        if (spotIdx < SPOTLIGHT_STEPS.length - 1) {
+          spotIdx += 1;
+          renderSpotlightStep(true);
+        } else {
+          finishMichuSpotlightTour(true);
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        if (spotActive) positionSpotlightCurrentStep(false);
+      });
+      window.addEventListener("scroll", () => {
+        if (spotActive) positionSpotlightCurrentStep(false);
+      }, { passive: true });
+      document.addEventListener("keydown", (e) => {
+        if (!spotActive) return;
+        if (e.key === "Escape") finishMichuSpotlightTour(false);
+        else if (e.key === "ArrowRight") document.getElementById("btnMichuSpotNext")?.click();
+        else if (e.key === "ArrowLeft") document.getElementById("btnMichuSpotPrev")?.click();
+      });
+
+      // Centro de Guía Rápida ❓
+      window.openQuickGuideModal = function () {
+        const drop = document.getElementById("topHamburgerDropdown");
+        if (drop) drop.classList.remove("open");
+        const hb = document.getElementById("btnToggleHamburger");
+        if (hb) hb.setAttribute("aria-expanded", "false");
+        if (typeof openModal === "function") openModal("modalQuickGuide");
+      };
+
+      document.getElementById("btnLaunchTourFromGuide")?.addEventListener("click", () => {
+        window.startMichuSpotlightTour();
+      });
+
+      document.getElementById("btnRestoreDay1Checklist")?.addEventListener("click", () => {
+        const uid = getOnbUid();
+        if (uid) {
+          try {
+            localStorage.removeItem("michufit_day1_dismissed_" + uid);
+            localStorage.setItem("michufit_day1_force_" + uid, "1");
+          } catch (_) {}
+        }
+        if (appData && appData.profile) {
+          appData.profile.onboardingChecklistDismissed = false;
+        }
+        if (typeof closeModal === "function") closeModal("modalQuickGuide");
+        if (typeof switchTab === "function") switchTab("tab-diary");
+        renderDay1ChecklistAndMaybeTour();
+      });
+
+      document.querySelectorAll("#modalQuickGuide [data-guide-action]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const act = btn.getAttribute("data-guide-action");
+          if (typeof closeModal === "function") closeModal("modalQuickGuide");
+          if (act === "add-food") {
+            if (typeof switchTab === "function") switchTab("tab-diary");
+            if (typeof openFoodModal === "function") openFoodModal(getSmartMealKeyByHour());
+          } else if (act === "go-diary") {
+            if (typeof switchTab === "function") switchTab("tab-diary");
+            document.getElementById("diaryMainKcalCard")?.scrollIntoView({ behavior: "smooth", block: "center" });
+          } else if (act === "open-menu") {
+            if (typeof window.openSuggestedMenuModal === "function") window.openSuggestedMenuModal();
+          } else if (act === "open-water-vitd") {
+            if (typeof switchTab === "function") switchTab("tab-diary");
+            const wBody = document.getElementById("waterCollapsibleBody");
+            if (wBody && (wBody.style.display === "none" || !wBody.style.display) && typeof window.toggleWaterCard === "function") {
+              window.toggleWaterCard();
+            }
+            document.getElementById("waterCardContainer")?.scrollIntoView({ behavior: "smooth", block: "center" });
+          } else if (act === "go-progress") {
+            if (typeof switchTab === "function") switchTab("tab-progress");
+          } else if (act === "go-report") {
+            if (typeof switchTab === "function") switchTab("tab-report");
+          }
+        });
+      });
+
+      // Checklist Gamificado de Primeros Pasos (Día 1) + Auto-disparo único para cuentas recién creadas
+      function renderDay1ChecklistAndMaybeTour() {
+        const wrap = document.getElementById("day1OnboardingChecklistWrap");
+        if (!wrap) return;
+        const uid = getOnbUid();
+        const isLoggedOut = document.documentElement.getAttribute("data-auth-state") === "logged-out";
+        const authModalOpen = document.getElementById("modalAuthOverlay")?.hasAttribute("open");
+        if (!uid || isLoggedOut || inspectedUserId) {
+          wrap.innerHTML = "";
+          return;
+        }
+
+        const stats = countUserStats();
+        const isPlayReviewerDemo = uid === "u-google-play-demo" || uid === "u-demouser2026";
+        const forceShown = localStorage.getItem("michufit_day1_force_" + uid) === "1";
+
+        // No interrumpir a cuentas veteranas que ya vienen usando la app (salvo que toquen 'Misiones Día 1' en ❓)
+        if ((isPlayReviewerDemo || stats.totalMeals >= 4) && !forceShown) {
+          try {
+            localStorage.setItem("michufit_tour_seen_" + uid, "1");
+            localStorage.setItem("michufit_day1_dismissed_" + uid, "1");
+          } catch (_) {}
+          wrap.innerHTML = "";
+          return;
+        }
+
+        // Auto-lanzar el Tour Spotlight 1 sola vez en la vida cuando una cuenta nueva entra a su Diario virgen
+        const tourAlreadySeen = Boolean(
+          (appData?.profile?.onboardingTourSeen) ||
+          localStorage.getItem("michufit_tour_seen_" + uid) === "1"
+        );
+        if (!tourAlreadySeen && !authModalOpen && stats.totalMeals === 0 && autoTourScheduledForUid !== uid) {
+          autoTourScheduledForUid = uid;
+          setTimeout(() => {
+            const stillLoggedIn = document.documentElement.getAttribute("data-auth-state") !== "logged-out";
+            const stillClosedAuth = !document.getElementById("modalAuthOverlay")?.hasAttribute("open");
+            if (stillLoggedIn && stillClosedAuth && !spotActive && getOnbUid() === uid) {
+              window.startMichuSpotlightTour();
+            }
+          }, 750);
+        }
+
+        const isDismissed = Boolean(
+          !forceShown && (
+            appData?.profile?.onboardingChecklistDismissed ||
+            localStorage.getItem("michufit_day1_dismissed_" + uid) === "1"
+          )
+        );
+        if (isDismissed && celebratingDay1ForUid !== uid) {
+          wrap.innerHTML = "";
+          return;
+        }
+
+        const missions = [
+          {
+            id: "meal",
+            done: stats.totalMeals >= 1,
+            title: "🍽️ Registrá tu primera comida",
+            sub: "Por foto, voz o texto rápido con IA"
+          },
+          {
+            id: "water",
+            done: stats.hasWater,
+            title: "💧 Sumá tu primer vaso de agua",
+            sub: "Hidratación diaria en 1 toque"
+          },
+          {
+            id: "menu",
+            done: stats.seenMenu,
+            title: "🥗 Descubrí tu Menú Semanal IA",
+            sub: "Armado con tus macros e ingredientes"
+          },
+          {
+            id: "prog",
+            done: stats.seenProgOrRep,
+            title: "📋 Mirá tu Progreso o Reporte 0–100",
+            sub: "Curva real y diagnóstico ejecutivo"
+          }
+        ];
+
+        const doneCount = missions.filter(m => m.done).length;
+        const pct = Math.round((doneCount / missions.length) * 100);
+
+        if (doneCount === missions.length && !forceShown) {
+          if (celebratingDay1ForUid !== uid) {
+            celebratingDay1ForUid = uid;
+            if (typeof window.fireCartoonConfetti === "function") window.fireCartoonConfetti("normal");
+            setTimeout(() => {
+              try {
+                localStorage.setItem("michufit_day1_dismissed_" + uid, "1");
+                localStorage.removeItem("michufit_day1_force_" + uid);
+              } catch (_) {}
+              if (appData && appData.profile) {
+                appData.profile.onboardingChecklistDismissed = true;
+                if (typeof saveToServer === "function") saveToServer();
+              }
+              celebratingDay1ForUid = null;
+              const wEl = document.getElementById("day1OnboardingChecklistWrap");
+              if (wEl) wEl.innerHTML = "";
+            }, 4600);
+          }
+          wrap.innerHTML = `
+            <div class="michu-day1-card" style="text-align:center;background:var(--accent-soft);border-color:var(--accent);">
+              <strong style="font-size:0.96rem;color:var(--accent);display:block;margin-bottom:3px;">
+                🎉 ¡Completaste tus 4 Primeros Pasos!
+              </strong>
+              <span style="font-size:0.8rem;color:var(--text-muted);">
+                ¡Excelente arranque! Esta tarjeta se ocultará sola ahora. Si algún día querés repasar algo, tocá <strong>❓</strong> arriba. 🐱💪
+              </span>
+            </div>
+          `;
+          return;
+        }
+
+        const uFirst = escapeHtml(((appData?.profile?.name || currentUserInfo?.name || "Campeón").trim().split(/\s+/)[0]) || "Campeón");
+        wrap.innerHTML = `
+          <div class="michu-day1-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+              <div>
+                <strong style="font-size:0.92rem;color:var(--text);">🚀 Primeros pasos de ${uFirst} con Michu (${doneCount}/4)</strong>
+                <span style="display:block;font-size:0.75rem;color:var(--text-muted);">Tocá cada misión para probarla — al llegar a 4/4 esta tarjeta desaparece sola</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <button type="button" class="btn btn-sm" id="btnDay1StartSpotlight" style="padding:4px 9px;font-size:0.73rem;background:var(--accent-soft);color:var(--accent);border-color:rgba(14,159,119,0.32);font-weight:800;">
+                  ▶️ Tour (25s)
+                </button>
+                <button type="button" id="btnDay1DismissCard" title="Ocultar primeros pasos" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.82rem;font-weight:800;padding:4px 6px;">
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div class="progress-track" style="height:7px;">
+              <div class="progress-fill" style="width:${pct}%;background:linear-gradient(90deg, #14bd8e, #0284c7);"></div>
+            </div>
+            <div class="michu-day1-grid">
+              ${missions.map(m => `
+                <button type="button" class="michu-day1-item ${m.done ? 'done' : ''}" data-day1-mission="${m.id}">
+                  <span class="michu-day1-check">${m.done ? "✓" : ""}</span>
+                  <div style="min-width:0;flex:1;">
+                    <strong style="font-size:0.81rem;display:block;line-height:1.22;${m.done ? 'text-decoration:line-through;' : ''}">${m.title}</strong>
+                    <span style="font-size:0.71rem;color:var(--text-muted);display:block;line-height:1.25;">${m.sub}</span>
+                  </div>
+                </button>
+              `).join("")}
+            </div>
+          </div>
+        `;
+
+        document.getElementById("btnDay1StartSpotlight")?.addEventListener("click", () => {
+          window.startMichuSpotlightTour();
+        });
+        document.getElementById("btnDay1DismissCard")?.addEventListener("click", () => {
+          try {
+            localStorage.setItem("michufit_day1_dismissed_" + uid, "1");
+            localStorage.removeItem("michufit_day1_force_" + uid);
+          } catch (_) {}
+          if (appData && appData.profile) {
+            appData.profile.onboardingChecklistDismissed = true;
+            if (typeof saveToServer === "function") saveToServer();
+          }
+          wrap.innerHTML = "";
+        });
+
+        wrap.querySelectorAll("[data-day1-mission]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const mId = btn.getAttribute("data-day1-mission");
+            if (mId === "meal") {
+              if (typeof openFoodModal === "function") openFoodModal(getSmartMealKeyByHour());
+            } else if (mId === "water") {
+              const wBody = document.getElementById("waterCollapsibleBody");
+              if (wBody && (wBody.style.display === "none" || !wBody.style.display) && typeof window.toggleWaterCard === "function") {
+                window.toggleWaterCard();
+              }
+              document.getElementById("waterCardContainer")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            } else if (mId === "menu") {
+              if (typeof window.openSuggestedMenuModal === "function") window.openSuggestedMenuModal();
+            } else if (mId === "prog") {
+              if (typeof switchTab === "function") switchTab("tab-report");
+            }
+          });
+        });
+      }
+      window.renderDay1ChecklistAndMaybeTour = renderDay1ChecklistAndMaybeTour;
     })();
 
     // Inicializar aplicación
