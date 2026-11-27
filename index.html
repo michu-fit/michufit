@@ -5230,9 +5230,20 @@
         window._cachedCloudFeedbackItems = sysFeedbackRow.user_doc.items;
       }
       const sysAuthCfgRow = (rows || []).find(r => r.id === "sys-auth-config");
-      if (sysAuthCfgRow && sysAuthCfgRow.user_doc && sysAuthCfgRow.user_doc.googleClientId) {
-        window._michuGoogleClientId = String(sysAuthCfgRow.user_doc.googleClientId).trim();
-        try { localStorage.setItem("michufit_google_client_id", window._michuGoogleClientId); } catch (_) {}
+      if (sysAuthCfgRow && sysAuthCfgRow.user_doc) {
+        window._michuSysAuthDoc = { ...sysAuthCfgRow.user_doc };
+        if (sysAuthCfgRow.user_doc.googleClientId) {
+          window._michuGoogleClientId = String(sysAuthCfgRow.user_doc.googleClientId).trim();
+          try { localStorage.setItem("michufit_google_client_id", window._michuGoogleClientId); } catch (_) {}
+        }
+        if (sysAuthCfgRow.user_doc.visionWebhookUrl) {
+          window._michuVisionWebhookUrl = String(sysAuthCfgRow.user_doc.visionWebhookUrl).trim();
+        }
+        if (sysAuthCfgRow.user_doc.visionKeyB64) {
+          try {
+            window._michuCloudVisionKey = atob(String(sysAuthCfgRow.user_doc.visionKeyB64).trim()).trim();
+          } catch (_) {}
+        }
       }
       const mapped = (rows || [])
         .filter(r => r.id !== "sys-food-catalog" && r.id !== "sys-churn-stats" && r.id !== "sys-auth-config" && !String(r.id || "").startsWith("gh-") && r.status !== "system_catalog" && r.role !== "system")
@@ -5536,7 +5547,54 @@
       };
     }
 
-    const DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwocpAw2NNfGiPGvRYXPqBlAmGRdW9Oil54AEr0wN96Cd-zO-c8mu3XOG4WNHA_jzNfqA/exec";
+    const DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbySU2cPXGhKNmd2m6tjQeHzZDgpvxnhTTs1XD-zkA4R0BN6xtvz4pkDBjEsHtkQVT7b1w/exec";
+
+    async function upsertSysAuthConfigPatch(patchObj) {
+      let existingDoc = { ...(window._michuSysAuthDoc || { id: "sys-auth-config" }) };
+      try {
+        const curRes = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.sys-auth-config&select=user_doc`, {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Cache-Control": "no-store"
+          }
+        }, 8000);
+        if (curRes.ok) {
+          const rows = await curRes.json();
+          if (rows?.[0]?.user_doc && typeof rows[0].user_doc === "object") {
+            existingDoc = { ...existingDoc, ...rows[0].user_doc };
+          }
+        }
+      } catch (_) {}
+      const mergedDoc = { ...existingDoc, id: "sys-auth-config", ...patchObj };
+      window._michuSysAuthDoc = mergedDoc;
+      if (mergedDoc.googleClientId !== undefined) window._michuGoogleClientId = String(mergedDoc.googleClientId || "").trim();
+      if (mergedDoc.visionWebhookUrl !== undefined) window._michuVisionWebhookUrl = String(mergedDoc.visionWebhookUrl || "").trim();
+      if (mergedDoc.visionKeyB64 !== undefined) {
+        try { window._michuCloudVisionKey = mergedDoc.visionKeyB64 ? atob(String(mergedDoc.visionKeyB64)).trim() : ""; } catch (_) {}
+      }
+      const cfgRow = {
+        id: "sys-auth-config",
+        username: "_sys_auth_config",
+        email: "auth@michufit.system",
+        name: "Configuración OAuth y Visión Global",
+        role: "system",
+        status: "system_catalog",
+        user_doc: mergedDoc,
+        updated_at: new Date().toISOString()
+      };
+      await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json",
+          "Prefer": "resolution=merge-duplicates,return=minimal"
+        },
+        body: JSON.stringify([cfgRow])
+      }, 20000);
+      return mergedDoc;
+    }
 
     async function sbSendAdminRegistrationEmail(newUser, usersList, isTest = false) {
       try {
@@ -10993,7 +11051,58 @@
           }
         }
       }
+      if (Array.isArray(data.outputs)) {
+        for (let i = data.outputs.length - 1; i >= 0; i--) {
+          const out = data.outputs[i];
+          if (out && out.type === "text" && typeof out.text === "string" && out.text.trim()) {
+            return out.text.trim();
+          }
+        }
+      }
       return "";
+    }
+
+    function safeParseVisionJson(rawText) {
+      const cleaned = String(rawText || "")
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+      if (!cleaned) return null;
+      try {
+        return JSON.parse(cleaned);
+      } catch (_) {
+        const firstBrace = cleaned.indexOf("{");
+        const lastBrace = cleaned.lastIndexOf("}");
+        if (firstBrace >= 0 && lastBrace > firstBrace) {
+          try { return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1)); } catch (_) {}
+        }
+      }
+      return null;
+    }
+
+    async function ensureCloudVisionConfigLoaded() {
+      if (window._michuCloudVisionKey || window._michuSysAuthFetchedOnce) return;
+      window._michuSysAuthFetchedOnce = true;
+      try {
+        const r = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.sys-auth-config&select=user_doc`, {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Cache-Control": "no-store"
+          }
+        }, 6000);
+        if (r.ok) {
+          const rows = await r.json();
+          const doc = rows?.[0]?.user_doc;
+          if (doc && typeof doc === "object") {
+            window._michuSysAuthDoc = { ...doc };
+            if (doc.visionWebhookUrl) window._michuVisionWebhookUrl = String(doc.visionWebhookUrl).trim();
+            if (doc.visionKeyB64) {
+              try { window._michuCloudVisionKey = atob(String(doc.visionKeyB64).trim()).trim(); } catch (_) {}
+            }
+          }
+        }
+      } catch (_) {}
     }
 
     const FOOD_VISION_JSON_SCHEMA = {
@@ -11045,15 +11154,14 @@
 
     async function callGeminiInteractionsVisionDirect(apiKey, promptText, cleanB64, cleanMime) {
       const modelsToTry = await resolveAvailableGeminiVisionModels(apiKey);
-      const endpointUrl = `https://generativelanguage.googleapis.com/v1beta/interactions?key=${encodeURIComponent(apiKey)}`;
+      const v1Url = `https://generativelanguage.googleapis.com/v1/interactions?key=${encodeURIComponent(apiKey)}`;
+      const v1BetaUrl = `https://generativelanguage.googleapis.com/v1beta/interactions?key=${encodeURIComponent(apiKey)}`;
       for (const modelName of modelsToTry) {
+        // 1) Intento primario: Interactions v1 GA (usa steps + TextResponseFormat sin requerir headers extra que bloqueen CORS)
         try {
-          // Solo enviamos Content-Type: application/json y ?key= en la URL para pasar siempre el CORS del navegador sin bloqueo 403
-          const res = await _nativeFetch(endpointUrl, {
+          const resV1 = await _nativeFetch(v1Url, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               model: modelName,
               store: false,
@@ -11068,11 +11176,36 @@
               }
             })
           });
-          if (res.ok) {
-            const data = await res.json();
-            const txt = extractGeminiInteractionText(data);
-            if (txt) {
-              return { parsed: JSON.parse(txt), modelUsed: modelName };
+          if (resV1.ok) {
+            const data = await resV1.json();
+            const parsed = safeParseVisionJson(extractGeminiInteractionText(data));
+            if (parsed && Array.isArray(parsed.items)) {
+              return { parsed, modelUsed: modelName };
+            }
+          }
+        } catch (_) {}
+
+        // 2) Respaldo automático: Interactions v1beta sin headers extra (compatible con esquema response_mime_type / steps u outputs)
+        try {
+          const resBeta = await _nativeFetch(v1BetaUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: modelName,
+              store: false,
+              input: [
+                { type: "text", text: promptText },
+                { type: "image", data: cleanB64, mime_type: cleanMime }
+              ],
+              response_mime_type: "application/json",
+              response_format: FOOD_VISION_JSON_SCHEMA
+            })
+          });
+          if (resBeta.ok) {
+            const dataB = await resBeta.json();
+            const parsedB = safeParseVisionJson(extractGeminiInteractionText(dataB));
+            if (parsedB && Array.isArray(parsedB.items)) {
+              return { parsed: parsedB, modelUsed: modelName };
             }
           }
         } catch (_) {}
@@ -11108,14 +11241,21 @@
         (extraCtx ? `\nContexto adicional indicado por el usuario: "${extraCtx}". Respetá las cantidades o aclaraciones que indicó.` : "") +
         `\nIdentificá cada ingrediente o componente visible, estimá su peso en gramos reales consumibles (ej. cocido/escurrido) y calculá calorías (kcal), proteínas (p), carbohidratos (c) y grasas (f) con rigor nutricional (tablas SARA Argentina / USDA). Si es una etiqueta nutricional, leé los valores exactos por porción. Usá español rioplatense ("vos").`;
 
+      await ensureCloudVisionConfigLoaded();
       let rawVision = null;
-      const localKey = (localStorage.getItem("michufit_gemini_key") || "").trim();
-      if (localKey) {
-        rawVision = await callGeminiInteractionsVisionDirect(localKey, visionPrompt, cleanB64, cleanMime);
+      let gasMissingUrlFetchPerm = false;
+      const activeKey = (
+        localStorage.getItem("michufit_gemini_key") ||
+        window._michuCloudVisionKey ||
+        ""
+      ).trim();
+      if (activeKey) {
+        rawVision = await callGeminiInteractionsVisionDirect(activeKey, visionPrompt, cleanB64, cleanMime);
       }
 
       if (!rawVision) {
         const hookUrl = (
+          window._michuVisionWebhookUrl ||
           (currentUserInfo && currentUserInfo.adminWebhookUrl) ||
           localStorage.getItem("michufit_admin_webhook_url") ||
           DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL ||
@@ -11135,14 +11275,17 @@
                 schema: FOOD_VISION_JSON_SCHEMA,
                 userEmail: (currentUserInfo && currentUserInfo.email) || ""
               })
-            }, 20000);
-            if (proxyRes.ok) {
-              const pData = await proxyRes.json();
+            }, 22000);
+            const rawBodyText = await proxyRes.text();
+            if (/UrlFetchApp\.fetch|script\.external_request/i.test(rawBodyText)) {
+              gasMissingUrlFetchPerm = true;
+            } else if (proxyRes.ok && rawBodyText) {
+              const pData = JSON.parse(rawBodyText);
               if (pData && pData.ok && pData.parsed) {
                 rawVision = { parsed: pData.parsed, modelUsed: pData.modelUsed || "gemini-4-hydrogen" };
               } else if (pData && pData.ok && pData.interaction) {
-                const txt = extractGeminiInteractionText(pData.interaction);
-                if (txt) rawVision = { parsed: JSON.parse(txt), modelUsed: pData.modelUsed || "gemini-4-hydrogen" };
+                const parsedInt = safeParseVisionJson(extractGeminiInteractionText(pData.interaction));
+                if (parsedInt) rawVision = { parsed: parsedInt, modelUsed: pData.modelUsed || "gemini-4-hydrogen" };
               }
             }
           } catch (_) {}
@@ -11181,6 +11324,19 @@
         const textOnly = await window.analyzeFoodSmart(extraCtx, null, null);
         textOnly.warning = "Calculado con tu descripción escrita (no se descontó intento de foto). Para activar lectura visual directa, cargá tu clave gratuita de Google AI Studio en 👑 Admin.";
         return textOnly;
+      }
+
+      if (gasMissingUrlFetchPerm) {
+        return {
+          mealName: "Falta 1 clic de permiso en Google Apps Script (o tocar Probar y Activar en Admin)",
+          emoji: "🔓",
+          source: "vision-gas-auth-needed",
+          warning: "No se descontó ningún intento de foto. Tu Google Apps Script ya tiene el código, pero Google pide autorizar 'UrlFetchApp': abrí tu Google Script, elegí 'autorizarPermisos' (o 'doPost') arriba y tocá ▶ Ejecutar → Revisar permisos → Permitir (o tocá '🧪 Probar y Activar acá' en 👑 Admin en tu PC para sincronizar la clave en la nube).",
+          items: [],
+          total: { kcal: 0, p: 0, c: 0, f: 0 },
+          raccoonCommentSarcastic: "Tu Google Script me frenó en la puerta porque falta darle ▶ Ejecutar → Permitir una sola vez para hablar con Gemini 🐱🔓.",
+          raccoonCommentCute: "¡Ya casi está! Solo falta aceptar el permiso de conexión externa en Google Script (o tocar Probar y Activar en Admin) y leo tus fotos al instante 💚."
+        };
       }
 
       return {
@@ -15898,7 +16054,7 @@
         }
         if (isSuper && geminiVisionKeyInp && !geminiVisionKeyInp.dataset.initialized) {
           geminiVisionKeyInp.dataset.initialized = "1";
-          geminiVisionKeyInp.value = localStorage.getItem("michufit_gemini_key") || "";
+          geminiVisionKeyInp.value = localStorage.getItem("michufit_gemini_key") || window._michuCloudVisionKey || "";
         }
         if (isSuper && btnTestAdminGemKey && !btnTestAdminGemKey.dataset.bound) {
           btnTestAdminGemKey.dataset.bound = "1";
@@ -15906,12 +16062,13 @@
             const kVal = (geminiVisionKeyInp ? geminiVisionKeyInp.value : "").trim();
             if (!kVal) {
               localStorage.removeItem("michufit_gemini_key");
+              try { await upsertSysAuthConfigPatch({ visionKeyB64: "" }); } catch (_) {}
               if (emailStatusMsg) {
                 emailStatusMsg.style.display = "block";
                 emailStatusMsg.style.background = "var(--bg-elev)";
                 emailStatusMsg.style.color = "var(--text-muted)";
                 emailStatusMsg.style.border = "1px solid var(--border)";
-                emailStatusMsg.innerHTML = "ℹ️ Clave local limpiada en este dispositivo.";
+                emailStatusMsg.innerHTML = "ℹ️ Clave limpiada en este dispositivo y en la nube.";
               }
               return;
             }
@@ -15924,10 +16081,17 @@
               if (emailStatusMsg) {
                 emailStatusMsg.style.display = "block";
                 if (pingRes.ok) {
+                  try {
+                    const hookNow = (webhookUrlInp ? webhookUrlInp.value : "").trim() || DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL;
+                    await upsertSysAuthConfigPatch({
+                      visionKeyB64: btoa(kVal),
+                      visionWebhookUrl: hookNow
+                    });
+                  } catch (_) {}
                   emailStatusMsg.style.background = "var(--accent-soft)";
                   emailStatusMsg.style.color = "var(--accent)";
                   emailStatusMsg.style.border = "1px solid var(--accent)";
-                  emailStatusMsg.innerHTML = "✅ <strong>¡Clave Gemini Vision verificada y activa!</strong> Ahora tocá <strong>📋 Copiar código para Google Script</strong> acá arriba y pegalo en tu Apps Script para habilitarla para todos los usuarios.";
+                  emailStatusMsg.innerHTML = "✅ <strong>¡Clave Gemini Vision verificada y sincronizada en la nube!</strong> Ya funciona en tu celular, Web y Google Play al instante.";
                 } else {
                   let errDetail = `HTTP ${pingRes.status}`;
                   try {
@@ -15963,26 +16127,7 @@
             try {
               window._michuGoogleClientId = cleanCid;
               localStorage.setItem("michufit_google_client_id", cleanCid);
-              const cfgRow = {
-                id: "sys-auth-config",
-                username: "_sys_auth_config",
-                email: "auth@michufit.system",
-                name: "Configuración OAuth Global",
-                role: "system",
-                status: "system_catalog",
-                user_doc: { id: "sys-auth-config", googleClientId: cleanCid },
-                updated_at: new Date().toISOString()
-              };
-              await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
-                method: "POST",
-                headers: {
-                  "apikey": SUPABASE_KEY,
-                  "Authorization": `Bearer ${SUPABASE_KEY}`,
-                  "Content-Type": "application/json",
-                  "Prefer": "resolution=merge-duplicates,return=minimal"
-                },
-                body: JSON.stringify([cfgRow])
-              }, 20000);
+              await upsertSysAuthConfigPatch({ googleClientId: cleanCid });
               if (emailStatusMsg) {
                 emailStatusMsg.style.display = "block";
                 emailStatusMsg.style.background = "var(--accent-soft)";
@@ -16009,9 +16154,15 @@
         if (isSuper && btnCopyGasCode && !btnCopyGasCode.dataset.bound) {
           btnCopyGasCode.dataset.bound = "1";
           btnCopyGasCode.addEventListener("click", () => {
-            const pastedGemKey = (geminiVisionKeyInp ? geminiVisionKeyInp.value : (localStorage.getItem("michufit_gemini_key") || "")).trim();
+            const pastedGemKey = (geminiVisionKeyInp ? geminiVisionKeyInp.value : (localStorage.getItem("michufit_gemini_key") || window._michuCloudVisionKey || "")).trim();
             const safeEmbeddedKey = pastedGemKey.replace(/["\\]/g, "");
-            const gasCode = `function doPost(e) {
+            const gasCode = `// PASO ÚNICO: Elegí "autorizarPermisos" arriba y tocá ▶ Ejecutar una vez para habilitar Gmail + Gemini Vision
+function autorizarPermisos() {
+  UrlFetchApp.fetch("https://generativelanguage.googleapis.com", { muteHttpExceptions: true });
+  MailApp.getRemainingDailyQuota();
+}
+
+function doPost(e) {
   var d = JSON.parse(e.postData.contents);
 
   // 1) Proxy seguro para Escáner IA por Foto (Gemini Vision) — mantiene tu clave oculta en servidor
@@ -16041,6 +16192,7 @@
       var resp = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/v1beta/interactions?key=" + encodeURIComponent(gemKey), {
         method: "post",
         contentType: "application/json",
+        headers: { "Api-Revision": "2026-05-20" },
         payload: JSON.stringify({
           model: mName,
           store: false,
