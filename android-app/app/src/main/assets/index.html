@@ -16153,6 +16153,7 @@
                 handoffResolved = true;
                 clearInterval(_activeGoogleHandoffPoll);
                 document.removeEventListener("visibilitychange", onVisResume);
+                window.removeEventListener("focus", checkHandoffStatus);
                 sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.${encodeURIComponent(rowId)}`, {
                   method: "DELETE",
                   headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
@@ -16166,7 +16167,8 @@
             if (document.visibilityState === "visible") checkHandoffStatus();
           };
           document.addEventListener("visibilitychange", onVisResume);
-          _activeGoogleHandoffPoll = setInterval(checkHandoffStatus, 2200);
+          window.addEventListener("focus", checkHandoffStatus);
+          _activeGoogleHandoffPoll = setInterval(checkHandoffStatus, 1400);
 
           const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(canonicalRedirectUri)}&response_type=token&scope=${encodeURIComponent("openid email profile")}&prompt=select_account&state=${encodeURIComponent("gh_" + handoffId)}`;
           window.location.href = authUrl;
@@ -16266,13 +16268,15 @@
         if (!accessToken) return;
 
         window._googleOAuthInProgress = true;
+        let keepBridgeOnlyScreen = false;
         const loadingToast = document.createElement("div");
-        loadingToast.style.cssText = "position:fixed;inset:0;z-index:100060;background:rgba(10,16,24,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#fff;font-weight:800;font-size:1rem;text-align:center;padding:24px;";
-        loadingToast.innerHTML = "<div style='font-size:2.4rem;'>🐱✨</div><div>Activando tu cuenta con Google...</div>";
+        loadingToast.style.cssText = "position:fixed;inset:0;z-index:100060;background:#0b1215;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;font-weight:800;font-size:1rem;text-align:center;padding:24px;";
+        loadingToast.innerHTML = "<div style='font-size:2.5rem;'>🐱✨</div><div>Conectando tu cuenta de Google...</div>";
         document.body.appendChild(loadingToast);
 
         try {
           if (stateParam.startsWith("gh_")) {
+            keepBridgeOnlyScreen = true;
             const handoffId = stateParam.slice(3);
             const rowId = `gh-${handoffId}`;
             let existingWizFromApp = null;
@@ -16306,12 +16310,32 @@
                 }])
               }, 10000);
             } catch (_) {}
-            await exchangeGoogleAccessTokenForSession(accessToken, existingWizFromApp);
-            const banner = document.createElement("div");
-            banner.style.cssText = "position:fixed;inset:14px 14px auto 14px;z-index:100055;background:#0e9f77;color:#fff;padding:14px 16px;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,0.35);font-weight:800;font-size:0.9rem;text-align:center;";
-            banner.innerHTML = "✅ ¡Cuenta de Google conectada! Ya podés seguir acá o volver a la app <strong>Michu Fit</strong>.";
-            document.body.appendChild(banner);
-            setTimeout(() => banner.remove(), 9000);
+
+            // NO iniciar sesión en el navegador web: devolver al usuario directo a la app nativa instalada (app.michufit)
+            const appReturnIntentUrl = "intent://#Intent;package=app.michufit;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;end";
+            loadingToast.innerHTML = `
+              <div style="max-width:340px;background:#131d21;border:2px solid #14bd8e;border-radius:22px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+                <div style="font-size:2.6rem;line-height:1;">✅📲</div>
+                <strong style="font-size:1.12rem;color:#ffffff;">¡Cuenta verificada con éxito!</strong>
+                <p style="font-size:0.84rem;color:#94a3b8;font-weight:600;line-height:1.45;margin:0;">
+                  Tu sesión se activó exclusivamente en la <strong>app Michu Fit</strong>. Tocá abajo si no se abrió sola:
+                </p>
+                <a href="${appReturnIntentUrl}" id="btnReturnNativeMichuApp" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#14bd8e,#0d8f6b);color:#ffffff;text-decoration:none;font-weight:900;font-size:0.95rem;padding:14px 18px;border-radius:14px;box-shadow:0 8px 24px rgba(20,189,142,0.35);">
+                  🐾 Volver a la app Michu Fit
+                </a>
+              </div>
+            `;
+            document.getElementById("btnReturnNativeMichuApp")?.addEventListener("click", () => {
+              setTimeout(() => { try { window.close(); } catch (_) {} }, 500);
+            });
+            document.addEventListener("visibilitychange", () => {
+              if (document.visibilityState === "hidden") {
+                try { window.close(); } catch (_) {}
+              }
+            });
+            try {
+              window.location.replace(appReturnIntentUrl);
+            } catch (_) {}
             return;
           }
 
@@ -16329,8 +16353,10 @@
             showAuthModal("login-form");
           }
         } finally {
-          window._googleOAuthInProgress = false;
-          loadingToast.remove();
+          if (!keepBridgeOnlyScreen) {
+            window._googleOAuthInProgress = false;
+            loadingToast.remove();
+          }
         }
       })();
 
