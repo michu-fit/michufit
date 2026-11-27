@@ -6111,7 +6111,18 @@
             return sbJsonResponse({ ok: false, error: "Google no devolvió un correo verificado." }, 400);
           }
 
-          const users = await sbFetchAllUsers();
+          // Consulta ultra-liviana por email exacto (~2 KB en vez de bajar toda la base en 4G)
+          let users = [];
+          if (inviteCode) {
+            users = await sbFetchAllUsers();
+          } else {
+            const qRes = await sbFetchWithTimeout(
+              `${SUPABASE_TABLE_URL}?or=(email.ilike.${encodeURIComponent(gEmail)},id.eq.u-owner)&select=*`,
+              { headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Cache-Control": "no-store" } },
+              15000
+            );
+            users = qRes.ok ? sbMapRowsToUsers(await qRes.json()) : await sbFetchAllUsers();
+          }
           let target = users.find(u => (u.email || "").trim().toLowerCase() === gEmail);
           if (target) {
             if (target.status === "blocked") {
@@ -16313,14 +16324,40 @@
       let _pendingNativeHandoffRowId = "";
       let _nativeTokenAlreadyHandled = false;
 
+      function showInAppGoogleWaitOverlay(msgText, allowCancel = true) {
+        let ov = document.getElementById("michuInAppGoogleWaitOv");
+        if (!ov) {
+          ov = document.createElement("div");
+          ov.id = "michuInAppGoogleWaitOv";
+          ov.style.cssText = "position:fixed;inset:0;z-index:100065;background:rgba(11,18,21,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#ffffff;text-align:center;padding:24px;font-weight:800;";
+          document.body.appendChild(ov);
+        }
+        ov.innerHTML = `
+          <div style="font-size:2.4rem;">🐱✨</div>
+          <div id="michuInAppGoogleWaitMsg" style="font-size:1rem;max-width:300px;line-height:1.4;">${msgText}</div>
+          ${allowCancel ? `<button type="button" id="btnCancelInAppGoogleWait" style="margin-top:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#cbd5e1;padding:8px 16px;border-radius:999px;font-size:0.78rem;font-weight:700;cursor:pointer;">Cancelar</button>` : ""}
+        `;
+        document.getElementById("btnCancelInAppGoogleWait")?.addEventListener("click", () => {
+          hideInAppGoogleWaitOverlay();
+          if (_activeGoogleHandoffPoll) clearInterval(_activeGoogleHandoffPoll);
+          try { localStorage.removeItem("michufit_pending_gh_handoff"); } catch (_) {}
+        });
+      }
+
+      function hideInAppGoogleWaitOverlay() {
+        document.getElementById("michuInAppGoogleWaitOv")?.remove();
+      }
+
       window.receiveNativeGoogleToken = async function (accessToken) {
         const cleanTok = String(accessToken || "").trim();
         if (!cleanTok || _nativeTokenAlreadyHandled) return;
         _nativeTokenAlreadyHandled = true;
+        showInAppGoogleWaitOverlay("🚀 ¡Cuenta verificada! Abriendo tu Diario...", false);
         if (_activeGoogleHandoffPoll) {
           clearInterval(_activeGoogleHandoffPoll);
           _activeGoogleHandoffPoll = null;
         }
+        try { localStorage.removeItem("michufit_pending_gh_handoff"); } catch (_) {}
         if (_pendingNativeHandoffRowId) {
           const rid = _pendingNativeHandoffRowId;
           _pendingNativeHandoffRowId = "";
@@ -16331,7 +16368,11 @@
         }
         const wiz = _pendingNativeWizardPayload;
         _pendingNativeWizardPayload = null;
-        await exchangeGoogleAccessTokenForSession(cleanTok, wiz);
+        try {
+          await exchangeGoogleAccessTokenForSession(cleanTok, wiz);
+        } finally {
+          hideInAppGoogleWaitOverlay();
+        }
       };
 
       async function triggerGoogleSignIn(wizardPayload = null) {
@@ -16350,11 +16391,19 @@
         const canonicalRedirectUri = "https://michu-fit.github.io/michufit/";
 
         if (isEmbeddedAndroidWebView) {
-          // En WebView de Google Play, abrimos Chrome externo seguro y regresamos por deep-link nativo michufit://auth (v16+) o puente cloud
+          // En WebView de Google Play, abrimos pestaña segura y sincronizamos al instante (por deep-link michufit://auth en v17+ o puente ultra-rápido)
           const handoffId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
           const rowId = `gh-${handoffId}`;
           _pendingNativeWizardPayload = wizardPayload || null;
           _pendingNativeHandoffRowId = rowId;
+          showInAppGoogleWaitOverlay("Elegí tu cuenta de Google...<br/><small style='color:#94a3b8;font-weight:600;font-size:0.78rem;'>Al volver impactará al instante</small>", true);
+          try {
+            localStorage.setItem("michufit_pending_gh_handoff", JSON.stringify({
+              rowId,
+              wizardPayload: wizardPayload || null,
+              ts: Date.now()
+            }));
+          } catch (_) {}
           try {
             await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
               method: "POST",
@@ -16376,55 +16425,12 @@
               }])
             }, 10000);
           } catch (_) {
+            hideInAppGoogleWaitOverlay();
             showAuthAlert("No se pudo iniciar la conexión con Google. Revisá tu conexión a internet.");
             return;
           }
 
-          if (_activeGoogleHandoffPoll) clearInterval(_activeGoogleHandoffPoll);
-          const startedAt = Date.now();
-          let handoffResolved = false;
-
-          const checkHandoffStatus = async () => {
-            if (handoffResolved) return;
-            if (Date.now() - startedAt > 5 * 60 * 1000) {
-              clearInterval(_activeGoogleHandoffPoll);
-              return;
-            }
-            try {
-              const r = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.${encodeURIComponent(rowId)}&select=user_doc`, {
-                headers: {
-                  "apikey": SUPABASE_KEY,
-                  "Authorization": `Bearer ${SUPABASE_KEY}`,
-                  "Cache-Control": "no-store"
-                }
-              }, 8000);
-              if (!r.ok) return;
-              const rows = await r.json();
-              const doc = rows?.[0]?.user_doc;
-              if (doc && doc.completed && doc.accessToken && !_nativeTokenAlreadyHandled) {
-                handoffResolved = true;
-                _nativeTokenAlreadyHandled = true;
-                clearInterval(_activeGoogleHandoffPoll);
-                document.removeEventListener("visibilitychange", onVisResume);
-                window.removeEventListener("focus", checkHandoffStatus);
-                _pendingNativeHandoffRowId = "";
-                _pendingNativeWizardPayload = null;
-                sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.${encodeURIComponent(rowId)}`, {
-                  method: "DELETE",
-                  headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
-                }, 6000).catch(() => {});
-                await exchangeGoogleAccessTokenForSession(doc.accessToken, wizardPayload || doc.wizardPayload || null);
-              }
-            } catch (_) {}
-          };
-
-          const onVisResume = () => {
-            if (document.visibilityState === "visible") checkHandoffStatus();
-          };
-          document.addEventListener("visibilitychange", onVisResume);
-          window.addEventListener("focus", checkHandoffStatus);
-          _activeGoogleHandoffPoll = setInterval(checkHandoffStatus, 1400);
-
+          startAndroidHandoffWatcher(rowId, wizardPayload || null);
           const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(canonicalRedirectUri)}&response_type=token&scope=${encodeURIComponent("openid email profile")}&prompt=select_account&state=${encodeURIComponent("gh_" + handoffId)}`;
           window.location.href = authUrl;
           return;
@@ -16490,6 +16496,83 @@
           }
         }
       }
+      function startAndroidHandoffWatcher(rowId, wizardPayload = null) {
+        if (_activeGoogleHandoffPoll) clearInterval(_activeGoogleHandoffPoll);
+        const startedAt = Date.now();
+        let handoffResolved = false;
+        let checkInFlight = false;
+
+        const checkHandoffStatus = async () => {
+          if (handoffResolved || _nativeTokenAlreadyHandled || checkInFlight) return;
+          if (Date.now() - startedAt > 5 * 60 * 1000) {
+            clearInterval(_activeGoogleHandoffPoll);
+            hideInAppGoogleWaitOverlay();
+            try { localStorage.removeItem("michufit_pending_gh_handoff"); } catch (_) {}
+            return;
+          }
+          checkInFlight = true;
+          try {
+            const r = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.${encodeURIComponent(rowId)}&select=user_doc`, {
+              headers: {
+                "apikey": SUPABASE_KEY,
+                "Authorization": `Bearer ${SUPABASE_KEY}`,
+                "Cache-Control": "no-store"
+              }
+            }, 6000);
+            if (!r.ok) return;
+            const rows = await r.json();
+            const doc = rows?.[0]?.user_doc;
+            if (doc && doc.completed && doc.accessToken && !_nativeTokenAlreadyHandled) {
+              handoffResolved = true;
+              _nativeTokenAlreadyHandled = true;
+              clearInterval(_activeGoogleHandoffPoll);
+              document.removeEventListener("visibilitychange", onVisResume);
+              window.removeEventListener("focus", checkHandoffStatus);
+              _pendingNativeHandoffRowId = "";
+              _pendingNativeWizardPayload = null;
+              try { localStorage.removeItem("michufit_pending_gh_handoff"); } catch (_) {}
+              showInAppGoogleWaitOverlay("🚀 ¡Cuenta verificada! Abriendo tu Diario...", false);
+              sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.${encodeURIComponent(rowId)}`, {
+                method: "DELETE",
+                headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+              }, 6000).catch(() => {});
+              try {
+                await exchangeGoogleAccessTokenForSession(doc.accessToken, wizardPayload || doc.wizardPayload || null);
+              } finally {
+                hideInAppGoogleWaitOverlay();
+              }
+            }
+          } catch (_) {
+          } finally {
+            checkInFlight = false;
+          }
+        };
+
+        const onVisResume = () => {
+          if (document.visibilityState === "visible") checkHandoffStatus();
+        };
+        document.addEventListener("visibilitychange", onVisResume);
+        window.addEventListener("focus", checkHandoffStatus);
+        _activeGoogleHandoffPoll = setInterval(checkHandoffStatus, 850);
+        checkHandoffStatus();
+      }
+
+      // Retomar handoff pendiente si Android recargó el WebView mientras el navegador estaba al frente
+      (function resumePendingAndroidGoogleHandoff() {
+        if (currentAuthToken) return;
+        try {
+          const raw = localStorage.getItem("michufit_pending_gh_handoff");
+          if (!raw) return;
+          const parsed = JSON.parse(raw);
+          if (!parsed || !parsed.rowId || (Date.now() - Number(parsed.ts || 0)) > 5 * 60 * 1000) {
+            localStorage.removeItem("michufit_pending_gh_handoff");
+            return;
+          }
+          showInAppGoogleWaitOverlay("🚀 Finalizando acceso con Google...", true);
+          startAndroidHandoffWatcher(parsed.rowId, parsed.wizardPayload || null);
+        } catch (_) {}
+      })();
+
       window.triggerGoogleSignIn = triggerGoogleSignIn;
 
       document.getElementById("btnSplashGoogleLogin")?.addEventListener("click", () => {
