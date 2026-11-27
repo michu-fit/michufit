@@ -7715,13 +7715,25 @@
       return null;
     }
 
+    function isUserInsideAuthSubscreen() {
+      const authOv = document.getElementById("modalAuthOverlay");
+      if (!authOv || !authOv.hasAttribute("open")) return false;
+      const curMode = authOv.getAttribute("data-auth-mode") || "splash";
+      return curMode !== "splash";
+    }
+
     async function loadFromServer() {
       if (window._googleOAuthInProgress) {
         return;
       }
       if (!currentAuthToken) {
         document.documentElement.setAttribute("data-auth-state", "logged-out");
-        showAuthModal("login");
+        if (!isUserInsideAuthSubscreen()) {
+          showAuthModal("login");
+        }
+        renderLocalQrSvg(document.getElementById("mobileLanUrlText").textContent);
+        renderAll();
+        return;
       } else if (!currentUserInfo) {
         try {
           const cachedUser = localStorage.getItem("michufit_cached_user_info");
@@ -7739,9 +7751,10 @@
       renderAll();
       updateSyncBadge("🔄 Sincronizando con la nube...", true);
       try {
+        const sentToken = currentAuthToken;
         const qs = inspectedUserId ? `?targetUserId=${encodeURIComponent(inspectedUserId)}` : "";
         const res = await fetch(`/api/data${qs}`, {
-          headers: currentAuthToken ? { "X-Michu-Token": currentAuthToken } : {}
+          headers: sentToken ? { "X-Michu-Token": sentToken } : {}
         });
         if (res.ok && (res.headers.get("x-michufit") === "1" || res.headers.get("x-pachofit") === "1")) {
           const payload = await res.json();
@@ -7752,10 +7765,14 @@
           hasGeminiKeyOnServer = Boolean(payload.hasGeminiKey);
 
           if (payload.authRequired) {
-            if (currentAuthToken || window._googleOAuthInProgress) return;
+            if (window._googleOAuthInProgress || (currentAuthToken && currentAuthToken !== sentToken)) return;
+            currentAuthToken = "";
+            localStorage.removeItem("michufit_auth_token");
             if (localBackup) appData = localBackup;
             renderAll();
-            showAuthModal("login");
+            if (!isUserInsideAuthSubscreen()) {
+              showAuthModal("login");
+            }
             return;
           }
 
@@ -13162,6 +13179,7 @@
 
     let _lastCloudSyncTs = 0;
     function syncCloudDataIfNeeded() {
+      if (!currentAuthToken || window._googleOAuthInProgress) return;
       const now = Date.now();
       if (now - _lastCloudSyncTs < 3500) return;
       _lastCloudSyncTs = now;
@@ -14383,10 +14401,19 @@
         });
       }).catch(() => {});
     }
+    let _michuUserInteracted = false;
+    window.addEventListener("pointerdown", () => { _michuUserInteracted = true; }, { once: true, passive: true });
+    window.addEventListener("keydown", () => { _michuUserInteracted = true; }, { once: true, passive: true });
+
     if ("serviceWorker" in navigator) {
       let swRefreshing = false;
+      const hadControllerAtBoot = Boolean(navigator.serviceWorker.controller);
       navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (swRefreshing) return;
+        if (swRefreshing || !hadControllerAtBoot) return;
+        // Si el usuario ya tocó la pantalla o entró a Login / Wizard / cualquier modal, NO recargar en su cara
+        if (_michuUserInteracted || isUserInsideAuthSubscreen() || window._googleOAuthInProgress) {
+          return;
+        }
         swRefreshing = true;
         window.location.reload();
       });
