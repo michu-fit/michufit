@@ -16588,18 +16588,36 @@
         if (rawSearch.includes("michu_app_return=1")) {
           window._googleOAuthInProgress = true;
           try { history.replaceState(null, "", window.location.pathname); } catch (_) {}
+          try { window.open("", "_self"); window.close(); } catch (_) {}
           const doneScreen = document.createElement("div");
           doneScreen.style.cssText = "position:fixed;inset:0;z-index:100060;background:#0b1215;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff;";
           doneScreen.innerHTML = `
-            <div style="max-width:340px;background:#131d21;border:2px solid #14bd8e;border-radius:22px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+            <div style="max-width:340px;background:#131d21;border:2px solid #14bd8e;border-radius:22px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
               <div style="font-size:2.6rem;line-height:1;">✅📲</div>
               <strong style="font-size:1.12rem;color:#ffffff;">¡Cuenta conectada en tu App!</strong>
-              <p style="font-size:0.85rem;color:#cbd5e1;font-weight:600;line-height:1.45;margin:0;">
-                Tu sesión ya está activa en <strong>Michu Fit</strong>.<br/>Deslizá <strong>«Atrás»</strong> una vez en tu celular para volver directo a la app.
+              <p id="michuFallbackCloseHint" style="font-size:0.84rem;color:#cbd5e1;font-weight:600;line-height:1.45;margin:0;">
+                Tu sesión ya está activa en <strong>Michu Fit</strong>.
               </p>
+              <button type="button" id="btnCloseBrowserBridgeTab" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#14bd8e,#0d8f6b);color:#ffffff;border:none;font-weight:900;font-size:0.95rem;padding:14px 18px;border-radius:14px;cursor:pointer;box-shadow:0 8px 24px rgba(20,189,142,0.35);">
+                ✕ Cerrar ventana y volver a la App
+              </button>
             </div>
           `;
           document.body.appendChild(doneScreen);
+          document.getElementById("btnCloseBrowserBridgeTab")?.addEventListener("click", () => {
+            try { window.open("", "_self"); window.close(); } catch (_) {}
+            try {
+              if (window.history.length > 1) {
+                window.history.go(-(window.history.length - 1));
+              }
+            } catch (_) {}
+            setTimeout(() => {
+              const hint = document.getElementById("michuFallbackCloseHint");
+              if (hint) {
+                hint.innerHTML = "Samsung Internet protege el cierre automático de pestañas: tocá una vez el botón <strong>◀ (Atrás)</strong> abajo a la derecha de tu celular para volver a Michu Fit.";
+              }
+            }, 350);
+          });
           document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === "hidden") {
               try { window.close(); } catch (_) {}
@@ -16644,9 +16662,9 @@
             const fallbackStayUrl = "https://michu-fit.github.io/michufit/?michu_app_return=1";
             const appReturnIntentUrl = `intent://auth?access_token=${encodeURIComponent(accessToken)}#Intent;scheme=michufit;package=app.michufit;S.browser_fallback_url=${encodeURIComponent(fallbackStayUrl)};end`;
 
-            // 1) Guardar respaldo en Supabase en segundo plano con keepalive:true SIN bloquear con await (para no perder el gesto automático del navegador)
+            // 1) Confirmar guardado en Supabase (~150 ms) para que la App reciba la sesión sí o sí
             try {
-              _nativeFetch(SUPABASE_TABLE_URL, {
+              await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
                 method: "POST",
                 keepalive: true,
                 headers: {
@@ -16665,23 +16683,35 @@
                   user_doc: { id: rowId, completed: true, accessToken, completedAt: Date.now() },
                   updated_at: new Date().toISOString()
                 }])
-              }).catch(() => {});
+              }, 8000);
             } catch (_) {}
 
-            // 2) Disparar salto nativo michufit://auth en 0 ms sincrónico (en v17+ cierra la pestaña Custom Tab sola y vuelve directo a la App)
-            try {
-              window.location.replace(appReturnIntentUrl);
-            } catch (_) {}
+            // 2) Intentar cerrar la pestaña puente automáticamente (cuando el navegador lo permite en history corto)
+            try { window.open("", "_self"); window.close(); } catch (_) {}
 
+            // 3) Mostrar botón grande de 1 toque (con gesto real de usuario Samsung Internet SÍ permite abrir michufit://auth o cerrar)
             loadingToast.innerHTML = `
-              <div style="max-width:340px;background:#131d21;border:2px solid #14bd8e;border-radius:22px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+              <div style="max-width:340px;background:#131d21;border:2px solid #14bd8e;border-radius:22px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
                 <div style="font-size:2.6rem;line-height:1;">✅📲</div>
-                <strong style="font-size:1.12rem;color:#ffffff;">¡Volviendo a Michu Fit!</strong>
+                <strong style="font-size:1.12rem;color:#ffffff;">¡Cuenta conectada con éxito!</strong>
+                <p style="font-size:0.84rem;color:#cbd5e1;font-weight:600;line-height:1.45;margin:0;">
+                  Tocá el botón verde para cerrar este navegador y volver directo a tu <strong>app Michu Fit</strong>:
+                </p>
                 <a href="${appReturnIntentUrl}" id="btnReturnNativeMichuApp" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#14bd8e,#0d8f6b);color:#ffffff;text-decoration:none;font-weight:900;font-size:0.95rem;padding:14px 18px;border-radius:14px;box-shadow:0 8px 24px rgba(20,189,142,0.35);">
                   🐾 Volver a la app Michu Fit
                 </a>
               </div>
             `;
+            document.getElementById("btnReturnNativeMichuApp")?.addEventListener("click", () => {
+              setTimeout(() => {
+                try { window.open("", "_self"); window.close(); } catch (_) {}
+              }, 400);
+            });
+            document.addEventListener("visibilitychange", () => {
+              if (document.visibilityState === "hidden") {
+                try { window.open("", "_self"); window.close(); } catch (_) {}
+              }
+            });
             return;
           }
 
