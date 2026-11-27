@@ -2671,11 +2671,6 @@
           <span id="navPendingUsersBadge" style="display:none;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--danger);color:#fff;font-size:0.7rem;font-weight:900;line-height:19px;text-align:center;">0</span>
         </button>
 
-        <!-- Botón Guía Rápida ❓ -->
-        <button type="button" class="hamburger-btn michu-help-top-btn" id="btnOpenQuickGuideTop" onclick="window.openQuickGuideModal && window.openQuickGuideModal()" title="Guía rápida y recorrido interactivo" aria-label="Abrir guía rápida de Michu Fit">
-          ❓
-        </button>
-
         <!-- Botón Hamburguesa -->
         <button type="button" class="hamburger-btn" id="btnToggleHamburger" aria-label="Abrir menú de opciones" aria-expanded="false">
           ☰
@@ -3169,28 +3164,60 @@
     <section class="tab-panel" id="tab-scanner">
       <div class="dashboard-grid">
         <div class="card">
-          <div class="card-header">
-            <div class="card-title">📸 Escáner de Comidas de Michu (Foto o Texto)</div>
-            <span class="sync-pill" id="aiEngineBadge">✨ Motor IA Listo</span>
+          <div class="card-header" style="flex-wrap:wrap;gap:8px;">
+            <div class="card-title">📸 Escáner de Comidas de Michu</div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span class="sync-pill" id="aiPhotoQuotaPill" title="Intentos diarios de escaneo con foto (se renuevan cada día a las 00:00 hs)">📷 Fotos hoy: 10/10</span>
+              <span class="sync-pill" id="aiEngineBadge">✨ Motor IA Listo</span>
+            </div>
           </div>
-          <p style="font-size:0.86rem;color:var(--text-muted);margin-bottom:14px;">
-            Subí una foto de tu plato o describí con tus palabras lo que comiste (con gramos o porciones aproximadas). Michu calcula calorías, proteínas, carbos y grasas al instante.
+          <p style="font-size:0.84rem;color:var(--text-muted);margin-bottom:12px;">
+            Sacale una foto a tu plato o tabla nutricional, o escribí con tus palabras lo que comiste. Michu calcula calorías, proteínas, carbos y grasas al instante.
           </p>
 
-          <div class="dropzone" id="photoDropzone">
+          <div class="dropzone" id="photoDropzone" style="cursor:default;padding:14px;">
+            <input type="file" id="cameraCaptureInput" accept="image/*" capture="environment" style="display:none;" />
             <input type="file" id="photoFileInput" accept="image/*" style="display:none;" />
-            <div id="photoPreviewContainer" style="display:none;margin-bottom:10px;">
-              <img id="photoPreviewImg" src="" alt="Vista previa del plato" style="max-height:190px;border-radius:12px;border:1px solid var(--border);" />
+
+            <!-- Barra de intentos diarios de foto (ej: 10/10, 4/10) -->
+            <div id="aiPhotoQuotaBarWrap" style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 11px;margin-bottom:12px;text-align:left;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:0.76rem;">
+                <span style="color:var(--text-muted);font-weight:700;">📸 Intentos de foto disponibles hoy:</span>
+                <strong id="aiPhotoQuotaCountText" style="color:var(--accent);font-size:0.8rem;">10 / 10 restantes</strong>
+              </div>
+              <div style="height:6px;border-radius:999px;background:var(--bg-elev);overflow:hidden;margin-top:6px;border:1px solid var(--border);">
+                <div id="aiPhotoQuotaFillBar" style="height:100%;width:100%;background:var(--accent);border-radius:999px;transition:width 0.25s ease, background 0.25s ease;"></div>
+              </div>
+              <div id="aiPhotoQuotaSubHint" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">
+                Se descuentan solo al analizar una foto • Describir con texto abajo es ilimitado ∞
+              </div>
             </div>
-            <div id="photoPromptText">
-              <div style="font-size:2rem;margin-bottom:4px;">📷</div>
-              <strong>Tocá para subir una foto de tu plato o etiqueta</strong>
-              <p style="font-size:0.78rem;color:var(--text-muted);">JPG, PNG o WebP (Opcional si describís tu comida abajo)</p>
+
+            <div id="photoPreviewContainer" style="display:none;margin-bottom:10px;">
+              <img id="photoPreviewImg" src="" alt="Vista previa del plato" style="max-height:200px;max-width:100%;object-fit:contain;border-radius:12px;border:1.5px solid var(--accent);" />
+              <div id="photoOptimizedInfoBadge" style="font-size:0.73rem;color:var(--accent);font-weight:800;margin-top:6px;">
+                ✅ Foto optimizada y lista para analizar
+              </div>
+            </div>
+
+            <div id="photoPromptText" style="margin-bottom:10px;">
+              <div style="font-size:1.85rem;margin-bottom:3px;">🍽️📷</div>
+              <strong style="font-size:0.9rem;">Capturá tu plato o etiqueta nutricional</strong>
+              <p style="font-size:0.76rem;color:var(--text-muted);margin-top:2px;">Podés sacar la foto en el momento o elegir una de tu galería</p>
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary" id="btnTriggerCameraCapture" style="flex:1;min-width:140px;justify-content:center;">
+                📷 Sacar foto
+              </button>
+              <button type="button" class="btn" id="btnTriggerGalleryPicker" style="flex:1;min-width:140px;justify-content:center;">
+                🖼️ Elegir de Galería
+              </button>
             </div>
           </div>
 
           <div class="field" style="margin-top:14px;">
-            <label for="aiFoodDescription">¿Qué tiene tu plato? (podés detallar cantidades)</label>
+            <label for="aiFoodDescription">¿Qué tiene tu plato? (opcional si sacaste foto, o sumá contexto ej: "sin aceite / 200g")</label>
             <textarea id="aiFoodDescription" rows="3" placeholder="Ej: 2 huevos revueltos con 2 tostadas integrales, media palta y un café con leche..."></textarea>
           </div>
 
@@ -3833,6 +3860,18 @@
               <input type="text" id="adminGoogleClientIdInput" placeholder="Ej: 1234567890-abcdefg.apps.googleusercontent.com" style="flex:1;min-width:220px;padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.8rem;" />
               <button type="button" class="btn btn-sm btn-primary" id="btnSaveGoogleClientId" style="padding:8px 14px;">
                 💾 Guardar Google ID
+              </button>
+            </div>
+          </div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:6px;">
+            <strong style="font-size:0.82rem;color:var(--text);">📸 Escáner IA por Foto (Gemini Vision — Google AI Studio)</strong>
+            <span style="font-size:0.73rem;color:var(--text-muted);line-height:1.38;">
+              Generá tu clave gratis en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;font-weight:700;">Google AI Studio</a>, pegala abajo y tocá <strong>📋 Copiar código para Google Script</strong> arriba para dejarla oculta y protegida en tu Apps Script para todos los usuarios (o probala ya mismo en este dispositivo):
+            </span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <input type="password" id="adminGeminiVisionKeyInput" placeholder="AIzaSy... (clave gratuita de Google AI Studio)" style="flex:1;min-width:220px;padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.8rem;" />
+              <button type="button" class="btn btn-sm btn-primary" id="btnTestAndSaveAdminGeminiKey" style="padding:8px 14px;">
+                🧪 Probar y Activar acá
               </button>
             </div>
           </div>
@@ -4531,13 +4570,13 @@
       </div>
       <div style="display:flex;flex-direction:column;gap:14px;">
         <div class="field">
-          <label for="settingsGeminiKey">Clave de Gemini API (Opcional para escaneo de fotos con `gemini-3.8-flash`)</label>
+          <label for="settingsGeminiKey">Clave personal de Gemini API (Opcional para escaneo de fotos en este dispositivo)</label>
           <input type="password" id="settingsGeminiKey" placeholder="AIzaSy..." />
           <small style="color:var(--text-muted);font-size:0.76rem;">
-            Se guarda localmente en tu `michufit_config.json`. Si lo dejás vacío, el escáner usa el motor nutricional local de Michu sin costo.
+            Se guarda únicamente en este dispositivo. Si la dejás vacía, la app usa el puente oficial en la nube de Michu Fit y el motor nutricional local.
           </small>
         </div>
-        <button type="button" class="btn btn-primary" id="btnSaveApiKey">🔑 Guardar API Key en Servidor Local</button>
+        <button type="button" class="btn btn-primary" id="btnSaveApiKey">🔑 Guardar clave en este dispositivo</button>
 
         <hr style="border:none;border-top:1px solid var(--border);margin:6px 0;" />
 
@@ -6252,7 +6291,11 @@
             const nutriUser = inviteCode
               ? users.find(u => ["nutritionist", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === inviteCode)
               : null;
-            const displayName = wizardName || gInfo.given_name || gInfo.name || gEmail.split("@")[0];
+            const cleanWizName = (wizardName || (wizardProf && wizardProf.name) || "").trim();
+            const isValidHumanName = cleanWizName && !/^(campe[oó]n|usuario)$/i.test(cleanWizName) && !cleanWizName.includes("@");
+            const displayName = isValidHumanName
+              ? cleanWizName
+              : (gInfo.given_name || (gInfo.name && !gInfo.name.includes("@") ? gInfo.name : "") || gEmail.split("@")[0]);
             const cleanSlug = gEmail.replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "").slice(0, 48);
             const newId = cleanSlug ? `u-${cleanSlug}` : ("u-" + Date.now());
             const roleToAssign = reqRole === "nutritionist" ? "nutritionist" : "patient";
@@ -10823,7 +10866,286 @@
       return buildFoodAnalysisResponse(raw, detected, "sara-usda-db");
     }
 
-    window.analyzeFoodSmart = async function (desc) {
+    const DAILY_PHOTO_SCAN_LIMIT = 10;
+
+    function getPhotoScanQuotaInfo() {
+      const dKey = todayStr();
+      const uid = (currentUserInfo && currentUserInfo.id) ? String(currentUserInfo.id) : "guest";
+      const lsKey = `michufit_photo_scans_${uid}_${dKey}`;
+      const profMap = (appData && appData.profile && appData.profile.photoScansByDate && typeof appData.profile.photoScansByDate === "object")
+        ? appData.profile.photoScansByDate
+        : {};
+      let lsUsed = 0;
+      try { lsUsed = Number(localStorage.getItem(lsKey)) || 0; } catch (_) {}
+      const used = Math.min(DAILY_PHOTO_SCAN_LIMIT, Math.max(Number(profMap[dKey]) || 0, lsUsed));
+      const remaining = Math.max(0, DAILY_PHOTO_SCAN_LIMIT - used);
+      return { limit: DAILY_PHOTO_SCAN_LIMIT, used, remaining, dKey, lsKey };
+    }
+    window.getPhotoScanQuotaInfo = getPhotoScanQuotaInfo;
+
+    function updateAiPhotoQuotaUI() {
+      const q = getPhotoScanQuotaInfo();
+      const pill = document.getElementById("aiPhotoQuotaPill");
+      const countTxt = document.getElementById("aiPhotoQuotaCountText");
+      const fillBar = document.getElementById("aiPhotoQuotaFillBar");
+      const subHint = document.getElementById("aiPhotoQuotaSubHint");
+      const btnCam = document.getElementById("btnTriggerCameraCapture");
+      const btnGal = document.getElementById("btnTriggerGalleryPicker");
+
+      const pct = Math.round((q.remaining / q.limit) * 100);
+      const toneColor = q.remaining === 0
+        ? "var(--danger)"
+        : (q.remaining <= 3 ? "var(--warn)" : "var(--accent)");
+
+      if (pill) {
+        pill.textContent = `📷 Fotos hoy: ${q.remaining}/${q.limit}`;
+        pill.style.borderColor = toneColor;
+        pill.style.color = toneColor;
+      }
+      if (countTxt) {
+        countTxt.textContent = `${q.remaining} / ${q.limit} restantes`;
+        countTxt.style.color = toneColor;
+      }
+      if (fillBar) {
+        fillBar.style.width = `${pct}%`;
+        fillBar.style.background = toneColor;
+      }
+      if (subHint) {
+        subHint.textContent = q.remaining > 0
+          ? `Se descuenta 1 intento solo al analizar una foto • Escribir con texto abajo es ilimitado ∞`
+          : `Usaste tus ${q.limit}/${q.limit} fotos de hoy (se renuevan a las 00:00 hs) • Podés seguir describiendo con texto sin límite ∞`;
+      }
+      if (btnCam) {
+        btnCam.disabled = q.remaining <= 0;
+        btnCam.style.opacity = q.remaining <= 0 ? "0.48" : "1";
+      }
+      if (btnGal) {
+        btnGal.disabled = q.remaining <= 0;
+        btnGal.style.opacity = q.remaining <= 0 ? "0.48" : "1";
+      }
+    }
+    window.updateAiPhotoQuotaUI = updateAiPhotoQuotaUI;
+
+    function consumeOnePhotoScanQuota() {
+      const q = getPhotoScanQuotaInfo();
+      const nextUsed = Math.min(q.limit, q.used + 1);
+      try { localStorage.setItem(q.lsKey, String(nextUsed)); } catch (_) {}
+      if (appData && appData.profile) {
+        if (!appData.profile.photoScansByDate || typeof appData.profile.photoScansByDate !== "object") {
+          appData.profile.photoScansByDate = {};
+        }
+        appData.profile.photoScansByDate[q.dKey] = nextUsed;
+        const keys = Object.keys(appData.profile.photoScansByDate).sort();
+        while (keys.length > 7) {
+          const oldK = keys.shift();
+          delete appData.profile.photoScansByDate[oldK];
+        }
+        if (typeof saveToServer === "function") saveToServer();
+      }
+      updateAiPhotoQuotaUI();
+    }
+
+    function extractGeminiInteractionText(data) {
+      if (!data) return "";
+      if (typeof data.output_text === "string" && data.output_text.trim()) return data.output_text.trim();
+      if (Array.isArray(data.steps)) {
+        for (let i = data.steps.length - 1; i >= 0; i--) {
+          const st = data.steps[i];
+          if (st && st.type === "model_output" && Array.isArray(st.content)) {
+            const parts = st.content
+              .filter(c => c && c.type === "text" && typeof c.text === "string")
+              .map(c => c.text);
+            if (parts.length) return parts.join("").trim();
+          }
+        }
+      }
+      return "";
+    }
+
+    const FOOD_VISION_JSON_SCHEMA = {
+      type: "object",
+      properties: {
+        mealName: { type: "string", description: "Nombre corto y claro del plato o producto en español rioplatense." },
+        emoji: { type: "string", description: "Un emoji representativo del plato." },
+        items: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              quantity: { type: "string", description: "Gramos o porción estimada, ej: 180 g o 2 unidades (110 g)" },
+              emoji: { type: "string" },
+              kcal: { type: "number" },
+              p: { type: "number" },
+              c: { type: "number" },
+              f: { type: "number" }
+            },
+            required: ["name", "quantity", "kcal", "p", "c", "f"]
+          }
+        },
+        raccoonCommentSarcastic: { type: "string", description: "Comentario breve, ingenioso y directo de Michu (gato nutricionista argentino)." },
+        raccoonCommentCute: { type: "string", description: "Comentario breve, cálido y motivador de Michu." }
+      },
+      required: ["mealName", "items", "raccoonCommentSarcastic", "raccoonCommentCute"]
+    };
+
+    async function callGeminiInteractionsVisionDirect(apiKey, promptText, cleanB64, cleanMime) {
+      const modelsToTry = ["gemini-4-hydrogen", "gemini-3.5-flash-lite"];
+      for (const modelName of modelsToTry) {
+        try {
+          const res = await _nativeFetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+            method: "POST",
+            headers: {
+              "x-goog-api-key": apiKey,
+              "Content-Type": "application/json",
+              "Api-Revision": "2026-05-20"
+            },
+            body: JSON.stringify({
+              model: modelName,
+              store: false,
+              input: [
+                { type: "text", text: promptText },
+                { type: "image", data: cleanB64, mime_type: cleanMime }
+              ],
+              response_format: {
+                type: "text",
+                mime_type: "application/json",
+                schema: FOOD_VISION_JSON_SCHEMA
+              }
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const txt = extractGeminiInteractionText(data);
+            if (txt) {
+              return { parsed: JSON.parse(txt), modelUsed: modelName };
+            }
+          }
+        } catch (_) {}
+      }
+      return null;
+    }
+
+    async function analyzeFoodImageWithGemini(desc, imageBase64, mimeType) {
+      const cleanB64 = String(imageBase64 || "").replace(/^data:[^;]+;base64,/, "").trim();
+      if (!cleanB64) return null;
+      const cleanMime = (mimeType && mimeType.startsWith("image/")) ? mimeType : "image/jpeg";
+      const quota = getPhotoScanQuotaInfo();
+      if (quota.remaining <= 0) {
+        if (desc && desc.trim()) {
+          const fallbackTextRes = await window.analyzeFoodSmart(desc, null, null);
+          fallbackTextRes.warning = `Ya usaste tus ${quota.limit}/${quota.limit} escaneos con foto de hoy (se renuevan a las 00:00 hs). Calculamos tu plato usando la descripción escrita.`;
+          return fallbackTextRes;
+        }
+        return {
+          mealName: "Límite diario de fotos alcanzado (0/10)",
+          emoji: "📷",
+          source: "quota-limit",
+          warning: `Ya usaste tus ${quota.limit}/${quota.limit} escaneos por foto de hoy (se renuevan automáticamente a las 00:00 hs). Podés describir tu plato con texto arriba sin límite ✨.`,
+          items: [],
+          total: { kcal: 0, p: 0, c: 0, f: 0 },
+          raccoonCommentSarcastic: "Hoy ya me mostraste 10 platos por cámara, humano. Escribime qué comiste con tus palabras que por texto no hay límite 🐱✍️.",
+          raccoonCommentCute: "¡Usaste tus 10 fotos de hoy! Mañana a las 00:00 se recargan solas; mientras tanto escribí tu comida arriba y te la calculo al toque 💚."
+        };
+      }
+
+      const extraCtx = (desc || "").trim();
+      const visionPrompt = `Sos Michu, gato nutricionista clínico y deportivo en Argentina. Analizá con precisión la imagen (plato de comida, bebida o tabla de información nutricional).` +
+        (extraCtx ? `\nContexto adicional indicado por el usuario: "${extraCtx}". Respetá las cantidades o aclaraciones que indicó.` : "") +
+        `\nIdentificá cada ingrediente o componente visible, estimá su peso en gramos reales consumibles (ej. cocido/escurrido) y calculá calorías (kcal), proteínas (p), carbohidratos (c) y grasas (f) con rigor nutricional (tablas SARA Argentina / USDA). Si es una etiqueta nutricional, leé los valores exactos por porción. Usá español rioplatense ("vos").`;
+
+      let rawVision = null;
+      const localKey = (localStorage.getItem("michufit_gemini_key") || "").trim();
+      if (localKey) {
+        rawVision = await callGeminiInteractionsVisionDirect(localKey, visionPrompt, cleanB64, cleanMime);
+      }
+
+      if (!rawVision) {
+        const hookUrl = (
+          (currentUserInfo && currentUserInfo.adminWebhookUrl) ||
+          localStorage.getItem("michufit_admin_webhook_url") ||
+          DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL ||
+          ""
+        ).trim();
+        if (hookUrl) {
+          try {
+            const proxyRes = await sbFetchWithTimeout(hookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              redirect: "follow",
+              body: JSON.stringify({
+                action: "analyze_food_vision",
+                prompt: visionPrompt,
+                imageBase64: cleanB64,
+                mimeType: cleanMime,
+                schema: FOOD_VISION_JSON_SCHEMA,
+                userEmail: (currentUserInfo && currentUserInfo.email) || ""
+              })
+            }, 20000);
+            if (proxyRes.ok) {
+              const pData = await proxyRes.json();
+              if (pData && pData.ok && pData.parsed) {
+                rawVision = { parsed: pData.parsed, modelUsed: pData.modelUsed || "gemini-4-hydrogen" };
+              } else if (pData && pData.ok && pData.interaction) {
+                const txt = extractGeminiInteractionText(pData.interaction);
+                if (txt) rawVision = { parsed: JSON.parse(txt), modelUsed: pData.modelUsed || "gemini-4-hydrogen" };
+              }
+            }
+          } catch (_) {}
+        }
+      }
+
+      if (rawVision && rawVision.parsed && Array.isArray(rawVision.parsed.items) && rawVision.parsed.items.length > 0) {
+        consumeOnePhotoScanQuota();
+        const pObj = rawVision.parsed;
+        const normItems = pObj.items.map(it => ({
+          name: String(it.name || "Alimento").trim(),
+          quantity: String(it.quantity || "1 porción").trim(),
+          emoji: String(it.emoji || "🍽️").trim(),
+          kcal: Math.max(0, Math.round(Number(it.kcal) || 0)),
+          p: Math.max(0, Math.round((Number(it.p) || 0) * 10) / 10),
+          c: Math.max(0, Math.round((Number(it.c) || 0) * 10) / 10),
+          f: Math.max(0, Math.round((Number(it.f) || 0) * 10) / 10)
+        }));
+        const totK = normItems.reduce((s, x) => s + x.kcal, 0);
+        const totP = Math.round(normItems.reduce((s, x) => s + x.p, 0) * 10) / 10;
+        const totC = Math.round(normItems.reduce((s, x) => s + x.c, 0) * 10) / 10;
+        const totF = Math.round(normItems.reduce((s, x) => s + x.f, 0) * 10) / 10;
+        return {
+          mealName: String(pObj.mealName || extraCtx || "Plato analizado por foto").trim(),
+          emoji: String(pObj.emoji || normItems[0]?.emoji || "🍽️").trim(),
+          source: rawVision.modelUsed || "gemini-4-hydrogen",
+          items: normItems,
+          total: { kcal: totK, p: totP, c: totC, f: totF },
+          raccoonCommentSarcastic: String(pObj.raccoonCommentSarcastic || "¡Ojo clínico gatuno activado! Mirá esos macros calculados al detalle 🐱📸."),
+          raccoonCommentCute: String(pObj.raccoonCommentCute || "¡Qué buen plato! Ya tenés todos los nutrientes calculados para sumarlo a tu día 💚🐱.")
+        };
+      }
+
+      // Si todavía no se configuró la clave Gemini en Apps Script / dispositivo, no descontar intento
+      if (extraCtx) {
+        const textOnly = await window.analyzeFoodSmart(extraCtx, null, null);
+        textOnly.warning = "Calculado con tu descripción escrita (no se descontó intento de foto). Para activar lectura visual directa, cargá tu clave gratuita de Google AI Studio en 👑 Admin.";
+        return textOnly;
+      }
+
+      return {
+        mealName: "Activá la clave gratuita de Visión IA o agregá una breve descripción",
+        emoji: "🔑",
+        source: "vision-setup-needed",
+        warning: "No se descontó ningún intento de foto (seguís teniendo tus intentos intactos). Para leer fotos sin texto, activá tu clave gratuita de Google AI Studio desde 👑 Admin → Escáner IA por Foto.",
+        items: [],
+        total: { kcal: 0, p: 0, c: 0, f: 0 },
+        raccoonCommentSarcastic: "Veo la foto lista, pero falta enchufar la llave gratuita de Gemini en el panel Admin (o escribir abajo qué hay en el plato) 🐱🔧.",
+        raccoonCommentCute: "¡Tu foto quedó súper nítida! Escribí dos palabritas abajo de qué es o activá la llave gratuita en Admin para que pueda verla directo 💚."
+      };
+    }
+
+    window.analyzeFoodSmart = async function (desc, imageBase64 = null, mimeType = null) {
+      if (imageBase64) {
+        const visionRes = await analyzeFoodImageWithGemini(desc, imageBase64, mimeType);
+        if (visionRes) return visionRes;
+      }
       const raw = (desc || "").trim();
       if (!raw) return estimateFoodOffline(raw);
       const clauses = splitFoodDescription(raw);
@@ -13156,71 +13478,114 @@
     // =========================================================================
     // ESCÁNER IA DE COMIDAS (FOTO + DESCRIPCIÓN)
     // =========================================================================
-    function renderAiAnalysisResult(res) {
+    function renderAiAnalysisResult(res, portionScale = 1) {
       lastAiResult = res;
+      const scale = Number(portionScale) || 1;
       const mood = appData.profile.moodMode || "sarcastic";
       const comment = mood === "sarcastic" ? res.raccoonCommentSarcastic : res.raccoonCommentCute;
       setRaccoonSpeech(`"${comment}"`);
 
-      document.getElementById("aiResultSourceTag").textContent =
-        res.source === "gemini-3.8-flash" ? "✨ Analizado con Gemini 3.8 Flash" : "⚡ Estimador Nutricional de Michu";
+      const isGemVision = String(res.source || "").startsWith("gemini-");
+      document.getElementById("aiResultSourceTag").textContent = isGemVision
+        ? "✨ Analizado por Foto con Gemini Vision"
+        : (res.source === "openfoodfacts-live" ? "🌐 Catálogo + OpenFoodFacts" : "⚡ Estimador Nutricional de Michu");
 
-      const itemsHtml = (res.items || []).map(it => `
+      const scaledKcal = Math.round((Number(res.total?.kcal) || 0) * scale);
+      const scaledP = Math.round(((Number(res.total?.p) || 0) * scale) * 10) / 10;
+      const scaledC = Math.round(((Number(res.total?.c) || 0) * scale) * 10) / 10;
+      const scaledF = Math.round(((Number(res.total?.f) || 0) * scale) * 10) / 10;
+
+      const itemsHtml = (res.items || []).map(it => {
+        const itK = Math.round((Number(it.kcal) || 0) * scale);
+        const itP = Math.round(((Number(it.p) || 0) * scale) * 10) / 10;
+        const itC = Math.round(((Number(it.c) || 0) * scale) * 10) / 10;
+        const itF = Math.round(((Number(it.f) || 0) * scale) * 10) / 10;
+        return `
         <div class="meal-item">
           <div>
-            <strong>${it.emoji || "🍽️"} ${it.name}</strong>
-            <div style="font-size:0.74rem;color:var(--text-muted);">${it.quantity} • ${it.p}g P • ${it.c}g C • ${it.f}g G</div>
+            <strong>${it.emoji || "🍽️"} ${escapeHtml(it.name)}</strong>
+            <div style="font-size:0.74rem;color:var(--text-muted);">${escapeHtml(it.quantity)}${scale !== 1 ? ` (×${scale})` : ""} • ${itP}g P • ${itC}g C • ${itF}g G</div>
           </div>
-          <strong>${it.kcal} kcal</strong>
+          <strong>${itK} kcal</strong>
         </div>
-      `).join("");
+      `;
+      }).join("");
+
+      const hrNow = new Date().getHours();
+      const autoSlot = hrNow < 11 ? "breakfast" : (hrNow < 16 ? "lunch" : (hrNow < 20 ? "merienda" : "dinner"));
+      const canSave = scaledKcal > 0;
 
       document.getElementById("aiResultContainer").innerHTML = `
         ${res.warning ? `<div style="padding:8px 11px;margin-bottom:10px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-size:0.78rem;">⚠️ ${res.warning}</div>` : ""}
         <div style="background:var(--bg-card);padding:13px;border-radius:12px;border:1px solid var(--border);margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
-            <strong style="font-size:1rem;">${res.emoji || "🍽️"} ${res.mealName}</strong>
-            <span style="font-size:1.15rem;font-weight:900;color:var(--accent);">${res.total.kcal} kcal</span>
+            <strong style="font-size:1rem;">${res.emoji || "🍽️"} ${escapeHtml(res.mealName)}${scale !== 1 ? ` (${scale}x)` : ""}</strong>
+            <span style="font-size:1.15rem;font-weight:900;color:var(--accent);">${scaledKcal} kcal</span>
           </div>
-          <div style="display:flex;gap:14px;font-size:0.82rem;font-weight:700;">
-            <span style="color:#22c55e;">🥩 ${res.total.p}g Prot</span>
-            <span style="color:#38bdf8;">🍚 ${res.total.c}g Carbos</span>
-            <span style="color:#f59e0b;">🥑 ${res.total.f}g Grasas</span>
+          <div style="display:flex;gap:14px;font-size:0.82rem;font-weight:700;flex-wrap:wrap;">
+            <span style="color:#22c55e;">🥩 ${scaledP}g Prot</span>
+            <span style="color:#38bdf8;">🍚 ${scaledC}g Carbos</span>
+            <span style="color:#f59e0b;">🥑 ${scaledF}g Grasas</span>
           </div>
+          ${canSave ? `
+            <div style="margin-top:10px;padding-top:9px;border-top:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
+              <span style="font-size:0.73rem;color:var(--text-muted);font-weight:700;">⚖️ Ajustar porción:</span>
+              <div style="display:inline-flex;gap:5px;flex-wrap:wrap;">
+                ${[
+                  { v: 0.5, lbl: "½ chica" },
+                  { v: 0.75, lbl: "¾" },
+                  { v: 1, lbl: "1x normal" },
+                  { v: 1.25, lbl: "1.25x" },
+                  { v: 1.5, lbl: "1.5x grande" }
+                ].map(opt => `
+                  <button type="button" class="btn btn-sm ${scale === opt.v ? "btn-primary" : ""}" data-ai-portion-scale="${opt.v}" style="padding:3px 8px;font-size:0.71rem;font-weight:800;">
+                    ${opt.lbl}
+                  </button>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">
-          ${itemsHtml}
-        </div>
+        ${itemsHtml ? `<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">${itemsHtml}</div>` : ""}
 
         <div style="background:var(--bg);border:1px solid var(--border);padding:12px;border-radius:12px;margin-bottom:14px;font-size:0.84rem;">
-          <div><strong>🔥 Michu Sarcástico:</strong> "${res.raccoonCommentSarcastic}"</div>
-          <div style="margin-top:6px;color:var(--text-muted);"><strong>🌿 Michu Tierno:</strong> "${res.raccoonCommentCute}"</div>
+          <div><strong>🔥 Michu Sarcástico:</strong> "${escapeHtml(res.raccoonCommentSarcastic)}"</div>
+          <div style="margin-top:6px;color:var(--text-muted);"><strong>🌿 Michu Tierno:</strong> "${escapeHtml(res.raccoonCommentCute)}"</div>
         </div>
 
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <select id="aiTargetMealSelect" style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-weight:700;">
-            <option value="breakfast">🌅 Desayuno</option>
-            <option value="lunch" selected>☀️ Almuerzo</option>
-            <option value="merienda">🧉 Merienda</option>
-            <option value="dinner">🌙 Cena</option>
-            <option value="snack">🍿 Snack</option>
-          </select>
-          <button type="button" class="btn btn-primary" id="btnAddAiMealToDiary" style="flex:1;">
-            ➕ Guardar plato en mi Diario de Hoy
-          </button>
-        </div>
+        ${canSave ? `
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="aiTargetMealSelect" style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-weight:700;">
+              <option value="breakfast" ${autoSlot === "breakfast" ? "selected" : ""}>🌅 Desayuno</option>
+              <option value="lunch" ${autoSlot === "lunch" ? "selected" : ""}>☀️ Almuerzo</option>
+              <option value="merienda" ${autoSlot === "merienda" ? "selected" : ""}>🧉 Merienda</option>
+              <option value="dinner" ${autoSlot === "dinner" ? "selected" : ""}>🌙 Cena</option>
+              <option value="snack">🍿 Snack</option>
+            </select>
+            <button type="button" class="btn btn-primary" id="btnAddAiMealToDiary" style="flex:1;">
+              ➕ Guardar plato en mi Diario de Hoy
+            </button>
+          </div>
+        ` : ""}
       `;
 
-      document.getElementById("btnAddAiMealToDiary").addEventListener("click", () => {
+      document.querySelectorAll("#aiResultContainer [data-ai-portion-scale]").forEach(b => {
+        b.addEventListener("click", () => {
+          const nextSc = Number(b.getAttribute("data-ai-portion-scale")) || 1;
+          renderAiAnalysisResult(res, nextSc);
+        });
+      });
+
+      document.getElementById("btnAddAiMealToDiary")?.addEventListener("click", () => {
         const mealType = document.getElementById("aiTargetMealSelect").value;
         addFoodItemToDay(selectedDate, {
           mealType,
-          name: res.mealName,
-          kcal: res.total.kcal,
-          p: res.total.p,
-          c: res.total.c,
-          f: res.total.f,
+          name: scale !== 1 ? `${res.mealName} (${scale}x)` : res.mealName,
+          kcal: scaledKcal,
+          p: scaledP,
+          c: scaledC,
+          f: scaledF,
           emoji: res.emoji || "🍽️"
         });
         switchTab("tab-diary");
@@ -13255,6 +13620,9 @@
         }
       }
 
+      if (tabId === "tab-scanner" && typeof updateAiPhotoQuotaUI === "function") {
+        updateAiPhotoQuotaUI();
+      }
       if (tabId === "tab-report" && typeof renderWeeklyExecutiveReport === "function") {
         renderWeeklyExecutiveReport();
       }
@@ -14279,28 +14647,101 @@
       renderAll();
     });
 
-    // Escáner IA: Foto y Chips de ejemplo
-    const dropzone = document.getElementById("photoDropzone");
+    // Escáner IA: Cámara directa + Galería + Compresión inteligente (<canvas> 1024px)
+    const cameraInput = document.getElementById("cameraCaptureInput");
     const fileInput = document.getElementById("photoFileInput");
-    dropzone.addEventListener("click", () => fileInput.click());
+    const btnCamCapture = document.getElementById("btnTriggerCameraCapture");
+    const btnGalPicker = document.getElementById("btnTriggerGalleryPicker");
 
-    fileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
+    function compressFoodImageFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("read_error"));
+        reader.onload = (ev) => {
+          const rawDataUrl = ev.target.result;
+          const img = new Image();
+          img.onerror = () => resolve({ dataUrl: rawDataUrl, mime: file.type || "image/jpeg", kb: Math.round((rawDataUrl.length * 0.75) / 1024) });
+          img.onload = () => {
+            try {
+              const maxSide = 1024;
+              let w = img.naturalWidth || img.width || 800;
+              let h = img.naturalHeight || img.height || 600;
+              if (w > maxSide || h > maxSide) {
+                if (w >= h) {
+                  h = Math.round((h * maxSide) / w);
+                  w = maxSide;
+                } else {
+                  w = Math.round((w * maxSide) / h);
+                  h = maxSide;
+                }
+              }
+              const canvas = document.createElement("canvas");
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, w, h);
+              const outUrl = canvas.toDataURL("image/jpeg", 0.80);
+              const kb = Math.max(1, Math.round((outUrl.length * 0.75) / 1024));
+              resolve({ dataUrl: outUrl, mime: "image/jpeg", kb });
+            } catch (_) {
+              resolve({ dataUrl: rawDataUrl, mime: file.type || "image/jpeg", kb: Math.round((rawDataUrl.length * 0.75) / 1024) });
+            }
+          };
+          img.src = rawDataUrl;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleSelectedScannerFile(file) {
       if (!file) return;
-      uploadedPhotoMime = file.type || "image/jpeg";
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        uploadedPhotoBase64 = ev.target.result;
+      const quota = getPhotoScanQuotaInfo();
+      if (quota.remaining <= 0) {
+        updateAiPhotoQuotaUI();
+        alert(`Ya usaste tus ${quota.limit}/${quota.limit} escaneos con foto de hoy (se renuevan a las 00:00 hs). Podés escribir tu comida abajo sin límite.`);
+        return;
+      }
+      const infoBadge = document.getElementById("photoOptimizedInfoBadge");
+      if (infoBadge) infoBadge.textContent = "⏳ Optimizando imagen para carga rápida...";
+      try {
+        const comp = await compressFoodImageFile(file);
+        uploadedPhotoBase64 = comp.dataUrl;
+        uploadedPhotoMime = comp.mime;
         document.getElementById("photoPreviewImg").src = uploadedPhotoBase64;
         document.getElementById("photoPreviewContainer").style.display = "block";
-      };
-      reader.readAsDataURL(file);
+        const promptBox = document.getElementById("photoPromptText");
+        if (promptBox) promptBox.style.display = "none";
+        if (infoBadge) infoBadge.textContent = `✅ Foto optimizada (${comp.kb} KB) • Tocá «Analizar plato con Michu» abajo`;
+      } catch (_) {}
+    }
+
+    btnCamCapture?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (getPhotoScanQuotaInfo().remaining <= 0) return;
+      cameraInput?.click();
+    });
+
+    btnGalPicker?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (getPhotoScanQuotaInfo().remaining <= 0) return;
+      fileInput?.click();
+    });
+
+    cameraInput?.addEventListener("change", (e) => {
+      handleSelectedScannerFile(e.target.files && e.target.files[0]);
+    });
+
+    fileInput?.addEventListener("change", (e) => {
+      handleSelectedScannerFile(e.target.files && e.target.files[0]);
     });
 
     document.getElementById("btnClearAiPhoto").addEventListener("click", () => {
       uploadedPhotoBase64 = null;
-      fileInput.value = "";
+      if (cameraInput) cameraInput.value = "";
+      if (fileInput) fileInput.value = "";
       document.getElementById("photoPreviewContainer").style.display = "none";
+      const promptBox = document.getElementById("photoPromptText");
+      if (promptBox) promptBox.style.display = "block";
       document.getElementById("aiFoodDescription").value = "";
     });
 
@@ -14313,17 +14754,20 @@
     document.getElementById("btnRunAiAnalysis").addEventListener("click", async () => {
       const desc = document.getElementById("aiFoodDescription").value.trim();
       if (!desc && !uploadedPhotoBase64) {
-        alert("Escribí qué tiene tu plato o subí una foto para que Michu lo analice.");
+        alert("Sacá/elegí una foto de tu plato o escribí qué comiste para que Michu lo analice.");
         return;
       }
       const btn = document.getElementById("btnRunAiAnalysis");
       btn.disabled = true;
-      btn.textContent = "🐱 Michu está olfateando y calculando...";
+      btn.textContent = uploadedPhotoBase64
+        ? "📸 Michu está mirando tu plato y pesando macros..."
+        : "🐱 Michu está olfateando y calculando...";
       updateRaccoonVisualExpression("scanning");
 
       try {
         const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 4500);
+        const timeoutMs = uploadedPhotoBase64 ? 23000 : 6500;
+        const tid = setTimeout(() => ctrl.abort(), timeoutMs);
         const res = await fetch("/api/analyze-food", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -14339,6 +14783,7 @@
           const data = await res.json();
           if (data.ok && data.result) {
             renderAiAnalysisResult(data.result);
+            document.getElementById("aiResultCard")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
             return;
           }
         }
@@ -14353,12 +14798,16 @@
 
     // Configuración de API Key y Backup
     document.getElementById("btnOpenSettings").addEventListener("click", () => {
+      const inp = document.getElementById("settingsGeminiKey");
+      if (inp) inp.value = localStorage.getItem("michufit_gemini_key") || "";
       openModal("modalSettings");
     });
 
     document.getElementById("btnSaveApiKey").addEventListener("click", async () => {
       const key = document.getElementById("settingsGeminiKey").value.trim();
       try {
+        if (key) localStorage.setItem("michufit_gemini_key", key);
+        else localStorage.removeItem("michufit_gemini_key");
         const res = await fetch("/api/config", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -14367,11 +14816,12 @@
         if (res.ok) {
           const d = await res.json();
           hasGeminiKeyOnServer = Boolean(d.hasGeminiKey);
-          renderAll();
-          closeModal("modalSettings");
         }
-      } catch (err) {
-        alert("No se pudo conectar con el servidor Python local.");
+        renderAll();
+        closeModal("modalSettings");
+      } catch (_) {
+        renderAll();
+        closeModal("modalSettings");
       }
     });
 
@@ -14849,12 +15299,34 @@
         el.style.display = canAccessReto21 ? "inline-flex" : "none";
       });
 
+      if (typeof updateAiPhotoQuotaUI === "function") {
+        updateAiPhotoQuotaUI();
+      }
+
+      // Priorizar siempre el nombre real elegido en el Wizard / Perfil (nunca un prefijo de email)
+      const resolveGreetingName = () => {
+        const profN = String(appData && appData.profile && appData.profile.name ? appData.profile.name : "").trim();
+        const userN = String(currentUserInfo && currentUserInfo.name ? currentUserInfo.name : "").trim();
+        const emailPrefix = String((currentUserInfo && (currentUserInfo.email || currentUserInfo.username)) || "").split("@")[0].trim().toLowerCase();
+        const isGeneric = (s) => !s || /^(campe[oó]n|usuario|mi cuenta)$/i.test(s) || s.includes("@");
+
+        if (!isGeneric(profN) && profN.toLowerCase() !== emailPrefix) return profN;
+        if (!isGeneric(userN) && userN.toLowerCase() !== emailPrefix) return userN;
+        if (!isGeneric(profN)) return profN;
+        if (!isGeneric(userN)) return userN;
+        return profN || userN || "Campeón";
+      };
+
       if (currentUserInfo) {
+        const chosenDispName = resolveGreetingName();
+        if (appData && appData.profile && (!appData.profile.name || appData.profile.name === "Campeón" || appData.profile.name.includes("@")) && chosenDispName !== "Campeón") {
+          appData.profile.name = chosenDispName;
+        }
         const shortRole = currentUserInfo.role === "superadmin" ? "👑 Admin" : (currentUserInfo.role === "nutritionist" ? "🩺 Nutri" : "🐱");
-        if (topLabel) topLabel.textContent = `${currentUserInfo.name} (${shortRole})`;
+        if (topLabel) topLabel.textContent = `${chosenDispName} (${shortRole})`;
         if (welcomeEl) {
           welcomeEl.style.display = "inline";
-          welcomeEl.textContent = `👋 ¡Hola ${currentUserInfo.name}!`;
+          welcomeEl.textContent = `👋 ¡Hola ${chosenDispName}!`;
         }
 
         // Llenar modal Mi Cuenta
@@ -14865,7 +15337,7 @@
         const accOwnField = document.getElementById("accMyOwnInviteCodeField");
         const accOwnInput = document.getElementById("accMyOwnCodeInput");
 
-        if (accName) accName.textContent = currentUserInfo.name;
+        if (accName) accName.textContent = chosenDispName;
         if (accEmail) accEmail.textContent = currentUserInfo.email || currentUserInfo.username;
         if (accRole) accRole.textContent = roleLabelHtml(currentUserInfo.role);
         if (accNutriStatus) {
@@ -15224,6 +15696,8 @@
       const webhookUrlInp = document.getElementById("adminWebhookUrlInput");
       const googleCidInp = document.getElementById("adminGoogleClientIdInput");
       const btnSaveGoogleCid = document.getElementById("btnSaveGoogleClientId");
+      const geminiVisionKeyInp = document.getElementById("adminGeminiVisionKeyInput");
+      const btnTestAdminGemKey = document.getElementById("btnTestAndSaveAdminGeminiKey");
       const btnCopyGasCode = document.getElementById("btnCopyGoogleScriptCode");
       const btnSaveTestMail = document.getElementById("btnSaveAndTestAdminEmail");
       const emailStatusMsg = document.getElementById("adminEmailNotifyStatusMsg");
@@ -15240,6 +15714,70 @@
         if (isSuper && googleCidInp && !googleCidInp.dataset.initialized) {
           googleCidInp.dataset.initialized = "1";
           googleCidInp.value = window._michuGoogleClientId || localStorage.getItem("michufit_google_client_id") || "";
+        }
+        if (isSuper && geminiVisionKeyInp && !geminiVisionKeyInp.dataset.initialized) {
+          geminiVisionKeyInp.dataset.initialized = "1";
+          geminiVisionKeyInp.value = localStorage.getItem("michufit_gemini_key") || "";
+        }
+        if (isSuper && btnTestAdminGemKey && !btnTestAdminGemKey.dataset.bound) {
+          btnTestAdminGemKey.dataset.bound = "1";
+          btnTestAdminGemKey.addEventListener("click", async () => {
+            const kVal = (geminiVisionKeyInp ? geminiVisionKeyInp.value : "").trim();
+            if (!kVal) {
+              localStorage.removeItem("michufit_gemini_key");
+              if (emailStatusMsg) {
+                emailStatusMsg.style.display = "block";
+                emailStatusMsg.style.background = "var(--bg-elev)";
+                emailStatusMsg.style.color = "var(--text-muted)";
+                emailStatusMsg.style.border = "1px solid var(--border)";
+                emailStatusMsg.innerHTML = "ℹ️ Clave local limpiada en este dispositivo.";
+              }
+              return;
+            }
+            btnTestAdminGemKey.disabled = true;
+            btnTestAdminGemKey.textContent = "⏳ Verificando...";
+            try {
+              localStorage.setItem("michufit_gemini_key", kVal);
+              const pingRes = await _nativeFetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+                method: "POST",
+                headers: {
+                  "x-goog-api-key": kVal,
+                  "Content-Type": "application/json",
+                  "Api-Revision": "2026-05-20"
+                },
+                body: JSON.stringify({
+                  model: "gemini-4-hydrogen",
+                  store: false,
+                  input: "Respondé únicamente OK."
+                })
+              });
+              if (emailStatusMsg) {
+                emailStatusMsg.style.display = "block";
+                if (pingRes.ok) {
+                  emailStatusMsg.style.background = "var(--accent-soft)";
+                  emailStatusMsg.style.color = "var(--accent)";
+                  emailStatusMsg.style.border = "1px solid var(--accent)";
+                  emailStatusMsg.innerHTML = "✅ <strong>¡Clave Gemini Vision verificada y activa!</strong> Ahora podés tocar <strong>📋 Copiar código para Google Script</strong> arriba y pegarlo en tu Apps Script para habilitarla para todos los usuarios sin exponer la clave.";
+                } else {
+                  emailStatusMsg.style.background = "var(--warn-soft)";
+                  emailStatusMsg.style.color = "var(--warn)";
+                  emailStatusMsg.style.border = "1px solid var(--warn)";
+                  emailStatusMsg.innerHTML = `⚠️ Guardada en el dispositivo, pero Google devolvió HTTP ${pingRes.status}. Revisá que la clave AIzaSy... de Google AI Studio esté completa.`;
+                }
+              }
+            } catch (_) {
+              if (emailStatusMsg) {
+                emailStatusMsg.style.display = "block";
+                emailStatusMsg.style.background = "var(--danger-soft)";
+                emailStatusMsg.style.color = "var(--danger)";
+                emailStatusMsg.style.border = "1px solid var(--danger)";
+                emailStatusMsg.innerHTML = "⚠️ Error de red al verificar con Google AI Studio.";
+              }
+            } finally {
+              btnTestAdminGemKey.disabled = false;
+              btnTestAdminGemKey.textContent = "🧪 Probar y Activar acá";
+            }
+          });
         }
         if (isSuper && btnSaveGoogleCid && !btnSaveGoogleCid.dataset.bound) {
           btnSaveGoogleCid.dataset.bound = "1";
@@ -15296,8 +15834,51 @@
         if (isSuper && btnCopyGasCode && !btnCopyGasCode.dataset.bound) {
           btnCopyGasCode.dataset.bound = "1";
           btnCopyGasCode.addEventListener("click", () => {
+            const pastedGemKey = (geminiVisionKeyInp ? geminiVisionKeyInp.value : (localStorage.getItem("michufit_gemini_key") || "")).trim();
+            const safeEmbeddedKey = pastedGemKey.replace(/["\\]/g, "");
             const gasCode = `function doPost(e) {
   var d = JSON.parse(e.postData.contents);
+
+  // 1) Proxy seguro para Escáner IA por Foto (Gemini Vision) — mantiene tu clave oculta en servidor
+  if (d.action === "analyze_food_vision") {
+    var gemKey = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY") || "${safeEmbeddedKey}";
+    if (!gemKey) {
+      return ContentService.createTextOutput(JSON.stringify({ ok: false, error: "missing_gemini_key" })).setMimeType(ContentService.MimeType.JSON);
+    }
+    var models = ["gemini-4-hydrogen", "gemini-3.5-flash-lite"];
+    for (var i = 0; i < models.length; i++) {
+      var mName = models[i];
+      var resp = UrlFetchApp.fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+        method: "post",
+        contentType: "application/json",
+        headers: {
+          "x-goog-api-key": gemKey,
+          "Api-Revision": "2026-05-20"
+        },
+        payload: JSON.stringify({
+          model: mName,
+          store: false,
+          input: [
+            { type: "text", text: d.prompt || "Analizá este plato nutricionalmente." },
+            { type: "image", data: d.imageBase64, mime_type: d.mimeType || "image/jpeg" }
+          ],
+          response_format: {
+            type: "text",
+            mime_type: "application/json",
+            schema: d.schema
+          }
+        }),
+        muteHttpExceptions: true
+      });
+      if (resp.getResponseCode() >= 200 && resp.getResponseCode() < 300) {
+        var j = JSON.parse(resp.getContentText());
+        return ContentService.createTextOutput(JSON.stringify({ ok: true, modelUsed: mName, interaction: j })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: "vision_failed" })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 2) Envío de códigos OTP de 6 dígitos y avisos por Gmail ("🐱 Michu Fit")
   var dest = d.to || Session.getActiveUser().getEmail();
   var subj = d.customSubject || (d.isTest
     ? "🐱 [Prueba] Avisos de Michu Fit activados"
@@ -15320,8 +15901,8 @@
   return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
 }`;
             navigator.clipboard.writeText(gasCode);
-            btnCopyGasCode.textContent = "✅ ¡Código copiado!";
-            setTimeout(() => { btnCopyGasCode.textContent = "📋 Copiar código para Google Script"; }, 2500);
+            btnCopyGasCode.textContent = "✅ ¡Código copiado (Mails + Visión IA)!";
+            setTimeout(() => { btnCopyGasCode.textContent = "📋 Copiar código para Google Script"; }, 2800);
           });
         }
         if (isSuper && btnSaveTestMail && !btnSaveTestMail.dataset.bound) {
@@ -16298,9 +16879,7 @@
               email: payloadInfo.email,
               name: payloadInfo.name || ""
             };
-            if (payloadInfo.name && !bpState.userName) {
-              bpState.userName = String(payloadInfo.name).trim().slice(0, 32);
-            }
+            // Dejar que el usuario elija su propio nombre en el Wizard (nunca precargar prefijos de email)
             bpState.email = payloadInfo.email || "";
             showAuthModal("register");
           });
@@ -16439,7 +17018,15 @@
           clearInterval(_activeGoogleHandoffPoll);
           _activeGoogleHandoffPoll = null;
         }
-        try { localStorage.removeItem("michufit_pending_gh_handoff"); } catch (_) {}
+        let savedHandoffWiz = null;
+        try {
+          const rawSaved = localStorage.getItem("michufit_pending_gh_handoff");
+          if (rawSaved) {
+            const parsedSaved = JSON.parse(rawSaved);
+            if (parsedSaved && parsedSaved.wizardPayload) savedHandoffWiz = parsedSaved.wizardPayload;
+          }
+          localStorage.removeItem("michufit_pending_gh_handoff");
+        } catch (_) {}
         if (_pendingNativeHandoffRowId) {
           const rid = _pendingNativeHandoffRowId;
           _pendingNativeHandoffRowId = "";
@@ -16448,7 +17035,7 @@
             headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
           }, 6000).catch(() => {});
         }
-        const wiz = _pendingNativeWizardPayload;
+        const wiz = _pendingNativeWizardPayload || savedHandoffWiz || null;
         _pendingNativeWizardPayload = null;
         try {
           await exchangeGoogleAccessTokenForSession(cleanTok, wiz);
@@ -18847,6 +19434,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           roleRequested: bpState.roleRequested || "patient",
           inviteCode: (bpState.inviteCode || "").trim(),
           profile: {
+            name,
             sex: ev.sex,
             age: ev.age,
             height: ev.hCm,
@@ -23981,7 +24569,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         {
           selector: "nav.nav-tabs",
           title: "⏳ Ayuno, 📈 Progreso y 📋 Reporte (0–100)",
-          body: "Acá activás tu <strong>Ayuno</strong>, seguís peso/medidas reales y mirás tu <strong>📋 Reporte Ejecutivo</strong> semanal. ¡Cuando quieras repetir esta guía tocá <strong>❓</strong> arriba!"
+          body: "Acá activás tu <strong>Ayuno</strong>, seguís peso/medidas reales y mirás tu <strong>📋 Reporte Ejecutivo</strong> semanal. ¡Cuando quieras repetir esta guía abrila desde el menú <strong>☰</strong> arriba!"
         }
       ];
 
@@ -24563,8 +25151,16 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
       function ensureMichuBackGuard() {
         if (hasDismissibleLayerOpen() && !_hasBackGuard) {
           try {
-            history.pushState({ michuBackGuard: 1 }, "");
+            const nextUrl = window.location.hash === "#m"
+              ? window.location.pathname + window.location.search
+              : window.location.pathname + window.location.search + "#m";
+            history.pushState({ michuBackGuard: 1 }, "", nextUrl);
             _hasBackGuard = true;
+          } catch (_) {}
+        } else if (!hasDismissibleLayerOpen() && window.location.hash === "#m") {
+          try {
+            history.replaceState(null, "", window.location.pathname + window.location.search);
+            _hasBackGuard = false;
           } catch (_) {}
         }
       }
@@ -24572,6 +25168,12 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
       const _origOpenModal = window.openModal || openModal;
       openModal = window.openModal = function (id) {
         _origOpenModal(id);
+        setTimeout(ensureMichuBackGuard, 25);
+      };
+
+      const _origCloseModal = window.closeModal || closeModal;
+      closeModal = window.closeModal = function (id) {
+        _origCloseModal(id);
         setTimeout(ensureMichuBackGuard, 25);
       };
 
@@ -24587,18 +25189,16 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         setTimeout(ensureMichuBackGuard, 25);
       };
 
-      ["btnToggleHamburger", "bpWizNextBtn", "btnOpenQuickGuideTop", "btnDay1StartSpotlight"].forEach(id => {
+      ["btnToggleHamburger", "bpWizNextBtn", "btnDay1StartSpotlight"].forEach(id => {
         document.getElementById(id)?.addEventListener("click", () => setTimeout(ensureMichuBackGuard, 35));
       });
 
-      window.addEventListener("popstate", () => {
-        _hasBackGuard = Boolean(history.state && history.state.michuBackGuard);
-
+      function executeMichuLayerBack() {
         const spotOv = document.getElementById("michuSpotlightOverlay");
         if (spotOv && spotOv.style.display === "block") {
           document.getElementById("btnMichuSpotSkip")?.click();
           setTimeout(ensureMichuBackGuard, 25);
-          return;
+          return true;
         }
 
         const hbDrop = document.getElementById("topHamburgerDropdown");
@@ -24606,14 +25206,42 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           hbDrop.classList.remove("open");
           document.getElementById("btnToggleHamburger")?.setAttribute("aria-expanded", "false");
           setTimeout(ensureMichuBackGuard, 25);
-          return;
+          return true;
         }
 
         const topModal = getTopmostOpenNonAuthModal();
         if (topModal) {
+          if (topModal.id === "modalSuggestedMenu") {
+            const openSwapBtn = topModal.querySelector("button.btn-purple[data-swap-slot]");
+            if (openSwapBtn) {
+              openSwapBtn.click();
+              setTimeout(ensureMichuBackGuard, 25);
+              return true;
+            }
+            const backShopBtn = document.getElementById("btnBackToSugMenu");
+            if (backShopBtn) {
+              backShopBtn.click();
+              setTimeout(ensureMichuBackGuard, 25);
+              return true;
+            }
+            const backWizBtn = document.getElementById("btnSugWizBack");
+            if (backWizBtn) {
+              backWizBtn.click();
+              setTimeout(ensureMichuBackGuard, 25);
+              return true;
+            }
+          }
+          if (topModal.id === "modalFeedbackAndRating") {
+            const fbGate = document.getElementById("fbStepGate");
+            if (fbGate && fbGate.style.display === "none") {
+              document.getElementById("btnFbBackToGate")?.click();
+              setTimeout(ensureMichuBackGuard, 25);
+              return true;
+            }
+          }
           closeModal(topModal.id);
           setTimeout(ensureMichuBackGuard, 25);
-          return;
+          return true;
         }
 
         const authOv = document.getElementById("modalAuthOverlay");
@@ -24627,14 +25255,14 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
               showAuthModal("splash");
             }
             setTimeout(ensureMichuBackGuard, 25);
-            return;
+            return true;
           }
           if (authMode !== "splash") {
             const gDecView = document.getElementById("authGoogleDecisionView");
             if (gDecView && gDecView.style.display === "block") {
               document.getElementById("btnGoogleDecBack")?.click();
               setTimeout(ensureMichuBackGuard, 25);
-              return;
+              return true;
             }
             const otpView = document.getElementById("authVerifyOtpView");
             if (otpView && otpView.style.display === "block") {
@@ -24643,8 +25271,9 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
               showAuthModal("splash");
             }
             setTimeout(ensureMichuBackGuard, 25);
-            return;
+            return true;
           }
+          return false;
         }
 
         const isLoggedOut = document.documentElement.getAttribute("data-auth-state") === "logged-out";
@@ -24653,9 +25282,20 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           if (activePanel && activePanel.id !== "tab-diary") {
             switchTab("tab-diary");
             setTimeout(ensureMichuBackGuard, 25);
-            return;
+            return true;
           }
         }
+        return false;
+      }
+
+      // Puente directo para el botón físico/gesto «Atrás» de Android 16 (MainActivity.java)
+      window.handleMichuBackAction = function () {
+        return executeMichuLayerBack();
+      };
+
+      window.addEventListener("popstate", () => {
+        _hasBackGuard = Boolean(history.state && history.state.michuBackGuard);
+        executeMichuLayerBack();
       });
 
       // 4. Buzón Privado de Sugerencias + Filtro Inteligente de 5 ⭐ en Google Play
