@@ -2719,7 +2719,7 @@
           </button>
         </div>
         <button type="button" class="btn btn-sm" onclick="window.syncSamsungHealthSteps && window.syncSamsungHealthSteps()">
-          ⌚ Samsung Health / Pasos
+          👟 Sincronizar Pasos
         </button>
         <button type="button" class="btn btn-sm" id="btnToggleTheme">
           🌓 Cambiar Tema (Claro / Oscuro)
@@ -4668,13 +4668,13 @@
   <div class="custom-modal-overlay" id="modalSamsungHealthSync" role="dialog" aria-modal="true">
     <div class="modal-inner" style="max-width:540px;">
       <div class="card-header">
-        <div class="card-title">⌚ Sincronizar Samsung Health / Pasos</div>
+        <div class="card-title">👟 Sincronizar Pasos y Actividad</div>
         <button type="button" class="btn btn-sm" data-close-modal="modalSamsungHealthSync">✕</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px;font-size:0.85rem;">
         <div id="pedometerPlayStoreInfoBox" style="display:none;background:var(--accent-soft);border:1.5px solid var(--accent);padding:11px 13px;border-radius:12px;font-size:0.79rem;line-height:1.42;">
-          <strong style="color:var(--accent);display:block;margin-bottom:3px;">👟 Podómetro Nativo Activo (Google Play)</strong>
-          El sensor de Android suma automáticamente tus pasos nuevos desde que abrís Michu Fit cada día. Si hoy ya caminaste antes de abrir la app, <strong>igualá acá abajo tus pasos actuales de Samsung Health</strong> (escribiéndolos o subiendo captura) y seguirá sumando arriba de ese número.
+          <strong style="color:var(--accent);display:block;margin-bottom:3px;">👟 Sincronización Multi-Marca Activa (Health Connect + Podómetro)</strong>
+          Compatible con <strong>cualquier marca de celular</strong> (Samsung Health, Google Fit en Motorola/Pixel, Mi Fitness en Xiaomi, Garmin, Fitbit o el chip podómetro interno del teléfono). Si hoy caminaste antes de activar el permiso, podés igualar tu número acá abajo o subir captura:
         </div>
 
         <div style="background:var(--bg-card);border:1.5px solid var(--accent);padding:13px 14px;border-radius:12px;">
@@ -4682,7 +4682,7 @@
             👟 Sincronizar / Igualar Pasos de Hoy
           </strong>
           <p style="font-size:0.77rem;color:var(--text-muted);margin-bottom:9px;line-height:1.4;">
-            Ingresá los pasos que te marca hoy <strong>Samsung Health</strong>, Google Fit o tu reloj (o subí captura de pantalla para leer pasos, minutos y kcal exactas):
+            Ingresá los pasos que marca hoy tu app de salud o reloj (Google Fit, Samsung Health, Mi Fitness, Apple Salud) o subí captura de pantalla:
           </p>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <input type="number" id="quickSamsungStepsInput" min="50" max="100000" step="1" inputmode="numeric" placeholder="Ej: 3468"
@@ -4694,7 +4694,7 @@
           <div style="margin-top:9px;padding-top:9px;border-top:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
             <input type="file" id="healthScreenshotFileInput" accept="image/*" style="display:none;" />
             <button type="button" class="btn btn-sm btn-purple" id="btnScanHealthScreenshot" style="width:100%;justify-content:center;padding:8px 12px;font-weight:800;">
-              📸 Leer captura de Samsung Health / Reloj con IA
+              📸 Leer captura de Salud / Reloj con IA
             </button>
             <div id="healthScreenshotStatusMsg" style="display:none;width:100%;font-size:0.76rem;padding:7px 10px;border-radius:8px;"></div>
           </div>
@@ -4702,7 +4702,7 @@
 
         <div id="nativeApkHealthBox" style="display:none;background:var(--bg-card);border:1px solid var(--border);padding:11px 13px;border-radius:12px;">
           <button type="button" class="btn btn-sm" id="btnTriggerNativeHealthRead" style="width:100%;justify-content:center;">
-            🔄 Consultar sensor podómetro del teléfono ahora
+            🔄 Leer Health Connect / Podómetro del teléfono ahora
           </button>
         </div>
 
@@ -10087,8 +10087,8 @@
           <button type="button" class="btn btn-sm" id="btnCardOpenAddExercise" style="flex:1;">
             + Agregar ejercicio con IA
           </button>
-          <button type="button" class="btn btn-sm btn-purple" id="btnCardSyncSamsungHealth" title="Sincronizar pasos y ejercicios desde Samsung Health / Health Connect">
-            ⌚ Samsung Health / Pasos
+          <button type="button" class="btn btn-sm btn-purple" id="btnCardSyncSamsungHealth" title="Sincronizar pasos y ejercicios (Samsung Health, Google Fit, Mi Fitness, Apple Salud o Podómetro)">
+            👟 Sincronizar Pasos
           </button>
         </div>
       `;
@@ -10129,7 +10129,7 @@
       if (isStepsRecord) {
         const curStepsMatch = String(ex.name || "").replace(/\./g, "").match(/(\d+)/);
         const curSteps = curStepsMatch ? Number(curStepsMatch[1]) : 6500;
-        const inputVal = prompt("✏️ Editar cantidad exacta de pasos (ej: lo que marca Samsung Health):", String(curSteps));
+        const inputVal = prompt("✏️ Editar cantidad exacta de pasos de hoy:", String(curSteps));
         if (inputVal === null) return;
         const newSteps = Math.round(Number(String(inputVal).replace(/[^\d]/g, "")) || 0);
         if (newSteps < 50) {
@@ -10139,7 +10139,7 @@
         const estMinutes = Math.max(5, Math.round(newSteps / 105));
         const calcKcal = Math.max(10, Math.round(2.9 * weightKg * (estMinutes / 60)));
         const baseHcVal = Math.max(Number(day.lastRawHcSteps) || 0, Number(day.manualStepsBaseHc) || 0, curSteps, newSteps);
-        ex.name = `${newSteps.toLocaleString("es-AR")} pasos (Samsung Health)`;
+        ex.name = `${newSteps.toLocaleString("es-AR")} pasos (Actividad diaria)`;
         ex.minutes = estMinutes;
         ex.kcal = calcKcal;
         ex.updatedAt = Date.now();
@@ -20743,7 +20743,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         }
       }
 
-      function applySyncedStepsAndExercises(dateKey, stepsCount, activeKcalFromHc, sessionsList, sourceLabel = "Samsung Health", isManualQuickInput = false, explicitMinutes = 0) {
+      function applySyncedStepsAndExercises(dateKey, stepsCount, activeKcalFromHc, sessionsList, sourceLabel = "Samsung Health", isManualQuickInput = false, explicitMinutes = 0, isDeduplicatedNative = false) {
         const effDate = dateKey || selectedDate || todayStr();
         const day = ensureDayRecord(effDate);
         day.exercises = day.exercises || [];
@@ -20769,6 +20769,11 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           if (Number(explicitMinutes) > 0) day.manualStepsExactMins = Math.round(Number(explicitMinutes));
           else delete day.manualStepsExactMins;
           day.manualStepsUpdatedAt = Date.now();
+        } else if (isDeduplicatedNative && rawSteps >= 50) {
+          // Lectura directa ya deduplicada desde Health Connect / Samsung Health (v18+): tomar pasos 1 a 1 exactos
+          steps = rawSteps;
+          day.lastRawHcSteps = rawSteps;
+          delete day.manualStepsOverride;
         } else if (isPedometerSensor) {
           // El sensor nativo de Google Play mide pasos reales 1:1 desde que se abrió la app hoy (nunca dividir a la mitad)
           if (Number(day.manualStepsOverride) > 0) {
@@ -20899,7 +20904,10 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             data.steps || 0,
             data.activeCalories || 0,
             data.exercises || [],
-            src
+            src,
+            false,
+            0,
+            Boolean(data.deduplicated)
           );
 
           // Si el usuario tocó "⌚ Samsung Health / Pasos" en la versión Google Play (Podómetro) y aún tiene 0 pasos nuevos (o quiere igualar con Samsung Health), abrimos el modal para igualar o escanear captura
