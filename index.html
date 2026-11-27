@@ -20306,9 +20306,11 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
 
       let sugMenuState = {
         mode: "menu", // "menu" | "wizard" | "shopping"
-        selectedMoodId: "normal", // "normal" | "anxious" | "sweet_craving" | "tired" | "starving" | "focused"
+        selectedMoodId: "normal", // "normal" | "anxious" | "sweet_craving" | "tired" | "starving" | "focused" | "bloated"
         wizStep: 0,
         activeDayIdx: (new Date().getDay() + 6) % 7,
+        planSectionOpen: (function () { try { return localStorage.getItem("michufit_sug_plan_open") === "1"; } catch (_) { return false; } })(),
+        moodSectionOpen: (function () { try { return localStorage.getItem("michufit_sug_mood_open") === "1"; } catch (_) { return false; } })(),
         variantOffsets: {}, // key: `${dayIdx}_${slotKey}` -> number
         openSwapSlotKey: null, // slotKey con panel "Heladera / Antojo" desplegado
         customSlotQueries: {}, // key: `${dayIdx}_${slotKey}` -> texto de ingredientes o antojo
@@ -21534,39 +21536,21 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
 
         const weekDays = [];
         const shoppingTotals = {};
-        const refDateStr = selectedDate || todayStr();
-        const refDayRec = (appData.days && appData.days[refDateStr]) || null;
-        const refDayTotals = getDayTotals(refDateStr);
-        const refEatenMeals = refDayRec && Array.isArray(refDayRec.meals)
-          ? refDayRec.meals.filter(m => isMealConsumed(m))
-          : [];
-
-        // Detectar qué momentos de comida (Desayuno, Almuerzo, Merienda, Cena, Snack) ya fueron cargados hoy (selectedDate)
-        const slotEatenKcal = {};
-        const slotHasFood = {};
-        for (const em of refEatenMeals) {
-          const mk = em.mealType || "lunch";
-          const kVal = Number(em.kcal) || 0;
-          slotEatenKcal[mk] = (slotEatenKcal[mk] || 0) + kVal;
-          const isTinyInfusion = kVal < 25 && /^(mate|te|té|cafe negro|café solo|agua|infusion|infusión)\b/i.test(String(em.name || "").trim());
-          if (!isTinyInfusion) {
-            slotHasFood[mk] = true;
-          }
-        }
-
-        const consumedSlotKeys = new Set(
-          Object.keys(slotEatenKcal).filter(mk => slotHasFood[mk] || slotEatenKcal[mk] >= 25)
-        );
-        const consumedSlotLabels = Array.from(consumedSlotKeys).map(mk => SLOT_SHORT_LABELS[mk] || mk);
-
-        const effectiveTargetKcal = targets.targetKcal + (refDayTotals.exerciseKcal || 0);
-        const eatenKcal = refDayTotals.kcal || 0;
-        const eatenP = Math.round(refDayTotals.p || 0);
-        const eatenC = Math.round(refDayTotals.c || 0);
-        const eatenF = Math.round(refDayTotals.f || 0);
-        const remainingKcal = Math.max(0, effectiveTargetKcal - eatenKcal);
+        const realTodayStr = todayStr();
+        const weekAnchorStr = (selectedDate && selectedDate >= realTodayStr) ? selectedDate : realTodayStr;
+        const anchorObj = new Date(weekAnchorStr + "T12:00:00");
+        const anchorDow = (anchorObj.getDay() + 6) % 7;
+        const mondayObj = new Date(anchorObj);
+        mondayObj.setDate(anchorObj.getDate() - anchorDow);
 
         for (let dIdx = 0; dIdx < 7; dIdx++) {
+          const dObj = new Date(mondayObj);
+          dObj.setDate(mondayObj.getDate() + dIdx);
+          const dDateStr = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, "0")}-${String(dObj.getDate()).padStart(2, "0")}`;
+          const dayStatus = dDateStr < realTodayStr ? "past" : (dDateStr === realTodayStr ? "today" : "future");
+          const isToday = dayStatus === "today";
+          const isPast = dayStatus === "past";
+
           // 1. Calcular el menú completo de referencia del día (para Lista de Compras y precarga de días futuros sin consumos)
           const fullDayMeals = [];
           for (let sIdx = 0; sIdx < slotShares.length; sIdx++) {
@@ -21599,12 +21583,50 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             }
           }
 
-          // 2. Filtrar los turnos ya cargados en el día activo (ej: si ya cargó Desayuno, no mostrar Desayuno) y redistribuir las kcal restantes
+          // 2. Solo en el día actual descontamos lo ya ingerido hoy; los días siguientes usan el 100% de las calorías objetivo
+          let eatenKcal = 0, eatenP = 0, eatenC = 0, eatenF = 0, dayExerciseKcal = 0;
+          let effectiveTargetKcal = targets.targetKcal;
+          let remainingKcal = targets.targetKcal;
+          let consumedSlotKeys = new Set();
+          let consumedSlotLabels = [];
+
+          if (isToday) {
+            const todayRec = (appData.days && appData.days[dDateStr]) || null;
+            const todayTotals = getDayTotals(dDateStr);
+            const todayEatenMeals = todayRec && Array.isArray(todayRec.meals)
+              ? todayRec.meals.filter(m => isMealConsumed(m))
+              : [];
+
+            const slotEatenKcal = {};
+            const slotHasFood = {};
+            for (const em of todayEatenMeals) {
+              const mk = em.mealType || "lunch";
+              const kVal = Number(em.kcal) || 0;
+              slotEatenKcal[mk] = (slotEatenKcal[mk] || 0) + kVal;
+              const isTinyInfusion = kVal < 25 && /^(mate|te|té|cafe negro|café solo|agua|infusion|infusión)\b/i.test(String(em.name || "").trim());
+              if (!isTinyInfusion) {
+                slotHasFood[mk] = true;
+              }
+            }
+
+            consumedSlotKeys = new Set(
+              Object.keys(slotEatenKcal).filter(mk => slotHasFood[mk] || slotEatenKcal[mk] >= 25)
+            );
+            consumedSlotLabels = Array.from(consumedSlotKeys).map(mk => SLOT_SHORT_LABELS[mk] || mk);
+            dayExerciseKcal = todayTotals.exerciseKcal || 0;
+            effectiveTargetKcal = targets.targetKcal + dayExerciseKcal;
+            eatenKcal = todayTotals.kcal || 0;
+            eatenP = Math.round(todayTotals.p || 0);
+            eatenC = Math.round(todayTotals.c || 0);
+            eatenF = Math.round(todayTotals.f || 0);
+            remainingKcal = Math.max(0, effectiveTargetKcal - eatenKcal);
+          }
+
           let pendingSlots = slotShares
             .map((slot, origIdx) => ({ ...slot, origIdx }))
             .filter(slot => !consumedSlotKeys.has(slot.key));
 
-          if (pendingSlots.length === 0 && remainingKcal > 90) {
+          if (isToday && pendingSlots.length === 0 && remainingKcal > 90) {
             pendingSlots = [
               { key: "snack", title: "🍽️ Comida / Colación para completar tu meta de hoy", share: 1, pool: meriendaPool, origIdx: 0 }
             ];
@@ -21614,7 +21636,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           const dayMeals = [];
           let allocatedKcalSoFar = 0;
 
-          if (remainingKcal > 0 && pendingSlots.length > 0) {
+          if (!isPast && remainingKcal > 0 && pendingSlots.length > 0) {
             for (let pIdx = 0; pIdx < pendingSlots.length; pIdx++) {
               const slot = pendingSlots[pIdx];
               const sIdx = slot.origIdx;
@@ -21651,10 +21673,19 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           const totP = Math.round(dayMeals.reduce((a, m) => a + m.p, 0));
           const totC = Math.round(dayMeals.reduce((a, m) => a + m.c, 0));
           const totF = Math.round(dayMeals.reduce((a, m) => a + m.f, 0));
+          const calendarKcalLabel = isPast
+            ? "—"
+            : (isToday ? String(remainingKcal) : String(targets.targetKcal));
+
           weekDays.push({
             dayIdx: dIdx,
+            dateStr: dDateStr,
+            dayStatus,
+            isPast,
+            isToday,
             dayName: DAY_NAMES[dIdx],
             dayShort: DAY_SHORT[dIdx],
+            calendarKcalLabel,
             meals: dayMeals,
             fullMeals: fullDayMeals,
             totals: { kcal: totKcal, p: totP, c: totC, f: totF },
@@ -21662,7 +21693,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             eatenP,
             eatenC,
             eatenF,
-            exerciseKcal: refDayTotals.exerciseKcal || 0,
+            exerciseKcal: dayExerciseKcal,
             effectiveTargetKcal,
             remainingKcal,
             consumedSlotKeys: Array.from(consumedSlotKeys),
@@ -21917,6 +21948,12 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         }
 
         // MODO 3: VISTA PRINCIPAL DEL MENÚ SEMANAL PERSONALIZADO (CON ADAPTACIÓN EN VIVO SEGÚN ESTADO DE ÁNIMO)
+        if (plan.weekDays[sugMenuState.activeDayIdx]?.isPast) {
+          const todayFoundIdx = plan.weekDays.findIndex(w => w.isToday);
+          const firstValidIdx = plan.weekDays.findIndex(w => !w.isPast);
+          sugMenuState.activeDayIdx = todayFoundIdx >= 0 ? todayFoundIdx : (firstValidIdx >= 0 ? firstValidIdx : 0);
+        }
+
         const moodInsights = computeMoodLearningInsights();
         const activeMoodId = sugMenuState.selectedMoodId || "normal";
         const activeMoodObj = MOOD_STATES.find(m => m.id === activeMoodId) || null;
@@ -21932,98 +21969,136 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           : (dailyDeltaKcal < 0
               ? `📉 Reducción estimada: <strong>${wkChangeKg.toFixed(2)} kg/semana</strong> • En 21 días: <strong>${days21ChangeKg.toFixed(1)} kg</strong> (de ${curWeight} kg → <strong>~${estWeight21} kg</strong>)`
               : `💪 Ganancia estimada: <strong>+${wkChangeKg.toFixed(2)} kg/semana</strong> • En 21 días: <strong>+${days21ChangeKg.toFixed(1)} kg</strong> (de ${curWeight} kg → <strong>~${estWeight21} kg</strong>)`);
+        const isPlanSecOpen = Boolean(sugMenuState.planSectionOpen);
+        const isMoodSecOpen = Boolean(sugMenuState.moodSectionOpen);
 
         root.innerHTML = `
-          <!-- Barra superior: Selector de Intensidad según tu peso/TDEE + Proyección de Peso + Gustos -->
-          <div style="display:flex;flex-direction:column;gap:8px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:14px;padding:11px 13px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-              <div style="font-size:0.82rem;">
-                <strong>${goalLabel}</strong> <span style="font-size:0.74rem;color:var(--text-muted);">(TDEE personal: ${t.tdee} kcal/día)</span>
-                <div style="color:var(--text-muted);font-size:0.74rem;">
-                  Macros calculados para tus ${curWeight} kg: <strong>${t.proteinG}g Proteína • ${t.carbsG}g Carbos • ${t.fatG}g Grasas</strong>
+          <!-- Sección 1 Desplegable (estilo Agua/Vitamina D): Meta, Intensidad, Gustos y Lista de Compras -->
+          <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:14px;padding:10px 13px;">
+            <div id="sugPlanCollapseToggle" style="display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+              <strong style="font-size:0.84rem;color:var(--text);display:flex;align-items:center;gap:6px;">
+                <span>🎯 Meta, Hábitos y Compras</span>
+              </strong>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:0.78rem;font-weight:800;color:var(--accent);">${t.targetKcal} kcal • ${t.proteinG}g P</span>
+                <span style="font-size:0.75rem;color:var(--text-muted);background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;padding:2px 6px;line-height:1;">${isPlanSecOpen ? "▲" : "▼"}</span>
+              </div>
+            </div>
+            <div style="display:${isPlanSecOpen ? "flex" : "none"};flex-direction:column;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid var(--border);">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div style="font-size:0.82rem;">
+                  <strong>${goalLabel}</strong> <span style="font-size:0.74rem;color:var(--text-muted);">(TDEE personal: ${t.tdee} kcal/día)</span>
+                  <div style="color:var(--text-muted);font-size:0.74rem;">
+                    Macros calculados para tus ${curWeight} kg: <strong>${t.proteinG}g Proteína • ${t.carbsG}g Carbos • ${t.fatG}g Grasas</strong>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button type="button" class="btn btn-sm btn-purple" id="btnOpenHabitsWizard">
+                    🧙‍♂️ Gustos y Hábitos
+                  </button>
+                  <button type="button" class="btn btn-sm" id="btnOpenShoppingList">
+                    🛒 Lista de Compras
+                  </button>
                 </div>
               </div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button type="button" class="btn btn-sm btn-purple" id="btnOpenHabitsWizard">
-                  🧙‍♂️ Gustos y Hábitos
-                </button>
-                <button type="button" class="btn btn-sm" id="btnOpenShoppingList">
-                  🛒 Lista de Compras
-                </button>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-top:7px;border-top:1px solid var(--border);">
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                <label for="sugMenuIntensitySel" style="font-size:0.75rem;font-weight:800;color:var(--text-muted);">🎯 Intensidad del Plan:</label>
-                <select id="sugMenuIntensitySel" style="padding:5px 9px;border-radius:9px;border:1px solid var(--border);background:var(--bg-elev);color:var(--text);font-size:0.78rem;font-weight:800;">
-                  <option value="aggressive" ${curDefType === "aggressive" || curDefType === "custom" ? "selected" : ""}>🔥 Déficit Extremo / Intenso (-750 kcal/día)</option>
-                  <option value="recommended" ${curDefType === "recommended" ? "selected" : ""}>⚖️ Déficit Moderado (-500 kcal/día)</option>
-                  <option value="light" ${curDefType === "light" ? "selected" : ""}>🌿 Déficit Liviano (-300 kcal/día)</option>
-                  <option value="maintain" ${curDefType === "maintain" ? "selected" : ""}>⚖️ Mantenimiento (0 kcal)</option>
-                  <option value="surplus_recommended" ${curDefType.startsWith("surplus") || curDefType === "custom_surplus" ? "selected" : ""}>💪 Superávit Muscular (+450 kcal/día)</option>
-                </select>
-              </div>
-              <div style="font-size:0.76rem;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:9px;border:1px solid rgba(34,197,94,0.35);">
-                ${projText}
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-top:7px;border-top:1px solid var(--border);">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                  <label for="sugMenuIntensitySel" style="font-size:0.75rem;font-weight:800;color:var(--text-muted);">🎯 Intensidad del Plan:</label>
+                  <select id="sugMenuIntensitySel" style="padding:5px 9px;border-radius:9px;border:1px solid var(--border);background:var(--bg-elev);color:var(--text);font-size:0.78rem;font-weight:800;">
+                    <option value="aggressive" ${curDefType === "aggressive" || curDefType === "custom" ? "selected" : ""}>🔥 Déficit Extremo / Intenso (-750 kcal/día)</option>
+                    <option value="recommended" ${curDefType === "recommended" ? "selected" : ""}>⚖️ Déficit Moderado (-500 kcal/día)</option>
+                    <option value="light" ${curDefType === "light" ? "selected" : ""}>🌿 Déficit Liviano (-300 kcal/día)</option>
+                    <option value="maintain" ${curDefType === "maintain" ? "selected" : ""}>⚖️ Mantenimiento (0 kcal)</option>
+                    <option value="surplus_recommended" ${curDefType.startsWith("surplus") || curDefType === "custom_surplus" ? "selected" : ""}>💪 Superávit Muscular (+450 kcal/día)</option>
+                  </select>
+                </div>
+                <div style="font-size:0.76rem;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:9px;border:1px solid rgba(34,197,94,0.35);">
+                  ${projText}
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Selector de Estado de Ánimo que transforma las propuestas de abajo en la misma pantalla -->
-          <div style="background:linear-gradient(135deg, rgba(56,189,248,0.12), rgba(168,85,247,0.1));border:1.5px solid ${activeMoodObj ? activeMoodObj.color : "rgba(56,189,248,0.4)"};border-radius:13px;padding:10px 12px;display:flex;flex-direction:column;gap:7px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-              <strong style="font-size:0.83rem;color:var(--text);">
-                🧠 ¿Cómo te sentís hoy? (Tocá para adaptar tu Desayuno, Almuerzo, Merienda y Cena):
+          <!-- Sección 2 Desplegable (estilo Agua/Vitamina D): Estado de Ánimo -->
+          <div style="background:linear-gradient(135deg, rgba(56,189,248,0.12), rgba(168,85,247,0.1));border:1.5px solid ${activeMoodObj ? activeMoodObj.color : "rgba(56,189,248,0.4)"};border-radius:13px;padding:10px 13px;">
+            <div id="sugMoodCollapseToggle" style="display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+              <strong style="font-size:0.84rem;color:var(--text);display:flex;align-items:center;gap:6px;">
+                <span>🧠 ¿Cómo te sentís hoy?</span>
               </strong>
-              ${moodInsights.totalLogs > 0 && moodInsights.topMoodObj ? `
-                <span style="font-size:0.72rem;color:#0284c7;font-weight:800;">
-                  📊 Aprendido (${moodInsights.totalLogs}): ${moodInsights.topMoodObj.shortLabel} en ${moodInsights.topWindowLabel}
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:0.78rem;font-weight:800;color:${activeMoodObj ? activeMoodObj.color : "var(--accent)"};">${activeMoodObj ? activeMoodObj.shortLabel : "😌 Normal"}</span>
+                <span style="font-size:0.75rem;color:var(--text-muted);background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;padding:2px 6px;line-height:1;">${isMoodSecOpen ? "▲" : "▼"}</span>
+              </div>
+            </div>
+            <div style="display:${isMoodSecOpen ? "flex" : "none"};flex-direction:column;gap:7px;margin-top:9px;padding-top:9px;border-top:1px solid rgba(148,163,184,0.28);">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">
+                  Tocá para adaptar tu Desayuno, Almuerzo, Merienda y Cena:
                 </span>
+                ${moodInsights.totalLogs > 0 && moodInsights.topMoodObj ? `
+                  <span style="font-size:0.72rem;color:#0284c7;font-weight:800;">
+                    📊 Aprendido (${moodInsights.totalLogs}): ${moodInsights.topMoodObj.shortLabel} en ${moodInsights.topWindowLabel}
+                  </span>
+                ` : ""}
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <button type="button" class="btn btn-sm ${activeMoodId === "normal" ? "btn-primary" : ""}" data-quick-open-mood="normal" style="padding:5px 10px;font-size:0.75rem;font-weight:800;">
+                  😌 Normal (Hábitos)
+                </button>
+                ${MOOD_STATES.map(ms => {
+                  const isSel = activeMoodId === ms.id;
+                  return `
+                    <button type="button" class="btn btn-sm" data-quick-open-mood="${ms.id}" style="padding:5px 10px;font-size:0.75rem;font-weight:800;border:2px solid ${isSel ? ms.color : "var(--border)"};background:${isSel ? ms.bgSoft : "var(--bg-elev)"};color:${isSel ? ms.color : "var(--text)"};">
+                      ${ms.shortLabel}
+                    </button>
+                  `;
+                }).join("")}
+              </div>
+              ${activeMoodObj ? `
+                <div style="font-size:0.76rem;color:var(--text);background:var(--bg-elev);border-left:3px solid ${activeMoodObj.color};padding:6px 10px;border-radius:7px;">
+                  <strong style="color:${activeMoodObj.color};">${activeMoodObj.emoji} Menú adaptado a "${activeMoodObj.label}" (${activeMoodObj.strategyTitle}):</strong>
+                  ${activeMoodObj.strategyDesc}
+                </div>
               ` : ""}
             </div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;">
-              <button type="button" class="btn btn-sm ${activeMoodId === "normal" ? "btn-primary" : ""}" data-quick-open-mood="normal" style="padding:5px 10px;font-size:0.75rem;font-weight:800;">
-                😌 Normal (Hábitos)
-              </button>
-              ${MOOD_STATES.map(ms => {
-                const isSel = activeMoodId === ms.id;
-                return `
-                  <button type="button" class="btn btn-sm" data-quick-open-mood="${ms.id}" style="padding:5px 10px;font-size:0.75rem;font-weight:800;border:2px solid ${isSel ? ms.color : "var(--border)"};background:${isSel ? ms.bgSoft : "var(--bg-elev)"};color:${isSel ? ms.color : "var(--text)"};">
-                    ${ms.shortLabel}
-                  </button>
-                `;
-              }).join("")}
-            </div>
-            ${activeMoodObj ? `
-              <div style="font-size:0.76rem;color:var(--text);background:var(--bg-elev);border-left:3px solid ${activeMoodObj.color};padding:6px 10px;border-radius:7px;">
-                <strong style="color:${activeMoodObj.color};">${activeMoodObj.emoji} Menú adaptado a "${activeMoodObj.label}" (${activeMoodObj.strategyTitle}):</strong>
-                ${activeMoodObj.strategyDesc}
-              </div>
-            ` : ""}
           </div>
 
-          <!-- Selector de día de la semana (Lun a Dom) -->
+          <!-- Selector de día de la semana (Lun a Dom): anteriores grisados, actual = restante de hoy, siguientes = objetivo -->
           <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;">
-            ${plan.weekDays.map((wd, idx) => `
-              <button type="button" class="btn btn-sm ${idx === sugMenuState.activeDayIdx ? "btn-primary" : ""}" data-sug-day="${idx}" style="padding:7px 2px;justify-content:center;flex-direction:column;gap:1px;">
-                <span style="font-size:0.77rem;font-weight:800;">${wd.dayShort}</span>
-                <span style="font-size:0.65rem;opacity:0.85;">${wd.totals.kcal}</span>
-              </button>
-            `).join("")}
+            ${plan.weekDays.map((wd, idx) => {
+              const isSel = idx === sugMenuState.activeDayIdx;
+              if (wd.isPast) {
+                return `
+                  <button type="button" class="btn btn-sm" disabled title="${wd.dayName} (día anterior)" style="padding:7px 2px;justify-content:center;flex-direction:column;gap:1px;opacity:0.42;background:var(--bg-elev);color:var(--text-muted);border:1px dashed var(--border);cursor:default;pointer-events:none;">
+                    <span style="font-size:0.76rem;font-weight:700;">${wd.dayShort}</span>
+                    <span style="font-size:0.64rem;">${wd.calendarKcalLabel}</span>
+                  </button>
+                `;
+              }
+              const todayHighlightStyle = (wd.isToday && !isSel)
+                ? "border-color:var(--accent);color:var(--accent);"
+                : "";
+              return `
+                <button type="button" class="btn btn-sm ${isSel ? "btn-primary" : ""}" data-sug-day="${idx}" title="${wd.isToday ? `${wd.dayName} (Hoy • restante: ${wd.calendarKcalLabel} kcal)` : `${wd.dayName} (Meta objetivo: ${wd.calendarKcalLabel} kcal)`}" style="padding:7px 2px;justify-content:center;flex-direction:column;gap:1px;${todayHighlightStyle}">
+                  <span style="font-size:0.77rem;font-weight:800;">${wd.dayShort}</span>
+                  <span style="font-size:0.65rem;opacity:0.9;">${wd.calendarKcalLabel}</span>
+                </button>
+              `;
+            }).join("")}
           </div>
 
           <!-- Platos del día seleccionado -->
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;padding:0 2px;">
-              <strong style="font-size:0.9rem;">📅 Menú sugerido — ${activeDay.dayName} ${activeMoodObj ? `<span style="color:${activeMoodObj.color};">(${activeMoodObj.shortLabel})</span>` : ""}</strong>
+              <strong style="font-size:0.9rem;">📅 Menú sugerido — ${activeDay.dayName}${activeDay.isToday ? " (Hoy)" : ""} ${activeMoodObj ? `<span style="color:${activeMoodObj.color};">(${activeMoodObj.shortLabel})</span>` : ""}</strong>
               <span style="font-size:0.77rem;color:var(--text-muted);">
-                ${activeDay.eatenKcal > 0
+                ${activeDay.isToday && activeDay.eatenKcal > 0
                   ? `Restante a distribuir: <strong style="color:var(--accent);">${activeDay.totals.kcal} kcal</strong> (${activeDay.totals.p}g P • ${activeDay.totals.c}g C • ${activeDay.totals.f}g G)`
-                  : `Total día: <strong style="color:var(--accent);">${activeDay.totals.kcal} kcal</strong> (${activeDay.totals.p}g P • ${activeDay.totals.c}g C • ${activeDay.totals.f}g G)`}
+                  : `Objetivo del día: <strong style="color:var(--accent);">${activeDay.totals.kcal} kcal</strong> (${activeDay.totals.p}g P • ${activeDay.totals.c}g C • ${activeDay.totals.f}g G)`}
               </span>
             </div>
 
-            ${activeDay.eatenKcal > 0 ? `
+            ${activeDay.isToday && activeDay.eatenKcal > 0 ? `
               <div style="background:var(--accent-soft);border:1px solid rgba(34,197,94,0.4);border-radius:11px;padding:8px 11px;font-size:0.77rem;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                 <div>
                   <strong style="color:var(--accent);">✅ Ya cargado hoy (${activeDay.consumedSummaryText}):</strong>
@@ -22073,8 +22148,8 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
                     <button type="button" class="btn btn-sm ${isSwapOpen ? "btn-purple" : ""}" data-swap-slot="${m.slotKey}" title="Elegir otra opción según antojo o lo que tenés en la heladera" style="padding:3px 8px;font-size:0.72rem;">
                       ${isSwapOpen ? "🧊 Heladera / Antojo ▲" : "🔄 Otra opción"}
                     </button>
-                    <button type="button" class="btn btn-sm btn-primary" data-add-sug-meal="${m.slotKey}" title="Agregar este plato al Diario de hoy" style="padding:3px 8px;font-size:0.72rem;">
-                      ➕ Cargar hoy
+                    <button type="button" class="btn btn-sm btn-primary" data-add-sug-meal="${m.slotKey}" title="${activeDay.isToday ? "Agregar este plato al Diario de hoy" : `Dejar planificado en ${activeDay.dayName} (${activeDay.dateStr})`}" style="padding:3px 8px;font-size:0.72rem;">
+                      ${activeDay.isToday ? "➕ Cargar hoy" : `➕ Planificar ${activeDay.dayShort}`}
                     </button>
                   </div>
                 </div>
@@ -22129,13 +22204,27 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           <!-- Botonera inferior para aplicar el día o toda la semana al Diario -->
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--border);">
             <button type="button" class="btn btn-sm" id="btnApplyDayAsPlanned">
-              📋 Precargar comidas restantes en hoy (${selectedDate || todayStr()})
+              ${activeDay.isToday
+                ? `📋 Precargar restantes en hoy (${activeDay.dateStr})`
+                : `📋 Precargar menú en ${activeDay.dayName} (${activeDay.dateStr})`}
             </button>
             <button type="button" class="btn btn-sm btn-primary" id="btnApplyWeekAsPlanned">
               📅 Precargar los 7 días en mi Diario (como Planificado)
             </button>
           </div>
         `;
+
+        document.getElementById("sugPlanCollapseToggle")?.addEventListener("click", () => {
+          sugMenuState.planSectionOpen = !sugMenuState.planSectionOpen;
+          try { localStorage.setItem("michufit_sug_plan_open", sugMenuState.planSectionOpen ? "1" : "0"); } catch (_) {}
+          renderSuggestedMenuModal();
+        });
+
+        document.getElementById("sugMoodCollapseToggle")?.addEventListener("click", () => {
+          sugMenuState.moodSectionOpen = !sugMenuState.moodSectionOpen;
+          try { localStorage.setItem("michufit_sug_mood_open", sugMenuState.moodSectionOpen ? "1" : "0"); } catch (_) {}
+          renderSuggestedMenuModal();
+        });
 
         document.getElementById("btnOpenHabitsWizard")?.addEventListener("click", () => {
           sugMenuState.mode = "wizard";
@@ -22268,6 +22357,28 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             const sk = btn.getAttribute("data-add-sug-meal");
             const mealObj = activeDay.meals.find(x => x.slotKey === sk);
             if (!mealObj) return;
+            const targetDayStr = activeDay.dateStr || todayStr();
+            if (!activeDay.isToday) {
+              const futRec = ensureDayRecord(targetDayStr);
+              futRec.meals.push({
+                id: `plan-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                mealType: mealObj.slotKey,
+                name: mealObj.title,
+                kcal: mealObj.kcal,
+                p: mealObj.p,
+                c: mealObj.c,
+                f: mealObj.f,
+                emoji: mealObj.emoji || "🍽️",
+                planned: true,
+                checked: false,
+                updatedAt: Date.now()
+              });
+              saveToServer();
+              renderAll();
+              btn.textContent = "✅ Planificado";
+              setTimeout(() => { renderSuggestedMenuModal(); }, 500);
+              return;
+            }
             if (activeMoodObj) {
               recordMoodFoodChoice(activeMoodObj, {
                 id: mealObj.id || `${activeMoodObj.id}_${sk}`,
@@ -22280,7 +22391,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
                 slotKey: mealObj.slotKey
               });
             } else {
-              addFoodItemToDay(selectedDate || todayStr(), {
+              addFoodItemToDay(targetDayStr, {
                 mealType: mealObj.slotKey,
                 name: mealObj.title,
                 kcal: mealObj.kcal,
@@ -22296,7 +22407,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         });
 
         document.getElementById("btnApplyDayAsPlanned")?.addEventListener("click", () => {
-          const targetKey = selectedDate || todayStr();
+          const targetKey = activeDay.dateStr || todayStr();
           const dayRec = ensureDayRecord(targetKey);
           const eaten = (dayRec.meals || []).filter(m => isMealConsumed(m));
           const plannedNew = activeDay.meals.map((m, i) => ({
@@ -22316,11 +22427,11 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           saveToServer();
           renderAll();
           closeModal("modalSuggestedMenu");
-          setRaccoonSpeech(`"🥗 ¡Listo! Te dejé precargadas las comidas restantes del ${activeDay.dayName} en tu Diario (${targetKey}) como 📋 Planificado 🐱✨."`);
+          setRaccoonSpeech(`"🥗 ¡Listo! Te dejé precargado el menú del ${activeDay.dayName} en tu Diario (${targetKey}) como 📋 Planificado 🐱✨."`);
         });
 
         document.getElementById("btnApplyWeekAsPlanned")?.addEventListener("click", () => {
-          const baseDateStr = selectedDate || todayStr();
+          const baseDateStr = todayStr();
           const cursor = new Date(baseDateStr + "T12:00:00");
           for (let offset = 0; offset < 7; offset++) {
             const dStr = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
@@ -22328,7 +22439,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             const wdPlan = plan.weekDays[wdIdx] || plan.weekDays[0];
             const dayRec = ensureDayRecord(dStr);
             const eaten = (dayRec.meals || []).filter(m => isMealConsumed(m));
-            const mealsSource = eaten.length > 0 ? wdPlan.meals : (wdPlan.fullMeals || wdPlan.meals);
+            const mealsSource = (offset === 0 && eaten.length > 0) ? wdPlan.meals : (wdPlan.fullMeals || wdPlan.meals);
             const plannedNew = mealsSource.map((m, i) => ({
               id: `plan-${Date.now()}-${offset}-${i}-${Math.random().toString(36).slice(2, 6)}`,
               mealType: m.slotKey,
@@ -22358,14 +22469,17 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         }
         const prefs = ensureMenuPrefs();
         if (startMode === "mood") {
-          sugMenuState.mode = "mood";
+          sugMenuState.mode = "menu";
+          sugMenuState.moodSectionOpen = true;
         } else if (startMode === true || startMode === "wizard" || !prefs.configured) {
           sugMenuState.mode = "wizard";
         } else {
           sugMenuState.mode = "menu";
         }
         sugMenuState.wizStep = 0;
-        sugMenuState.activeDayIdx = (new Date((selectedDate || todayStr()) + "T12:00:00").getDay() + 6) % 7;
+        const realToday = todayStr();
+        const startDayStr = (selectedDate && selectedDate >= realToday) ? selectedDate : realToday;
+        sugMenuState.activeDayIdx = (new Date(startDayStr + "T12:00:00").getDay() + 6) % 7;
         renderSuggestedMenuModal();
         openModal("modalSuggestedMenu");
       };
