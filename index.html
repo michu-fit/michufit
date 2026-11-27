@@ -3485,6 +3485,18 @@
               💾 Guardar y Probar Mail
             </button>
           </div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:6px;">
+            <strong style="font-size:0.82rem;color:var(--text);">🔵 Inicio en 1 toque «Continuar con Google» (OAuth Client ID Web)</strong>
+            <span style="font-size:0.73rem;color:var(--text-muted);line-height:1.38;">
+              En Google Cloud Console → Credenciales → Crear ID de cliente OAuth (Aplicación web) agregando <em>https://michu-fit.github.io</em> en Orígenes JS autorizados y <em>https://michu-fit.github.io/michufit/</em> en URI de redirección, y pegá el ID abajo:
+            </span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <input type="text" id="adminGoogleClientIdInput" placeholder="Ej: 1234567890-abcdefg.apps.googleusercontent.com" style="flex:1;min-width:220px;padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.8rem;" />
+              <button type="button" class="btn btn-sm btn-primary" id="btnSaveGoogleClientId" style="padding:8px 14px;">
+                💾 Guardar Google ID
+              </button>
+            </div>
+          </div>
           <div id="adminEmailNotifyStatusMsg" style="display:none;margin-top:8px;font-size:0.77rem;padding:7px 10px;border-radius:8px;"></div>
         </div>
 
@@ -3859,16 +3871,20 @@
           </p>
         </div>
 
-        <!-- BOTONERA INFERIOR: "Comenzar mi plan" + Huella + "Ya tengo una cuenta" -->
-        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;z-index:3;">
+        <!-- BOTONERA INFERIOR: "Comenzar mi plan" + Google + Huella + "Ya tengo una cuenta" -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:9px;width:100%;z-index:3;">
           <button type="button" class="michu-splash-start-btn" id="btnSplashStartRegister">
             Comenzar mi plan →
+          </button>
+          <button type="button" id="btnSplashGoogleLogin" style="display:inline-flex;align-items:center;justify-content:center;gap:10px;width:min(320px, 92%);padding:11px 18px;border-radius:12px;border:1px solid rgba(255,255,255,0.22);background:#ffffff;color:#0f172a;font-size:0.9rem;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.22);transition:transform 0.15s ease;">
+            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            <span>Continuar con Google</span>
           </button>
           <button type="button" id="btnSplashBiometricLogin" style="display:none;align-items:center;justify-content:center;gap:8px;width:min(320px, 92%);padding:12px 20px;border-radius:12px;border:1px solid rgba(52,211,153,0.45);background:rgba(16,185,129,0.12);color:#34d399;font-size:0.92rem;font-weight:800;cursor:pointer;transition:transform 0.15s ease;">
             🫆 <span id="btnSplashBiometricText">Ingresar con Huella</span>
           </button>
           <button type="button" class="michu-splash-login-link" id="btnSplashOpenLogin">
-            Ya tengo una cuenta
+            Ya tengo una cuenta con Email
           </button>
           <div style="font-size:0.72rem;color:#94a3b8;text-align:center;line-height:1.45;margin-top:3px;">
             Al continuar, aceptás nuestros
@@ -3898,13 +3914,27 @@
         <div id="authAlertMessage" style="display:none;padding:9px 12px;border-radius:10px;font-size:0.81rem;margin-bottom:12px;"></div>
 
         <!-- FORMULARIO LOGIN -->
-        <form id="authLoginForm" style="display:flex;flex-direction:column;gap:12px;">
-          <div class="field">
-            <label for="loginIdentifier">Usuario o Email</label>
-            <input type="text" id="loginIdentifier" placeholder="Ej: tu_usuario o tu@email.com" required autocomplete="username" />
+        <form id="authLoginForm" style="display:flex;flex-direction:column;gap:11px;">
+          <button type="button" id="btnLoginFormGoogle" style="display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:11px 16px;border-radius:12px;border:1.5px solid var(--border);background:#ffffff;color:#0f172a;font-size:0.88rem;font-weight:800;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,0.06);">
+            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            <span>Continuar con Google</span>
+          </button>
+          <div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:0.73rem;font-weight:700;">
+            <span style="flex:1;height:1px;background:var(--border);"></span>
+            <span>o con tu correo</span>
+            <span style="flex:1;height:1px;background:var(--border);"></span>
           </div>
           <div class="field">
-            <label for="loginPassword">Contraseña</label>
+            <label for="loginIdentifier">Email</label>
+            <input type="text" id="loginIdentifier" placeholder="Ej: tu@gmail.com" required autocomplete="username" />
+          </div>
+          <div class="field">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label for="loginPassword">Contraseña</label>
+              <button type="button" id="btnForgotPasswordOtp" style="background:none;border:none;padding:0;color:var(--accent);font-size:0.74rem;font-weight:800;cursor:pointer;text-decoration:underline;">
+                ¿Olvidaste tu clave?
+              </button>
+            </div>
             <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" />
           </div>
           <button type="submit" class="btn btn-primary" style="justify-content:center;padding:12px;margin-top:4px;">
@@ -3948,7 +3978,47 @@
         </form>
       </div>
 
-      <!-- Vista 2: Sala de Espera cuando la cuenta está 'pending' -->
+      <!-- Vista 2: Verificación de Email por Código de 6 dígitos (OTP) -->
+      <div id="authVerifyOtpView" style="display:none;text-align:center;padding:8px 4px;">
+        <div style="background:var(--bg-card);border:1.5px solid rgba(14,159,119,0.45);border-radius:18px;padding:18px 16px;margin-bottom:12px;">
+          <div style="font-size:2.1rem;margin-bottom:6px;">📧🔑</div>
+          <strong id="otpVerifyHeading" style="font-size:1.06rem;color:var(--text);display:block;margin-bottom:6px;">
+            Verificá tu correo con el código de 6 dígitos
+          </strong>
+          <p id="otpVerifySubtext" style="font-size:0.81rem;color:var(--text-muted);line-height:1.45;margin-bottom:14px;">
+            Enviamos un código de 6 números a <strong id="otpTargetEmailLabel" style="color:var(--accent);">tu@email.com</strong>. Revisá Recibidos (o Spam) e ingresalo abajo para entrar al instante.
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;max-width:300px;margin:0 auto;">
+            <input type="text" id="otpCodeInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code"
+              placeholder="000000"
+              style="text-align:center;font-size:1.65rem;font-weight:900;letter-spacing:0.32em;padding:12px 10px;border-radius:13px;border:2px solid var(--accent);background:var(--bg-elev);color:var(--text);font-variant-numeric:tabular-nums;" />
+
+            <div id="otpResetNewPwdWrap" style="display:none;text-align:left;">
+              <label for="otpNewPasswordInput" style="font-size:0.75rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;">Nueva contraseña (mín. 4 caracteres)</label>
+              <input type="password" id="otpNewPasswordInput" placeholder="Elegí tu nueva clave" autocomplete="new-password"
+                style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-elev);color:var(--text);" />
+            </div>
+
+            <div id="otpInlineAlert" style="display:none;padding:8px 10px;border-radius:9px;font-size:0.78rem;"></div>
+
+            <button type="button" class="btn btn-primary" id="btnConfirmOtpCode" style="width:100%;justify-content:center;padding:12px;font-size:0.9rem;font-weight:800;">
+              ✅ Verificar y Entrar Ahora
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          <button type="button" class="btn btn-sm" id="btnResendOtpCode">
+            🔄 Reenviar código
+          </button>
+          <button type="button" class="btn btn-sm" id="btnBackFromOtpView">
+            ✏️ Corregir email / Volver
+          </button>
+        </div>
+      </div>
+
+      <!-- Vista 3: Sala de Espera legacy cuando una cuenta antigua estuviera 'pending' -->
       <div id="authPendingView" style="display:none;text-align:center;padding:12px 4px;">
         <div style="background:rgba(245,158,11,0.12);border:1.5px solid var(--warn);border-radius:14px;padding:18px;margin-bottom:14px;">
           <div style="font-size:2.2rem;margin-bottom:6px;">⏳🐾</div>
@@ -4524,8 +4594,13 @@
       if (sysChurnRow && sysChurnRow.user_doc && Array.isArray(sysChurnRow.user_doc.events)) {
         window._cachedCloudChurnEvents = sysChurnRow.user_doc.events;
       }
+      const sysAuthCfgRow = (rows || []).find(r => r.id === "sys-auth-config");
+      if (sysAuthCfgRow && sysAuthCfgRow.user_doc && sysAuthCfgRow.user_doc.googleClientId) {
+        window._michuGoogleClientId = String(sysAuthCfgRow.user_doc.googleClientId).trim();
+        try { localStorage.setItem("michufit_google_client_id", window._michuGoogleClientId); } catch (_) {}
+      }
       const mapped = (rows || [])
-        .filter(r => r.id !== "sys-food-catalog" && r.id !== "sys-churn-stats" && r.status !== "system_catalog" && r.role !== "system")
+        .filter(r => r.id !== "sys-food-catalog" && r.id !== "sys-churn-stats" && r.id !== "sys-auth-config" && !String(r.id || "").startsWith("gh-") && r.status !== "system_catalog" && r.role !== "system")
         .map(r => {
           const doc = r.user_doc || {};
           doc.id = r.id || doc.id;
@@ -4917,6 +4992,62 @@
     }
     window.sbSendAdminRegistrationEmail = sbSendAdminRegistrationEmail;
 
+    async function sbSendOtpEmailToUser(userEmail, userName, otpCode, purpose = "verify", usersList = []) {
+      try {
+        const cleanEmail = String(userEmail || "").trim().toLowerCase();
+        if (!cleanEmail || !cleanEmail.includes("@")) return { ok: false, error: "Email inválido" };
+        const owner = (usersList || []).find(u => u.id === "u-owner" || u.role === "superadmin");
+        const webhookUrl = (
+          (owner && owner.adminWebhookUrl) ||
+          localStorage.getItem("michufit_admin_webhook_url") ||
+          DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL
+        ).trim();
+
+        const isReset = purpose === "reset";
+        const customSubject = isReset
+          ? `🔑 ${otpCode} es tu código para recuperar tu clave en Michu Fit`
+          : `🔑 ${otpCode} es tu código de verificación de Michu Fit`;
+        const customHtml = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;border:2px solid #10b981;border-radius:18px;overflow:hidden;background:#ffffff;">`
+          + `<div style="background:linear-gradient(135deg,#12ad82,#0d8f6b);color:#ffffff;padding:18px 22px;font-size:19px;font-weight:bold;text-align:center;">🐱 Michu Fit — ${isReset ? "Recuperación de Clave" : "Verificación de Correo"}</div>`
+          + `<div style="padding:22px 24px;color:#0f172a;font-size:15px;line-height:1.5;text-align:center;">`
+          + `<p style="margin:0 0 12px;">¡Hola <strong>${String(userName || "campeón").replace(/[<>&]/g, "")}</strong>! Ingresá este código de 6 dígitos en la app para ${isReset ? "guardar tu nueva contraseña" : "activar tu cuenta al instante"}:</p>`
+          + `<div style="margin:18px auto;padding:14px 20px;background:#f0fdf4;border:2px dashed #10b981;border-radius:14px;font-size:32px;font-weight:900;letter-spacing:8px;color:#047857;">${otpCode}</div>`
+          + `<p style="margin:12px 0 0;font-size:12px;color:#64748b;">Este código vence en 15 minutos. Si no solicitaste este acceso, podés ignorar este mensaje.</p>`
+          + `</div></div>`;
+
+        if (webhookUrl && webhookUrl.startsWith("https://script.google.com/")) {
+          const gasPayload = {
+            to: cleanEmail,
+            isOtp: true,
+            otpCode: String(otpCode),
+            customSubject,
+            customHtml,
+            // Campos retrocompatibles por si el Apps Script aún tiene la versión previa
+            nombre: `${userName || "Usuario"} — TU CÓDIGO ES: ${otpCode}`,
+            emailUsuario: cleanEmail,
+            rol: `🔑 CÓDIGO DE 6 DÍGITOS: ${otpCode}`,
+            pesoMeta: `Ingresá el código ${otpCode} en Michu Fit (válido 15 min)`,
+            fechaHora: new Date().toLocaleString("es-AR"),
+            linkAdmin: "https://michu-fit.github.io/michufit/"
+          };
+          const res = await _nativeFetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(gasPayload)
+          });
+          const txt = await res.text().catch(() => "");
+          if (res.ok && txt.includes('"ok":true')) {
+            return { ok: true, via: "google-script" };
+          }
+        }
+        return { ok: false, error: "No se pudo despachar el correo de verificación." };
+      } catch (err) {
+        console.warn("Error enviando OTP por email:", err);
+        return { ok: false, error: String(err) };
+      }
+    }
+    window.sbSendOtpEmailToUser = sbSendOtpEmailToUser;
+
     function sbSummarizeUserForPanel(users, u) {
       const td = u.trackerData || {};
       const prof = td.profile || {};
@@ -5052,17 +5183,19 @@
           const hasGemKey = Boolean(localStorage.getItem("michufit_gemini_key"));
 
           if (!actorUid) {
+            try { await sbFetchUsersByIds(["sys-auth-config"]); } catch (_) {}
             return sbJsonResponse({
               ok: true,
               authRequired: true,
               hasGeminiKey: hasGemKey,
+              googleClientId: window._michuGoogleClientId || localStorage.getItem("michufit_google_client_id") || "",
               lanUrl: publicUrl,
               localWifiUrl: publicUrl,
               tunnelUrl: publicUrl
             });
           }
 
-          const users = await sbFetchUsersByIds([actorUid, targetId, "sys-food-catalog"]);
+          const users = await sbFetchUsersByIds([actorUid, targetId, "sys-food-catalog", "sys-auth-config"]);
           const user = sbResolveAuthUser(users, init.headers);
 
           if (!user) {
@@ -5146,7 +5279,7 @@
           const ident = (body.identifier || "").trim().toLowerCase();
           const pwd = (body.password || "").trim();
           if (!ident || !pwd) {
-            return sbJsonResponse({ ok: false, error: "Ingresá tu usuario/email y contraseña." }, 400);
+            return sbJsonResponse({ ok: false, error: "Ingresá tu email y contraseña." }, 400);
           }
           const users = await sbFetchAllUsers();
           const pwdHash = sbHashPassword(pwd);
@@ -5157,10 +5290,23 @@
           });
 
           if (!matched) {
-            return sbJsonResponse({ ok: false, error: "Usuario o contraseña incorrectos." }, 401);
+            return sbJsonResponse({ ok: false, error: "Email o contraseña incorrectos." }, 401);
           }
           if (matched.status === "blocked") {
             return sbJsonResponse({ ok: false, error: "Esta cuenta se encuentra pausada por el administrador." }, 403);
+          }
+          if (matched.status === "pending_email") {
+            const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+            matched.otpCodeHash = sbHashPassword(otpCode);
+            matched.otpExpiresAt = Date.now() + 15 * 60 * 1000;
+            await sbUpsertUser(matched);
+            await sbSendOtpEmailToUser(matched.email, matched.name, otpCode, "verify", users);
+            return sbJsonResponse({
+              ok: true,
+              requiresEmailOtp: true,
+              email: matched.email,
+              name: matched.name
+            });
           }
 
           const token = `sb_tok__${matched.id}__${Date.now()}`;
@@ -5218,7 +5364,7 @@
           });
         }
 
-        // 4. POST /api/auth/register
+        // 4. POST /api/auth/register (Email como ID único + Código OTP de 6 dígitos con alta automática sin espera de Admin)
         if (method === "POST" && path.endsWith("/api/auth/register")) {
           if (window._sbRegisterInFlight) {
             return sbJsonResponse({ ok: false, error: "Procesando tu solicitud, aguardá un instante..." }, 429);
@@ -5227,41 +5373,53 @@
           try {
             const name = (body.name || "").trim();
             const email = (body.email || "").trim().toLowerCase();
-            const username = (body.username || (email ? email.split("@")[0] : "")).trim().toLowerCase();
             const pwd = (body.password || "").trim();
             const reqRole = body.roleRequested || "patient";
             const inviteCode = (body.inviteCode || "").trim().toUpperCase();
             const profInit = body.profile || {};
 
-            if (!name || !email || pwd.length < 4) {
-              return sbJsonResponse({ ok: false, error: "Completá nombre, email y una contraseña de al menos 4 caracteres." }, 400);
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!name || !emailRegex.test(email) || pwd.length < 4) {
+              return sbJsonResponse({ ok: false, error: "Ingresá tu nombre, un correo electrónico válido (ej: nombre@gmail.com) y una contraseña de al menos 4 caracteres." }, 400);
             }
 
             const pwdHash = sbHashPassword(pwd);
             const users = await sbFetchAllUsers();
-            const existingUser = users.find(u =>
-              (u.email || "").toLowerCase() === email ||
-              (username && (u.username || "").toLowerCase() === username)
-            );
+            // Colisión verificada exclusivamente por correo electrónico único
+            const existingUser = users.find(u => (u.email || "").trim().toLowerCase() === email);
+            const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+            const otpHash = sbHashPassword(otpCode);
+            const otpExp = Date.now() + 15 * 60 * 1000;
+
             if (existingUser) {
-              if (existingUser.status === "pending" && existingUser.passwordHash === pwdHash) {
-                const token = `sb_tok__${existingUser.id}__${Date.now()}`;
-                localStorage.setItem("michufit_auth_uid", existingUser.id);
+              if (existingUser.status === "pending_email" || existingUser.status === "pending") {
+                existingUser.name = name || existingUser.name;
+                existingUser.passwordHash = pwdHash;
+                existingUser.status = "pending_email";
+                existingUser.otpCodeHash = otpHash;
+                existingUser.otpExpiresAt = otpExp;
+                if (Object.keys(profInit).length > 0) {
+                  existingUser.trackerData = sbCreateEmptyTrackerData(
+                    name, profInit.sex, profInit.age, profInit.weight, profInit.goalWeight, profInit.height, profInit
+                  );
+                }
+                await sbUpsertUser(existingUser);
+                await sbSendOtpEmailToUser(email, name, otpCode, "verify", users);
                 return sbJsonResponse({
                   ok: true,
-                  token,
-                  user: sbSanitizeUser(users, existingUser),
-                  pendingApproval: true
+                  requiresEmailOtp: true,
+                  email,
+                  name: existingUser.name
                 });
               }
-              return sbJsonResponse({ ok: false, error: "Ya existe una cuenta registrada con ese email o usuario." }, 409);
+              return sbJsonResponse({ ok: false, error: "Ya existe una cuenta activa con ese correo electrónico. Podés iniciar sesión o tocar «¿Olvidaste tu clave?»." }, 409);
             }
 
             const nutriUser = inviteCode
               ? users.find(u => ["nutritionist", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === inviteCode)
               : null;
 
-            const cleanIdentSlug = (email || username).replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "").slice(0, 48);
+            const cleanIdentSlug = email.replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "").slice(0, 48);
             const newId = cleanIdentSlug ? `u-${cleanIdentSlug}` : ("u-" + Date.now());
             const roleToAssign = reqRole === "nutritionist" ? "nutritionist" : "patient";
             let genCode = "";
@@ -5275,12 +5433,15 @@
 
             const newUser = {
               id: newId,
-              username,
+              username: email,
               email,
               name,
               passwordHash: pwdHash,
               role: roleToAssign,
-              status: "pending",
+              status: "pending_email",
+              emailVerified: false,
+              otpCodeHash: otpHash,
+              otpExpiresAt: otpExp,
               inviteCode: genCode,
               nutritionistId: nutriUser ? nutriUser.id : null,
               coachNote: "",
@@ -5300,21 +5461,199 @@
 
             await sbUpsertUser(newUser);
             users.push(newUser);
-            const token = `sb_tok__${newId}__${Date.now()}`;
-            localStorage.setItem("michufit_auth_uid", newId);
 
-            // Disparar notificación por correo al Gmail del Administrador en segundo plano
-            sbSendAdminRegistrationEmail(newUser, users, false).catch(() => {});
+            const mailSent = await sbSendOtpEmailToUser(email, name, otpCode, "verify", users);
+            if (!mailSent.ok) {
+              return sbJsonResponse({ ok: false, error: "No pudimos enviar el código a ese correo. Verificá que esté bien escrito o usá Continuar con Google." }, 500);
+            }
 
             return sbJsonResponse({
               ok: true,
-              token,
-              user: sbSanitizeUser(users, newUser),
-              pendingApproval: true
+              requiresEmailOtp: true,
+              email,
+              name
             });
           } finally {
             window._sbRegisterInFlight = false;
           }
+        }
+
+        // 4b. POST /api/auth/verify-email-otp (Valida los 6 dígitos y aprueba automáticamente la cuenta al instante)
+        if (method === "POST" && path.endsWith("/api/auth/verify-email-otp")) {
+          const email = (body.email || "").trim().toLowerCase();
+          const code = String(body.code || "").replace(/\D/g, "").trim();
+          const newPwd = (body.newPassword || "").trim();
+          const isReset = Boolean(body.isPasswordReset);
+
+          if (!email || code.length !== 6) {
+            return sbJsonResponse({ ok: false, error: "Ingresá el código completo de 6 dígitos que enviamos a tu correo." }, 400);
+          }
+          if (isReset && newPwd.length < 4) {
+            return sbJsonResponse({ ok: false, error: "Elegí una nueva contraseña de al menos 4 caracteres." }, 400);
+          }
+
+          const users = await sbFetchAllUsers();
+          const target = users.find(u => (u.email || "").trim().toLowerCase() === email);
+          if (!target || !target.otpCodeHash) {
+            return sbJsonResponse({ ok: false, error: "No encontramos un código pendiente para ese correo. Tocá «Reenviar código»." }, 404);
+          }
+          if (target.status === "blocked") {
+            return sbJsonResponse({ ok: false, error: "Esta cuenta se encuentra pausada por el administrador." }, 403);
+          }
+          if (Number(target.otpExpiresAt || 0) < Date.now()) {
+            return sbJsonResponse({ ok: false, error: "El código venció (dura 15 min). Tocá «Reenviar código» para recibir uno nuevo." }, 400);
+          }
+          if (target.otpCodeHash !== sbHashPassword(code)) {
+            return sbJsonResponse({ ok: false, error: "Código incorrecto. Revisá los 6 números en el último mail recibido." }, 401);
+          }
+
+          const wasFirstActivation = target.status !== "approved";
+          target.status = "approved";
+          target.emailVerified = true;
+          delete target.otpCodeHash;
+          delete target.otpExpiresAt;
+          if (isReset && newPwd.length >= 4) {
+            target.passwordHash = sbHashPassword(newPwd);
+          }
+
+          await sbUpsertUser(target);
+          if (wasFirstActivation) {
+            sbSendAdminRegistrationEmail(target, users, false).catch(() => {});
+          }
+
+          const token = `sb_tok__${target.id}__${Date.now()}`;
+          localStorage.setItem("michufit_auth_uid", target.id);
+          return sbJsonResponse({
+            ok: true,
+            token,
+            user: sbSanitizeUser(users, target),
+            pendingApproval: false,
+            data: target.trackerData || sbCreateEmptyTrackerData(target.name)
+          });
+        }
+
+        // 4c. POST /api/auth/resend-email-otp (Reenvío de código o inicio de recupero de contraseña)
+        if (method === "POST" && path.endsWith("/api/auth/resend-email-otp")) {
+          const email = (body.email || "").trim().toLowerCase();
+          const purpose = body.purpose === "reset" ? "reset" : "verify";
+          if (!email || !email.includes("@")) {
+            return sbJsonResponse({ ok: false, error: "Ingresá tu dirección de correo electrónico válida." }, 400);
+          }
+          const users = await sbFetchAllUsers();
+          const target = users.find(u => (u.email || "").trim().toLowerCase() === email);
+          if (!target) {
+            return sbJsonResponse({ ok: false, error: "No encontramos ninguna cuenta registrada con ese correo electrónico." }, 404);
+          }
+          if (target.status === "blocked") {
+            return sbJsonResponse({ ok: false, error: "Esta cuenta se encuentra pausada." }, 403);
+          }
+          const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+          target.otpCodeHash = sbHashPassword(otpCode);
+          target.otpExpiresAt = Date.now() + 15 * 60 * 1000;
+          await sbUpsertUser(target);
+          const sent = await sbSendOtpEmailToUser(email, target.name, otpCode, purpose, users);
+          if (!sent.ok) {
+            return sbJsonResponse({ ok: false, error: "Error temporal enviando el correo. Intentá nuevamente en unos segundos." }, 500);
+          }
+          return sbJsonResponse({ ok: true, email, name: target.name });
+        }
+
+        // 4d. POST /api/auth/google-login (Inicio o alta instantánea con cuenta verificada de Google)
+        if (method === "POST" && path.endsWith("/api/auth/google-login")) {
+          const accessToken = (body.accessToken || "").trim();
+          const wizardProf = body.profile || null;
+          const wizardName = (body.name || "").trim();
+          const reqRole = body.roleRequested || "patient";
+          const inviteCode = (body.inviteCode || "").trim().toUpperCase();
+
+          if (!accessToken) {
+            return sbJsonResponse({ ok: false, error: "No se recibió el token de Google." }, 400);
+          }
+          const gRes = await _nativeFetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: { "Authorization": `Bearer ${accessToken}` }
+          });
+          if (!gRes.ok) {
+            return sbJsonResponse({ ok: false, error: "No se pudo verificar la sesión con Google. Intentá nuevamente." }, 401);
+          }
+          const gInfo = await gRes.json();
+          const gEmail = String(gInfo.email || "").trim().toLowerCase();
+          if (!gEmail || !gInfo.email_verified) {
+            return sbJsonResponse({ ok: false, error: "Google no devolvió un correo verificado." }, 400);
+          }
+
+          const users = await sbFetchAllUsers();
+          let target = users.find(u => (u.email || "").trim().toLowerCase() === gEmail);
+          if (target) {
+            if (target.status === "blocked") {
+              return sbJsonResponse({ ok: false, error: "Esta cuenta se encuentra pausada por el administrador." }, 403);
+            }
+            let changed = false;
+            if (target.status !== "approved") {
+              target.status = "approved";
+              changed = true;
+            }
+            if (!target.emailVerified) {
+              target.emailVerified = true;
+              changed = true;
+            }
+            if (gInfo.sub && target.googleSub !== gInfo.sub) {
+              target.googleSub = gInfo.sub;
+              changed = true;
+            }
+            if (changed) await sbUpsertUser(target);
+          } else {
+            const nutriUser = inviteCode
+              ? users.find(u => ["nutritionist", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === inviteCode)
+              : null;
+            const displayName = wizardName || gInfo.given_name || gInfo.name || gEmail.split("@")[0];
+            const cleanSlug = gEmail.replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "").slice(0, 48);
+            const newId = cleanSlug ? `u-${cleanSlug}` : ("u-" + Date.now());
+            const roleToAssign = reqRole === "nutritionist" ? "nutritionist" : "patient";
+            const now = new Date();
+            const createdStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+            const pInit = wizardProf || {};
+
+            target = {
+              id: newId,
+              username: gEmail,
+              email: gEmail,
+              name: displayName,
+              passwordHash: sbHashPassword("google_oauth_" + (gInfo.sub || Date.now())),
+              authProvider: "google",
+              googleSub: gInfo.sub || "",
+              role: roleToAssign,
+              status: "approved",
+              emailVerified: true,
+              inviteCode: roleToAssign === "nutritionist" ? `NUTRI-${displayName.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PRO"}` : "",
+              nutritionistId: nutriUser ? nutriUser.id : null,
+              coachNote: "",
+              coachNoteUpdatedAt: "",
+              coachName: nutriUser ? nutriUser.name : "",
+              createdAt: createdStr,
+              trackerData: sbCreateEmptyTrackerData(
+                displayName,
+                pInit.sex,
+                pInit.age,
+                pInit.weight,
+                pInit.goalWeight,
+                pInit.height,
+                pInit
+              )
+            };
+            await sbUpsertUser(target);
+            users.push(target);
+            sbSendAdminRegistrationEmail(target, users, false).catch(() => {});
+          }
+
+          const token = `sb_tok__${target.id}__${Date.now()}`;
+          localStorage.setItem("michufit_auth_uid", target.id);
+          return sbJsonResponse({
+            ok: true,
+            token,
+            user: sbSanitizeUser(users, target),
+            pendingApproval: false,
+            data: target.trackerData || sbCreateEmptyTrackerData(target.name)
+          });
         }
 
         // 5. POST /api/auth/logout
@@ -13373,6 +13712,7 @@
       const overlayEl = document.getElementById("modalAuthOverlay");
       const splashView = document.getElementById("authSplashHeroView");
       const formsView = document.getElementById("authFormsView");
+      const verifyOtpView = document.getElementById("authVerifyOtpView");
       const pendingView = document.getElementById("authPendingView");
       const loginForm = document.getElementById("authLoginForm");
       const regForm = document.getElementById("authRegisterForm");
@@ -13382,12 +13722,22 @@
       const switchTabs = document.getElementById("authModalSwitchTabs");
 
       showAuthAlert("");
-      if (mode === "pending") {
+      if (mode === "verify-otp") {
         if (overlayEl) overlayEl.setAttribute("data-auth-mode", "login-form");
         if (splashView) splashView.style.display = "none";
         if (headerIntro) headerIntro.style.display = "none";
         if (switchTabs) switchTabs.style.display = "none";
         if (formsView) formsView.style.display = "none";
+        if (pendingView) pendingView.style.display = "none";
+        if (verifyOtpView) verifyOtpView.style.display = "block";
+        setTimeout(() => document.getElementById("otpCodeInput")?.focus(), 80);
+      } else if (mode === "pending") {
+        if (overlayEl) overlayEl.setAttribute("data-auth-mode", "login-form");
+        if (splashView) splashView.style.display = "none";
+        if (headerIntro) headerIntro.style.display = "none";
+        if (switchTabs) switchTabs.style.display = "none";
+        if (formsView) formsView.style.display = "none";
+        if (verifyOtpView) verifyOtpView.style.display = "none";
         if (pendingView) pendingView.style.display = "block";
         const summaryTxt = document.getElementById("pendingUserSummaryText");
         if (summaryTxt && currentUserInfo) {
@@ -13396,6 +13746,7 @@
       } else if (mode === "login-form") {
         if (overlayEl) overlayEl.setAttribute("data-auth-mode", "login-form");
         if (splashView) splashView.style.display = "none";
+        if (verifyOtpView) verifyOtpView.style.display = "none";
         if (pendingView) pendingView.style.display = "none";
         if (formsView) formsView.style.display = "block";
         if (headerIntro) headerIntro.style.display = "block";
@@ -13406,20 +13757,23 @@
       } else if (mode === "register") {
         if (overlayEl) overlayEl.setAttribute("data-auth-mode", "register");
         if (splashView) splashView.style.display = "none";
+        if (verifyOtpView) verifyOtpView.style.display = "none";
         if (pendingView) pendingView.style.display = "none";
         if (formsView) formsView.style.display = "block";
         if (headerIntro) headerIntro.style.display = "none";
         if (switchTabs) switchTabs.style.display = "none";
         if (loginForm) loginForm.style.display = "none";
         if (regForm) regForm.style.display = "flex";
-        if (typeof window.resetRegWizard === "function") {
+        if (typeof window.resetRegWizard === "function" && !window._keepWizardStepOnReturn) {
           window.resetRegWizard();
         }
+        window._keepWizardStepOnReturn = false;
       } else {
         // Por defecto ("login" o "splash"): Mostrar la portada editorial de Michu Fit
         if (overlayEl) overlayEl.setAttribute("data-auth-mode", "splash");
         if (splashView) splashView.style.display = "flex";
         if (formsView) formsView.style.display = "none";
+        if (verifyOtpView) verifyOtpView.style.display = "none";
         if (pendingView) pendingView.style.display = "none";
         if (headerIntro) headerIntro.style.display = "none";
       }
@@ -13782,6 +14136,8 @@
       const emailNotifySec = document.getElementById("adminEmailNotifySection");
       const emailNotifyInp = document.getElementById("adminNotifyEmailInput");
       const webhookUrlInp = document.getElementById("adminWebhookUrlInput");
+      const googleCidInp = document.getElementById("adminGoogleClientIdInput");
+      const btnSaveGoogleCid = document.getElementById("btnSaveGoogleClientId");
       const btnCopyGasCode = document.getElementById("btnCopyGoogleScriptCode");
       const btnSaveTestMail = document.getElementById("btnSaveAndTestAdminEmail");
       const emailStatusMsg = document.getElementById("adminEmailNotifyStatusMsg");
@@ -13795,29 +14151,85 @@
           webhookUrlInp.dataset.initialized = "1";
           webhookUrlInp.value = currentUserInfo.adminWebhookUrl || localStorage.getItem("michufit_admin_webhook_url") || DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL;
         }
+        if (isSuper && googleCidInp && !googleCidInp.dataset.initialized) {
+          googleCidInp.dataset.initialized = "1";
+          googleCidInp.value = window._michuGoogleClientId || localStorage.getItem("michufit_google_client_id") || "";
+        }
+        if (isSuper && btnSaveGoogleCid && !btnSaveGoogleCid.dataset.bound) {
+          btnSaveGoogleCid.dataset.bound = "1";
+          btnSaveGoogleCid.addEventListener("click", async () => {
+            const cleanCid = (googleCidInp ? googleCidInp.value : "").trim();
+            btnSaveGoogleCid.disabled = true;
+            btnSaveGoogleCid.textContent = "⏳ Guardando...";
+            try {
+              window._michuGoogleClientId = cleanCid;
+              localStorage.setItem("michufit_google_client_id", cleanCid);
+              const cfgRow = {
+                id: "sys-auth-config",
+                username: "_sys_auth_config",
+                email: "auth@michufit.system",
+                name: "Configuración OAuth Global",
+                role: "system",
+                status: "system_catalog",
+                user_doc: { id: "sys-auth-config", googleClientId: cleanCid },
+                updated_at: new Date().toISOString()
+              };
+              await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
+                method: "POST",
+                headers: {
+                  "apikey": SUPABASE_KEY,
+                  "Authorization": `Bearer ${SUPABASE_KEY}`,
+                  "Content-Type": "application/json",
+                  "Prefer": "resolution=merge-duplicates,return=minimal"
+                },
+                body: JSON.stringify([cfgRow])
+              }, 20000);
+              if (emailStatusMsg) {
+                emailStatusMsg.style.display = "block";
+                emailStatusMsg.style.background = "var(--accent-soft)";
+                emailStatusMsg.style.color = "var(--accent)";
+                emailStatusMsg.style.border = "1px solid var(--accent)";
+                emailStatusMsg.innerHTML = cleanCid
+                  ? `✅ <strong>Google OAuth Client ID activado en la nube</strong> para Web y Google Play.`
+                  : `ℹ️ Google Client ID limpiado.`;
+              }
+            } catch (_) {
+              if (emailStatusMsg) {
+                emailStatusMsg.style.display = "block";
+                emailStatusMsg.style.background = "var(--danger-soft)";
+                emailStatusMsg.style.color = "var(--danger)";
+                emailStatusMsg.style.border = "1px solid var(--danger)";
+                emailStatusMsg.innerHTML = `⚠️ Error al guardar en la nube. Revisá tu conexión.`;
+              }
+            } finally {
+              btnSaveGoogleCid.disabled = false;
+              btnSaveGoogleCid.textContent = "💾 Guardar Google ID";
+            }
+          });
+        }
         if (isSuper && btnCopyGasCode && !btnCopyGasCode.dataset.bound) {
           btnCopyGasCode.dataset.bound = "1";
           btnCopyGasCode.addEventListener("click", () => {
             const gasCode = `function doPost(e) {
   var d = JSON.parse(e.postData.contents);
   var dest = d.to || Session.getActiveUser().getEmail();
-  var subj = d.isTest
+  var subj = d.customSubject || (d.isTest
     ? "🐱 [Prueba] Avisos de Michu Fit activados"
-    : "🐱 Nuevo usuario pendiente en Michu Fit: " + d.nombre + " (" + d.rol + ")";
-  var html = "<div style='font-family:Arial,sans-serif;max-width:520px;margin:0 auto;border:2px solid #22c55e;border-radius:16px;overflow:hidden;'>"
+    : "🐱 Nuevo usuario en Michu Fit: " + d.nombre + " (" + d.rol + ")");
+  var html = d.customHtml || ("<div style='font-family:Arial,sans-serif;max-width:520px;margin:0 auto;border:2px solid #22c55e;border-radius:16px;overflow:hidden;'>"
     + "<div style='background:#22c55e;color:#ffffff;padding:16px 20px;font-size:18px;font-weight:bold;'>🐱 Michu Fit — Alta de Usuario</div>"
     + "<div style='padding:18px 20px;color:#1e293b;font-size:14px;line-height:1.5;'>"
-    + "<p style='margin-top:0;'>¡Hola Angel! Se registró una nueva solicitud de cuenta en <strong>Michu Fit</strong>:</p>"
+    + "<p style='margin-top:0;'>¡Hola Angel! Se activó una nueva cuenta en <strong>Michu Fit</strong>:</p>"
     + "<table style='width:100%;border-collapse:collapse;margin:14px 0;'>"
     + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>👤 Nombre:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.nombre + "</td></tr>"
-    + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>📧 Email / Usuario:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.emailUsuario + "</td></tr>"
-    + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>🏷️ Rol solicitado:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.rol + "</td></tr>"
+    + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>📧 Email:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.emailUsuario + "</td></tr>"
+    + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>🏷️ Rol:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.rol + "</td></tr>"
     + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>⚖️ Peso y Meta:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.pesoMeta + "</td></tr>"
     + "<tr><td style='padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;'>🕒 Fecha y Hora:</td><td style='padding:8px;border-bottom:1px solid #e2e8f0;'>" + d.fechaHora + "</td></tr>"
     + "</table>"
     + "<div style='text-align:center;margin-top:18px;'>"
-    + "<a href='" + d.linkAdmin + "' style='display:inline-block;background:#22c55e;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:999px;'>👑 Abrir Panel Admin y Aprobar</a>"
-    + "</div></div></div>";
+    + "<a href='" + d.linkAdmin + "' style='display:inline-block;background:#22c55e;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:999px;'>👑 Abrir Michu Fit</a>"
+    + "</div></div></div>");
   MailApp.sendEmail({ to: dest, subject: subj, name: "🐱 Michu Fit", htmlBody: html });
   return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
 }`;
@@ -14505,6 +14917,504 @@
       });
       refreshBiometricButtonsUI();
 
+      function completeSessionLoginFromData(data) {
+        currentAuthToken = data.token;
+        localStorage.setItem("michufit_auth_token", currentAuthToken);
+        currentUserInfo = data.user;
+        if (currentUserInfo) {
+          try { localStorage.setItem("michufit_cached_user_info", JSON.stringify(currentUserInfo)); } catch (_) {}
+        }
+        inspectedUserId = null;
+        inspectedUserInfo = null;
+        if (data.pendingApproval) {
+          showAuthModal("pending");
+          return;
+        }
+        if (data.data) {
+          appData = data.data;
+          localStorage.setItem(getBackupStorageKey(), JSON.stringify(appData));
+        }
+        closeModal("modalAuthOverlay");
+        renderAll();
+        loadFromServer();
+
+        const savedBio = getSavedBiometricCred();
+        const bioPromptDismissed = localStorage.getItem("michufit_bio_prompt_offered_" + (currentUserInfo?.id || ""));
+        if (isWebAuthnSupported() && (!savedBio || savedBio.userId !== currentUserInfo?.id) && !bioPromptDismissed) {
+          localStorage.setItem("michufit_bio_prompt_offered_" + (currentUserInfo?.id || ""), "1");
+          setTimeout(() => {
+            if (confirm(`🫆 ¿Querés activar el ingreso rápido con Huella Dactilar / Rostro en este celular para ${currentUserInfo?.name || "tu cuenta"}?`)) {
+              enrollBiometricForCurrentUser();
+            }
+          }, 650);
+        }
+      }
+
+      const _otpFlowState = {
+        email: "",
+        purpose: "verify",
+        returnMode: "login-form",
+        cooldownTimer: null
+      };
+
+      function showOtpInlineMessage(msg, isError = true) {
+        const box = document.getElementById("otpInlineAlert");
+        if (!box) return;
+        if (!msg) {
+          box.style.display = "none";
+          box.textContent = "";
+          return;
+        }
+        box.style.display = "block";
+        box.style.background = isError ? "var(--danger-soft)" : "var(--accent-soft)";
+        box.style.color = isError ? "var(--danger)" : "var(--accent)";
+        box.style.border = `1px solid ${isError ? "var(--danger)" : "var(--accent)"}`;
+        box.textContent = msg;
+      }
+
+      function openOtpVerificationFlow(email, purpose = "verify", returnMode = "login-form") {
+        _otpFlowState.email = (email || "").trim().toLowerCase();
+        _otpFlowState.purpose = purpose === "reset" ? "reset" : "verify";
+        _otpFlowState.returnMode = returnMode || "login-form";
+
+        const headingEl = document.getElementById("otpVerifyHeading");
+        const subtextEl = document.getElementById("otpVerifySubtext");
+        const newPwdWrap = document.getElementById("otpResetNewPwdWrap");
+        const codeInp = document.getElementById("otpCodeInput");
+        const newPwdInp = document.getElementById("otpNewPasswordInput");
+        const confirmBtn = document.getElementById("btnConfirmOtpCode");
+
+        if (headingEl) {
+          headingEl.textContent = _otpFlowState.purpose === "reset"
+            ? "Recuperá tu contraseña con el código"
+            : "Verificá tu correo con el código de 6 dígitos";
+        }
+        if (subtextEl) {
+          subtextEl.innerHTML = _otpFlowState.purpose === "reset"
+            ? `Enviamos un código de 6 números a <strong style="color:var(--accent);">${escapeHtml(_otpFlowState.email)}</strong>. Ingresalo abajo junto con tu nueva clave.`
+            : `Enviamos un código de 6 números a <strong style="color:var(--accent);">${escapeHtml(_otpFlowState.email)}</strong>. Revisá Recibidos (o Spam) e ingresalo para activar tu cuenta al instante.`;
+        }
+        if (newPwdWrap) {
+          newPwdWrap.style.display = _otpFlowState.purpose === "reset" ? "block" : "none";
+        }
+        if (confirmBtn) {
+          confirmBtn.textContent = _otpFlowState.purpose === "reset"
+            ? "🔑 Guardar Nueva Clave y Entrar"
+            : "✅ Verificar y Entrar Ahora";
+        }
+        if (codeInp) codeInp.value = "";
+        if (newPwdInp) newPwdInp.value = "";
+        showOtpInlineMessage("");
+        showAuthModal("verify-otp");
+      }
+      window.openOtpVerificationFlow = openOtpVerificationFlow;
+
+      async function submitOtpVerification() {
+        const codeInp = document.getElementById("otpCodeInput");
+        const newPwdInp = document.getElementById("otpNewPasswordInput");
+        const confirmBtn = document.getElementById("btnConfirmOtpCode");
+        const cleanCode = String(codeInp ? codeInp.value : "").replace(/\D/g, "").trim();
+        const isReset = _otpFlowState.purpose === "reset";
+        const newPassword = (newPwdInp ? newPwdInp.value : "").trim();
+
+        if (cleanCode.length !== 6) {
+          showOtpInlineMessage("Ingresá los 6 números del código que te enviamos por mail.");
+          codeInp?.focus();
+          return;
+        }
+        if (isReset && newPassword.length < 4) {
+          showOtpInlineMessage("Elegí una nueva contraseña de al menos 4 caracteres.");
+          newPwdInp?.focus();
+          return;
+        }
+        showOtpInlineMessage("");
+        const origLabel = confirmBtn ? confirmBtn.textContent : "✅ Verificar y Entrar Ahora";
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = "⏳ Verificando código...";
+        }
+        try {
+          const res = await fetch("/api/auth/verify-email-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: _otpFlowState.email,
+              code: cleanCode,
+              isPasswordReset: isReset,
+              newPassword
+            })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            showOtpInlineMessage(data.error || "No se pudo verificar el código.");
+            return;
+          }
+          completeSessionLoginFromData(data);
+        } catch (_) {
+          showOtpInlineMessage("Error de conexión. Verificá tu internet e intentá de nuevo.");
+        } finally {
+          if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = origLabel;
+          }
+        }
+      }
+
+      const otpInpEl = document.getElementById("otpCodeInput");
+      if (otpInpEl) {
+        otpInpEl.addEventListener("input", () => {
+          const digits = otpInpEl.value.replace(/\D/g, "").slice(0, 6);
+          if (otpInpEl.value !== digits) otpInpEl.value = digits;
+          if (digits.length === 6 && _otpFlowState.purpose === "verify") {
+            submitOtpVerification();
+          }
+        });
+        otpInpEl.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            submitOtpVerification();
+          }
+        });
+      }
+      document.getElementById("btnConfirmOtpCode")?.addEventListener("click", submitOtpVerification);
+
+      document.getElementById("btnResendOtpCode")?.addEventListener("click", async () => {
+        const resendBtn = document.getElementById("btnResendOtpCode");
+        if (!resendBtn || resendBtn.disabled || !_otpFlowState.email) return;
+        resendBtn.disabled = true;
+        resendBtn.textContent = "⏳ Reenviando...";
+        showOtpInlineMessage("");
+        try {
+          const res = await fetch("/api/auth/resend-email-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: _otpFlowState.email, purpose: _otpFlowState.purpose })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            showOtpInlineMessage(data.error || "No se pudo reenviar el código.");
+            resendBtn.disabled = false;
+            resendBtn.textContent = "🔄 Reenviar código";
+            return;
+          }
+          showOtpInlineMessage("📨 ¡Nuevo código de 6 dígitos enviado! Revisá tu bandeja de entrada o Spam.", false);
+          let secs = 30;
+          if (_otpFlowState.cooldownTimer) clearInterval(_otpFlowState.cooldownTimer);
+          resendBtn.textContent = `🔄 Reenviar (${secs}s)`;
+          _otpFlowState.cooldownTimer = setInterval(() => {
+            secs -= 1;
+            if (secs <= 0) {
+              clearInterval(_otpFlowState.cooldownTimer);
+              resendBtn.disabled = false;
+              resendBtn.textContent = "🔄 Reenviar código";
+            } else {
+              resendBtn.textContent = `🔄 Reenviar (${secs}s)`;
+            }
+          }, 1000);
+        } catch (_) {
+          showOtpInlineMessage("No se pudo conectar para reenviar el código.");
+          resendBtn.disabled = false;
+          resendBtn.textContent = "🔄 Reenviar código";
+        }
+      });
+
+      document.getElementById("btnBackFromOtpView")?.addEventListener("click", () => {
+        if (_otpFlowState.returnMode === "register") {
+          window._keepWizardStepOnReturn = true;
+        }
+        showAuthModal(_otpFlowState.returnMode || "login-form");
+      });
+
+      document.getElementById("btnForgotPasswordOtp")?.addEventListener("click", async () => {
+        const idInp = document.getElementById("loginIdentifier");
+        const typedEmail = (idInp ? idInp.value : "").trim().toLowerCase();
+        if (!typedEmail || !typedEmail.includes("@")) {
+          showAuthAlert("Escribí tu correo electrónico en el campo de arriba y tocá «¿Olvidaste tu clave?» para recibir un código de 6 dígitos.");
+          idInp?.focus();
+          return;
+        }
+        const forgotBtn = document.getElementById("btnForgotPasswordOtp");
+        if (forgotBtn) forgotBtn.textContent = "Enviando código...";
+        showAuthAlert("");
+        try {
+          const res = await fetch("/api/auth/resend-email-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: typedEmail, purpose: "reset" })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            showAuthAlert(data.error || "No pudimos enviar el código a ese correo.");
+            return;
+          }
+          openOtpVerificationFlow(typedEmail, "reset", "login-form");
+        } catch (_) {
+          showAuthAlert("Error de conexión al enviar el código de recuperación.");
+        } finally {
+          if (forgotBtn) forgotBtn.textContent = "¿Olvidaste tu clave?";
+        }
+      });
+
+      // =========================================================================
+      // INICIO EN 1 TOQUE CON GOOGLE (WEB GIS + PUENTE CLOUD PARA GOOGLE PLAY WEBVIEW)
+      // =========================================================================
+      async function resolveGoogleClientId() {
+        const cached = (window._michuGoogleClientId || localStorage.getItem("michufit_google_client_id") || "").trim();
+        if (cached) return cached;
+        try {
+          const r = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.sys-auth-config&select=user_doc`, {
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`,
+              "Cache-Control": "no-store"
+            }
+          }, 8000);
+          if (r.ok) {
+            const rows = await r.json();
+            const cid = rows?.[0]?.user_doc?.googleClientId ? String(rows[0].user_doc.googleClientId).trim() : "";
+            if (cid) {
+              window._michuGoogleClientId = cid;
+              try { localStorage.setItem("michufit_google_client_id", cid); } catch (_) {}
+              return cid;
+            }
+          }
+        } catch (_) {}
+        return "";
+      }
+
+      async function exchangeGoogleAccessTokenForSession(accessToken, wizardPayload = null) {
+        const bodyObj = {
+          accessToken,
+          ...(wizardPayload ? {
+            name: wizardPayload.name || "",
+            roleRequested: wizardPayload.roleRequested || "patient",
+            inviteCode: wizardPayload.inviteCode || "",
+            profile: wizardPayload.profile || null
+          } : {})
+        };
+        const res = await fetch("/api/auth/google-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyObj)
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          showAuthAlert(data.error || "No se pudo iniciar sesión con Google.");
+          return false;
+        }
+        completeSessionLoginFromData(data);
+        return true;
+      }
+
+      let _activeGoogleHandoffPoll = null;
+
+      async function triggerGoogleSignIn(wizardPayload = null) {
+        showAuthAlert("");
+        const clientId = await resolveGoogleClientId();
+        if (!clientId) {
+          if (document.getElementById("modalAuthOverlay")?.getAttribute("data-auth-mode") === "splash") {
+            showAuthModal("login-form");
+          }
+          showAuthAlert("El inicio con Google requiere pegar el OAuth Client ID Web en 👑 Admin → Guardar Google ID. Mientras tanto podés entrar o crear tu cuenta con tu correo y código de 6 dígitos.");
+          return;
+        }
+
+        const isEmbeddedAndroidWebView = Boolean(window.MichuAndroidHealth) || /;\s*wv\)/i.test(navigator.userAgent || "");
+        const canonicalRedirectUri = "https://michu-fit.github.io/michufit/";
+
+        if (isEmbeddedAndroidWebView) {
+          // En WebView de Google Play, abrimos Chrome externo seguro y sincronizamos el regreso por puente efímero
+          const handoffId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+          const rowId = `gh-${handoffId}`;
+          try {
+            await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
+              method: "POST",
+              headers: {
+                "apikey": SUPABASE_KEY,
+                "Authorization": `Bearer ${SUPABASE_KEY}`,
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates,return=minimal"
+              },
+              body: JSON.stringify([{
+                id: rowId,
+                username: `_${rowId}`,
+                email: `${rowId}@michufit.system`,
+                name: "Google Auth Handoff",
+                role: "system",
+                status: "system_catalog",
+                user_doc: { id: rowId, completed: false, createdAt: Date.now() },
+                updated_at: new Date().toISOString()
+              }])
+            }, 10000);
+          } catch (_) {
+            showAuthAlert("No se pudo iniciar la conexión con Google. Revisá tu conexión a internet.");
+            return;
+          }
+
+          if (_activeGoogleHandoffPoll) clearInterval(_activeGoogleHandoffPoll);
+          const startedAt = Date.now();
+          let handoffResolved = false;
+
+          const checkHandoffStatus = async () => {
+            if (handoffResolved) return;
+            if (Date.now() - startedAt > 5 * 60 * 1000) {
+              clearInterval(_activeGoogleHandoffPoll);
+              return;
+            }
+            try {
+              const r = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.${encodeURIComponent(rowId)}&select=user_doc`, {
+                headers: {
+                  "apikey": SUPABASE_KEY,
+                  "Authorization": `Bearer ${SUPABASE_KEY}`,
+                  "Cache-Control": "no-store"
+                }
+              }, 8000);
+              if (!r.ok) return;
+              const rows = await r.json();
+              const doc = rows?.[0]?.user_doc;
+              if (doc && doc.completed && doc.accessToken) {
+                handoffResolved = true;
+                clearInterval(_activeGoogleHandoffPoll);
+                document.removeEventListener("visibilitychange", onVisResume);
+                sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.${encodeURIComponent(rowId)}`, {
+                  method: "DELETE",
+                  headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+                }, 6000).catch(() => {});
+                await exchangeGoogleAccessTokenForSession(doc.accessToken, wizardPayload);
+              }
+            } catch (_) {}
+          };
+
+          const onVisResume = () => {
+            if (document.visibilityState === "visible") checkHandoffStatus();
+          };
+          document.addEventListener("visibilitychange", onVisResume);
+          _activeGoogleHandoffPoll = setInterval(checkHandoffStatus, 2200);
+
+          const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(canonicalRedirectUri)}&response_type=token&scope=${encodeURIComponent("openid email profile")}&prompt=select_account&state=${encodeURIComponent("gh_" + handoffId)}`;
+          window.location.href = authUrl;
+          return;
+        }
+
+        // En Web / PWA móvil o escritorio: usar Google Identity Services popup (con fallback a redirección OAuth2)
+        const launchRedirectFallback = () => {
+          try {
+            if (wizardPayload) sessionStorage.setItem("michufit_pending_google_wizard", JSON.stringify(wizardPayload));
+            else sessionStorage.removeItem("michufit_pending_google_wizard");
+          } catch (_) {}
+          const redirectTarget = window.location.origin.includes("github.io")
+            ? canonicalRedirectUri
+            : (window.location.origin + window.location.pathname);
+          const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectTarget)}&response_type=token&scope=${encodeURIComponent("openid email profile")}&prompt=select_account&state=web_direct`;
+          window.location.href = authUrl;
+        };
+
+        const runGisPopup = () => {
+          if (!window.google?.accounts?.oauth2?.initTokenClient) {
+            launchRedirectFallback();
+            return;
+          }
+          const tokenClient = window.google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: "openid email profile",
+            callback: async (tokenResp) => {
+              if (tokenResp && tokenResp.access_token) {
+                await exchangeGoogleAccessTokenForSession(tokenResp.access_token, wizardPayload);
+              } else if (tokenResp && tokenResp.error && tokenResp.error !== "popup_closed_by_user") {
+                showAuthAlert("No se pudo completar el acceso con Google: " + tokenResp.error);
+              }
+            },
+            error_callback: (err) => {
+              if (err && err.type === "popup_failed_to_open") {
+                launchRedirectFallback();
+              }
+            }
+          });
+          tokenClient.requestAccessToken({ prompt: "select_account" });
+        };
+
+        if (window.google?.accounts?.oauth2?.initTokenClient) {
+          runGisPopup();
+        } else {
+          let gScript = document.getElementById("michuGoogleGisScript");
+          if (!gScript) {
+            gScript = document.createElement("script");
+            gScript.id = "michuGoogleGisScript";
+            gScript.src = "https://accounts.google.com/gsi/client";
+            gScript.async = true;
+            gScript.onload = () => runGisPopup();
+            gScript.onerror = () => launchRedirectFallback();
+            document.head.appendChild(gScript);
+          } else {
+            launchRedirectFallback();
+          }
+        }
+      }
+      window.triggerGoogleSignIn = triggerGoogleSignIn;
+
+      document.getElementById("btnSplashGoogleLogin")?.addEventListener("click", () => {
+        triggerGoogleSignIn(null);
+      });
+      document.getElementById("btnLoginFormGoogle")?.addEventListener("click", () => {
+        triggerGoogleSignIn(null);
+      });
+
+      // Procesar callback #access_token=... si venimos de una redirección OAuth de Google (Web o Puente Android)
+      (async function checkGoogleOAuthHashCallback() {
+        const rawHash = window.location.hash || "";
+        if (!rawHash.includes("access_token=")) return;
+        const params = new URLSearchParams(rawHash.replace(/^#/, ""));
+        const accessToken = params.get("access_token") || "";
+        const stateParam = params.get("state") || "";
+        try {
+          history.replaceState(null, "", window.location.pathname + window.location.search);
+        } catch (_) {}
+        if (!accessToken) return;
+
+        if (stateParam.startsWith("gh_")) {
+          const handoffId = stateParam.slice(3);
+          const rowId = `gh-${handoffId}`;
+          try {
+            await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
+              method: "POST",
+              headers: {
+                "apikey": SUPABASE_KEY,
+                "Authorization": `Bearer ${SUPABASE_KEY}`,
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates,return=minimal"
+              },
+              body: JSON.stringify([{
+                id: rowId,
+                username: `_${rowId}`,
+                email: `${rowId}@michufit.system`,
+                name: "Google Auth Handoff",
+                role: "system",
+                status: "system_catalog",
+                user_doc: { id: rowId, completed: true, accessToken, completedAt: Date.now() },
+                updated_at: new Date().toISOString()
+              }])
+            }, 10000);
+          } catch (_) {}
+          await exchangeGoogleAccessTokenForSession(accessToken, null);
+          const banner = document.createElement("div");
+          banner.style.cssText = "position:fixed;inset:14px 14px auto 14px;z-index:99999;background:#0e9f77;color:#fff;padding:14px 16px;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,0.35);font-weight:800;font-size:0.9rem;text-align:center;";
+          banner.innerHTML = "✅ ¡Cuenta de Google conectada! Ya podés volver a la app <strong>Michu Fit</strong>.";
+          document.body.appendChild(banner);
+          setTimeout(() => banner.remove(), 9000);
+          return;
+        }
+
+        let savedWiz = null;
+        try {
+          const rawWiz = sessionStorage.getItem("michufit_pending_google_wizard");
+          if (rawWiz) {
+            savedWiz = JSON.parse(rawWiz);
+            sessionStorage.removeItem("michufit_pending_google_wizard");
+          }
+        } catch (_) {}
+        await exchangeGoogleAccessTokenForSession(accessToken, savedWiz);
+      })();
+
       async function performLogin(identifier, password) {
         showAuthAlert("");
         try {
@@ -14518,37 +15428,11 @@
             showAuthAlert(data.error || "Credenciales inválidas.");
             return;
           }
-          currentAuthToken = data.token;
-          localStorage.setItem("michufit_auth_token", currentAuthToken);
-          currentUserInfo = data.user;
-          if (currentUserInfo) {
-            try { localStorage.setItem("michufit_cached_user_info", JSON.stringify(currentUserInfo)); } catch (_) {}
-          }
-          inspectedUserId = null;
-          inspectedUserInfo = null;
-          if (data.pendingApproval) {
-            showAuthModal("pending");
+          if (data.requiresEmailOtp) {
+            openOtpVerificationFlow(data.email || identifier, "verify", "login-form");
             return;
           }
-          if (data.data) {
-            appData = data.data;
-            localStorage.setItem(getBackupStorageKey(), JSON.stringify(appData));
-          }
-          closeModal("modalAuthOverlay");
-          renderAll();
-          loadFromServer();
-
-          // Si el celu soporta huella y todavía no la vinculó en este dispositivo, ofrecer activarla en 1 toque
-          const savedBio = getSavedBiometricCred();
-          const bioPromptDismissed = localStorage.getItem("michufit_bio_prompt_offered_" + (currentUserInfo?.id || ""));
-          if (isWebAuthnSupported() && (!savedBio || savedBio.userId !== currentUserInfo?.id) && !bioPromptDismissed) {
-            localStorage.setItem("michufit_bio_prompt_offered_" + (currentUserInfo?.id || ""), "1");
-            setTimeout(() => {
-              if (confirm(`🫆 ¿Querés activar el ingreso rápido con Huella Dactilar / Rostro en este celular para ${currentUserInfo?.name || "tu cuenta"}?`)) {
-                enrollBiometricForCurrentUser();
-              }
-            }, 650);
-          }
+          completeSessionLoginFromData(data);
         } catch (err) {
           showAuthAlert("No se pudo conectar con el servidor. Verificá tu conexión a internet.");
         }
@@ -16439,10 +17323,19 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
 
             <!-- Datos de acceso para guardar la cuenta -->
             <div style="background:var(--bg-card);border:1.5px solid var(--purple);border-radius:16px;padding:11px 13px;display:flex;flex-direction:column;gap:8px;">
-              <strong style="font-size:0.82rem;color:var(--purple);">🔐 Elegí tu usuario y clave para guardar tu plan:</strong>
+              <strong style="font-size:0.82rem;color:var(--purple);">🔐 Guardá y activá tu plan al instante:</strong>
+              <button type="button" id="btnWizardGoogleSignup" style="width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:10px 12px;border-radius:11px;border:1.5px solid var(--border);background:#ffffff;color:#1f2937;font-weight:800;font-size:0.84rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+                <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                <span>Continuar con Google (1 toque)</span>
+              </button>
+              <div style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:0.7rem;font-weight:700;">
+                <span style="flex:1;height:1px;background:var(--border);"></span>
+                <span>o con tu correo (recibirás un código de 6 dígitos)</span>
+                <span style="flex:1;height:1px;background:var(--border);"></span>
+              </div>
               <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:7px;">
                 <div class="field" style="grid-column:1 / -1;">
-                  <input type="text" id="bpFinalEmailInp" placeholder="Tu Email o Usuario (ej: angel@gmail.com)" value="${bpState.email}" autocomplete="username" />
+                  <input type="email" id="bpFinalEmailInp" placeholder="Tu correo electrónico (ej: nombre@gmail.com)" value="${bpState.email}" autocomplete="email" />
                 </div>
                 <div class="field">
                   <input type="password" id="bpFinalPwdInp" placeholder="Contraseña (mín. 4)" value="${bpState.password}" autocomplete="new-password" />
@@ -16470,41 +17363,26 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           const pwInp = document.getElementById("bpFinalPwdInp");
           const rlSel = document.getElementById("bpFinalRoleSel");
           const ivInp = document.getElementById("bpFinalInviteInp");
+          const gWizBtn = document.getElementById("btnWizardGoogleSignup");
           if (emInp) emInp.addEventListener("input", () => { bpState.email = emInp.value; });
           if (pwInp) pwInp.addEventListener("input", () => { bpState.password = pwInp.value; });
           if (rlSel) rlSel.addEventListener("change", () => { bpState.roleRequested = rlSel.value; });
           if (ivInp) ivInp.addEventListener("input", () => { bpState.inviteCode = ivInp.value; });
+          if (gWizBtn) {
+            gWizBtn.addEventListener("click", () => {
+              triggerGoogleSignIn(buildBpWizardPayloadObject());
+            });
+          }
           return;
         }
       }
 
       let bpRegSubmitting = false;
 
-      async function submitBpRegistration() {
-        if (bpRegSubmitting) return;
+      function buildBpWizardPayloadObject() {
         const name = (bpState.userName || "").trim() || "Campeón";
-        const email = (bpState.email || "").trim();
+        const email = (bpState.email || "").trim().toLowerCase();
         const password = (bpState.password || "").trim();
-        if (!email) {
-          showAuthAlert("Ingresá un email o nombre de usuario para guardar tu plan.");
-          document.getElementById("bpFinalEmailInp")?.focus();
-          return;
-        }
-        if (password.length < 4) {
-          showAuthAlert("Elegí una contraseña de al menos 4 caracteres.");
-          document.getElementById("bpFinalPwdInp")?.focus();
-          return;
-        }
-        showAuthAlert("");
-        bpRegSubmitting = true;
-        const nextBtn = document.getElementById("bpWizNextBtn");
-        const prevBtnText = nextBtn ? nextBtn.innerHTML : "🚀 Comprometerme y Crear mi Cuenta";
-        if (nextBtn) {
-          nextBtn.disabled = true;
-          nextBtn.style.opacity = "0.65";
-          nextBtn.innerHTML = "⏳ Enviando solicitud...";
-        }
-
         const ev = evaluateBpWizardAi();
         const curW = ev.curW;
         const goalW = ev.goalW;
@@ -16518,7 +17396,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         const fastTarget = Math.max(12, Math.min(20, 24 - winHrs));
         const macroPreset = ["balanced", "high_protein", "low_carb"].includes(bpState.dietType) ? bpState.dietType : "high_protein";
 
-        const payload = {
+        return {
           name,
           email,
           password,
@@ -16553,6 +17431,31 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             aiWizardSummary: bpGeminiWizardCache.text || ev.coachBody || ""
           }
         };
+      }
+
+      async function submitBpRegistration() {
+        if (bpRegSubmitting) return;
+        const payload = buildBpWizardPayloadObject();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(payload.email)) {
+          showAuthAlert("Ingresá un correo electrónico válido (ej: nombre@gmail.com) para enviarte el código de verificación.");
+          document.getElementById("bpFinalEmailInp")?.focus();
+          return;
+        }
+        if (payload.password.length < 4) {
+          showAuthAlert("Elegí una contraseña de al menos 4 caracteres.");
+          document.getElementById("bpFinalPwdInp")?.focus();
+          return;
+        }
+        showAuthAlert("");
+        bpRegSubmitting = true;
+        const nextBtn = document.getElementById("bpWizNextBtn");
+        const prevBtnText = nextBtn ? nextBtn.innerHTML : "🚀 Comprometerme y Crear mi Cuenta";
+        if (nextBtn) {
+          nextBtn.disabled = true;
+          nextBtn.style.opacity = "0.65";
+          nextBtn.innerHTML = "⏳ Enviando código a tu mail...";
+        }
 
         try {
           const res = await fetch("/api/auth/register", {
@@ -16565,10 +17468,11 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             showAuthAlert(data.error || "Error al crear la cuenta.");
             return;
           }
-          currentAuthToken = data.token;
-          localStorage.setItem("michufit_auth_token", currentAuthToken);
-          currentUserInfo = data.user;
-          showAuthModal("pending");
+          if (data.requiresEmailOtp) {
+            openOtpVerificationFlow(data.email || payload.email, "verify", "register");
+            return;
+          }
+          completeSessionLoginFromData(data);
         } catch (err) {
           showAuthAlert("No se pudo conectar con el servidor.");
         } finally {
