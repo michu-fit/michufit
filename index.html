@@ -2414,6 +2414,118 @@
       z-index: 100046;
       transition: top 0.26s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.26s cubic-bezier(0.22, 1, 0.36, 1);
     }
+
+    /* =========================================================================
+       PULIDO NATIVO MÓVIL: TECLADO VIRTUAL, CHIPS 1-TOQUE Y TOAST DESHACER
+       ========================================================================= */
+    html.michu-kb-open #modalAuthOverlay .modal-inner {
+      max-height: calc(var(--michu-vvh, 100dvh) - 12px) !important;
+      padding-top: 10px !important;
+      padding-bottom: 10px !important;
+    }
+
+    html.michu-kb-open .bp-wiz-shell {
+      min-height: 0 !important;
+      max-height: calc(var(--michu-vvh, 100dvh) - 30px) !important;
+      gap: 6px;
+    }
+
+    html.michu-kb-open .bp-stage-body {
+      overflow-y: auto;
+      padding-top: 4px !important;
+      padding-bottom: 4px !important;
+    }
+
+    html.michu-kb-open .bp-giant-input-wrap {
+      padding: 8px 4px !important;
+      margin: 4px 0 !important;
+    }
+
+    html.michu-kb-open .bp-mascot-row {
+      margin-bottom: 4px !important;
+    }
+
+    .meal-quick-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+
+    .meal-quick-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      cursor: pointer;
+      max-width: 100%;
+      transition: transform 0.13s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .meal-quick-chip:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .meal-quick-chip:active {
+      transform: scale(0.97);
+    }
+
+    .meal-quick-chip.yesterday {
+      background: var(--accent-soft);
+      border-color: rgba(14, 159, 119, 0.36);
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    #michuUndoToastBar {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100050;
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1.5px solid rgba(20, 189, 142, 0.55);
+      border-radius: 999px;
+      padding: 9px 12px 9px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+      font-size: 0.81rem;
+      font-weight: 700;
+      max-width: calc(100vw - 24px);
+      transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #michuUndoToastBar.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+
+    #michuUndoToastBtn {
+      background: #14bd8e;
+      color: #ffffff;
+      border: none;
+      border-radius: 999px;
+      padding: 5px 11px;
+      font-size: 0.75rem;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
   </style>
   <script>
     (function () {
@@ -2506,6 +2618,9 @@
         </button>
         <button type="button" class="btn btn-sm" onclick="window.openQuickGuideModal && window.openQuickGuideModal()" style="background:var(--accent-soft);border-color:rgba(14,159,119,0.32);color:var(--accent);font-weight:800;">
           ❓ Guía Rápida y Recorrido
+        </button>
+        <button type="button" class="btn btn-sm" onclick="window.openFeedbackRatingModal && window.openFeedbackRatingModal()" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.38);color:var(--warn);font-weight:800;">
+          ⭐ Calificar / Enviar Sugerencia
         </button>
         <button type="button" class="btn btn-sm btn-primary" onclick="window.openSuggestedMenuModal && window.openSuggestedMenuModal()" style="flex:0 0 auto;">
           🥗 Menú Sugerido y Hábitos
@@ -3654,6 +3769,20 @@
         </div>
       </div>
 
+      <!-- Bandeja de Sugerencias, Pedidos de Alimentos y Feedback (Solo Super-Admin) -->
+      <div class="card" id="adminFeedbackInboxCard" style="display:none;margin-bottom:18px;border:1.5px solid rgba(14,159,119,0.38);">
+        <div class="card-header" style="margin-bottom:10px;align-items:center;">
+          <div>
+            <div class="card-title">💬 Buzón de Sugerencias y Pedidos de Usuarios</div>
+            <small style="color:var(--text-muted);font-size:0.76rem;">
+              Ideas, alimentos pedidos y reportes enviados desde el filtro inteligente 5 ⭐
+            </small>
+          </div>
+          <span class="chip" id="adminFeedbackCountBadge" style="background:var(--accent-soft);color:var(--accent);font-weight:800;">0 mensajes</span>
+        </div>
+        <div id="adminFeedbackInboxBody" style="display:flex;flex-direction:column;gap:9px;max-height:320px;overflow-y:auto;"></div>
+      </div>
+
       <!-- Panel de Estadísticas de Bajas y Motivos de Salida (Solo Super-Admin) -->
       <div class="card" id="adminChurnAnalyticsCard" style="display:none;margin-bottom:18px;">
         <div class="card-header" style="margin-bottom:10px;align-items:center;">
@@ -3749,6 +3878,9 @@
 
         <button type="button" class="btn btn-sm" onclick="window.closeModal && window.closeModal('modalAccount'); window.openQuickGuideModal && window.openQuickGuideModal();" style="justify-content:center;background:var(--accent-soft);border-color:rgba(14,159,119,0.35);color:var(--accent);font-weight:800;">
           ❓ Cómo usar Michu Fit (Guía rápida y Tour)
+        </button>
+        <button type="button" class="btn btn-sm" onclick="window.closeModal && window.closeModal('modalAccount'); window.openFeedbackRatingModal && window.openFeedbackRatingModal();" style="justify-content:center;background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.38);color:var(--warn);font-weight:800;">
+          💬 Enviar sugerencia / Calificar con 5 ⭐
         </button>
 
         <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;" />
@@ -4725,6 +4857,83 @@
     </div>
   </div>
 
+  <!-- BARRA FLOTANTE DE DESHACER (5 SEGUNDOS) -->
+  <div id="michuUndoToastBar" role="status" aria-live="polite">
+    <span id="michuUndoToastText">Acción realizada</span>
+    <button type="button" id="michuUndoToastBtn">↩️ Deshacer</button>
+  </div>
+
+  <!-- MODAL FILTRO INTELIGENTE DE 5 ESTRELLAS (PLAY STORE) + BUZÓN PRIVADO DE SUGERENCIAS -->
+  <div class="custom-modal-overlay" id="modalFeedbackAndRating" role="dialog" aria-modal="true" style="z-index:100029;">
+    <div class="modal-inner" style="max-width:460px;">
+      <div class="card-header" style="align-items:center;margin-bottom:8px;">
+        <div>
+          <div class="card-title" id="fbModalHeaderTitle">🐱 ¿Te viene ayudando Michu Fit?</div>
+          <small style="color:var(--text-muted);font-size:0.75rem;">
+            Tu opinión nos ayuda a mejorar cada día
+          </small>
+        </div>
+        <button type="button" class="btn btn-sm" data-close-modal="modalFeedbackAndRating">✕</button>
+      </div>
+
+      <!-- PASO 1: FILTRO DE SENTIMIENTO -->
+      <div id="fbStepGate" style="display:flex;flex-direction:column;gap:10px;text-align:center;padding:4px 2px;">
+        <p style="font-size:0.84rem;color:var(--text-muted);line-height:1.45;margin:0;">
+          Queremos que registrar tus comidas y lograr tu objetivo sea cada vez más fácil. ¿Cómo viene tu experiencia hasta ahora?
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:4px;">
+          <button type="button" id="btnFbSentimentLove" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;border-radius:16px;border:2px solid var(--accent);background:var(--accent-soft);color:var(--text);cursor:pointer;font-weight:800;">
+            <span style="font-size:1.85rem;">😍</span>
+            <span style="font-size:0.86rem;color:var(--accent);">¡Me encanta!</span>
+            <small style="font-size:0.7rem;color:var(--text-muted);font-weight:600;">Me está sirviendo mucho</small>
+          </button>
+          <button type="button" id="btnFbSentimentIdea" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;border-radius:16px;border:1.5px solid var(--border);background:var(--bg-card);color:var(--text);cursor:pointer;font-weight:800;">
+            <span style="font-size:1.85rem;">💡</span>
+            <span style="font-size:0.86rem;">Tengo una idea</span>
+            <small style="font-size:0.7rem;color:var(--text-muted);font-weight:600;">Sugerencia o alimento</small>
+          </button>
+        </div>
+        <button type="button" id="btnFbSnoozeLater" style="background:none;border:none;color:var(--text-muted);font-size:0.76rem;font-weight:700;cursor:pointer;margin-top:4px;padding:4px;">
+          Más adelante
+        </button>
+      </div>
+
+      <!-- PASO 2A: INVITACIÓN A 5 ESTRELLAS EN GOOGLE PLAY -->
+      <div id="fbStepPlayStore" style="display:none;flex-direction:column;gap:11px;text-align:center;padding:6px 2px;">
+        <div style="font-size:2.1rem;">⭐⭐⭐⭐⭐</div>
+        <strong style="font-size:0.98rem;color:var(--text);">¡Qué alegría enorme leer eso! 💚</strong>
+        <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.45;margin:0;">
+          Como recién salimos a <strong>Google Play</strong>, una reseña tuya de <strong>5 estrellas</strong> toma 10 segundos y ayuda un montón a que más personas descubran Michu Fit.
+        </p>
+        <a href="https://play.google.com/store/apps/details?id=app.michufit" target="_blank" rel="noopener" id="btnOpenPlayStoreReview" class="btn btn-primary" style="justify-content:center;padding:12px;font-weight:900;text-decoration:none;font-size:0.9rem;">
+          ⭐ Dejar 5 estrellas en Google Play ↗
+        </a>
+        <button type="button" id="btnSwitchPlayToWrittenIdea" style="background:none;border:none;color:var(--accent);font-size:0.77rem;font-weight:800;cursor:pointer;text-decoration:underline;padding:4px;">
+          También quiero escribir una idea o pedir un alimento
+        </button>
+      </div>
+
+      <!-- PASO 2B: BUZÓN PRIVADO DIRECTO A MICHU -->
+      <div id="fbStepForm" style="display:none;flex-direction:column;gap:10px;">
+        <span style="font-size:0.78rem;color:var(--text-muted);">Elegí el tipo de mensaje (le llega directo a Angel):</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;" id="fbCategoryChipsWrap">
+          <button type="button" class="btn btn-sm fb-cat-btn" data-fb-cat="food" style="justify-content:center;font-size:0.76rem;">🍎 Sumar alimento</button>
+          <button type="button" class="btn btn-sm fb-cat-btn" data-fb-cat="idea" style="justify-content:center;font-size:0.76rem;">✨ Idea o mejora</button>
+          <button type="button" class="btn btn-sm fb-cat-btn" data-fb-cat="bug" style="justify-content:center;font-size:0.76rem;">🐞 Reportar error</button>
+          <button type="button" class="btn btn-sm fb-cat-btn" data-fb-cat="other" style="justify-content:center;font-size:0.76rem;">💬 Comentario</button>
+        </div>
+        <textarea id="fbMessageTextarea" rows="3" maxlength="500" placeholder="Contanos qué alimento querés que agreguemos o qué podemos mejorar..." style="width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:0.84rem;resize:vertical;"></textarea>
+        <div id="fbFormStatusAlert" style="display:none;padding:8px 10px;border-radius:9px;font-size:0.78rem;"></div>
+        <div style="display:flex;gap:8px;justify-content:space-between;">
+          <button type="button" class="btn btn-sm" id="btnFbBackToGate">‹ Volver</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btnSubmitUserFeedback" style="flex:1;justify-content:center;font-weight:800;padding:10px;">
+            📨 Enviar directo a Michu
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL DE BAJA DE CUENTA CON ENCUESTA SIMPLE DE 1 TOQUE (CHURN ANALYTICS + RETENCIÓN) -->
   <div class="custom-modal-overlay" id="modalCancelAccountFlow" role="dialog" aria-modal="true" style="z-index:100030;">
     <div class="modal-inner" style="max-width:480px;">
@@ -4873,6 +5082,10 @@
       const sysChurnRow = (rows || []).find(r => r.id === "sys-churn-stats");
       if (sysChurnRow && sysChurnRow.user_doc && Array.isArray(sysChurnRow.user_doc.events)) {
         window._cachedCloudChurnEvents = sysChurnRow.user_doc.events;
+      }
+      const sysFeedbackRow = (rows || []).find(r => r.id === "sys-feedback-box");
+      if (sysFeedbackRow && sysFeedbackRow.user_doc && Array.isArray(sysFeedbackRow.user_doc.items)) {
+        window._cachedCloudFeedbackItems = sysFeedbackRow.user_doc.items;
       }
       const sysAuthCfgRow = (rows || []).find(r => r.id === "sys-auth-config");
       if (sysAuthCfgRow && sysAuthCfgRow.user_doc && sysAuthCfgRow.user_doc.googleClientId) {
@@ -5550,7 +5763,8 @@
             actor: sbSanitizeUser(users, actor),
             users: visibleUsers,
             nutritionists,
-            churnEvents: actor.role === "superadmin" ? (window._cachedCloudChurnEvents || []) : []
+            churnEvents: actor.role === "superadmin" ? (window._cachedCloudChurnEvents || []) : [],
+            feedbackItems: actor.role === "superadmin" ? (window._cachedCloudFeedbackItems || []) : []
           });
         }
 
@@ -5999,6 +6213,129 @@
           await sbDeleteUser(actorUid);
           localStorage.removeItem("michufit_auth_uid");
           return sbJsonResponse({ ok: true });
+        }
+
+        // 5c. POST /api/feedback/submit (Buzón privado de sugerencias, alimentos faltantes y errores)
+        if (method === "POST" && path.endsWith("/api/feedback/submit")) {
+          const msg = String(body.message || "").trim().slice(0, 600);
+          const category = ["food", "idea", "bug", "other"].includes(body.category) ? body.category : "idea";
+          if (msg.length < 3) {
+            return sbJsonResponse({ ok: false, error: "Escribí al menos unas palabras para poder ayudarte." }, 400);
+          }
+          const catLabels = {
+            food: "🍎 Sumar alimento",
+            idea: "✨ Idea o mejora",
+            bug: "🐞 Reportar error",
+            other: "💬 Comentario"
+          };
+          const users = await sbFetchAllUsers();
+          const actor = sbResolveAuthUser(users, init.headers);
+          let existingItems = Array.isArray(window._cachedCloudFeedbackItems) ? [...window._cachedCloudFeedbackItems] : [];
+
+          const now = new Date();
+          const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+          const newEntry = {
+            id: "fb-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
+            userId: actor ? actor.id : "anon",
+            userName: actor ? actor.name : (body.userName || "Usuario"),
+            userEmail: actor ? (actor.email || actor.username || "") : "",
+            category,
+            categoryLabel: catLabels[category] || "✨ Sugerencia",
+            message: msg,
+            streak: Number(body.streak) || 0,
+            date: dateStr,
+            ts: Date.now()
+          };
+          existingItems.unshift(newEntry);
+          const trimmed = existingItems.slice(0, 400);
+          window._cachedCloudFeedbackItems = trimmed;
+
+          const fbRow = {
+            id: "sys-feedback-box",
+            username: "_sys_feedback_box",
+            email: "feedback@michufit.system",
+            name: "Buzón de Sugerencias",
+            role: "system",
+            status: "system_catalog",
+            user_doc: { id: "sys-feedback-box", items: trimmed },
+            updated_at: new Date().toISOString()
+          };
+          await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
+            method: "POST",
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`,
+              "Content-Type": "application/json",
+              "Prefer": "resolution=merge-duplicates,return=minimal"
+            },
+            body: JSON.stringify([fbRow])
+          }, 20000);
+
+          // Enviar aviso instantáneo al mail de Admin vía Google Apps Script
+          try {
+            const ownerRec = users.find(u => u.id === "u-owner" || u.role === "superadmin");
+            const destMail = (ownerRec && ownerRec.adminNotifyEmail) ? ownerRec.adminNotifyEmail : "michufitapp@gmail.com";
+            const hookUrl = (ownerRec && ownerRec.adminWebhookUrl) ? ownerRec.adminWebhookUrl : DEFAULT_GOOGLE_SCRIPT_WEBHOOK_URL;
+            const safeMsgHtml = msg.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const mailPayload = {
+              to: destMail,
+              customSubject: `💬 [Michu Fit] ${newEntry.categoryLabel} de ${newEntry.userName}`,
+              customHtml: `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;border:2px solid #0e9f77;border-radius:16px;overflow:hidden;">` +
+                `<div style="background:#0e9f77;color:#fff;padding:14px 18px;font-weight:bold;font-size:16px;">🐱 Nuevo mensaje en el Buzón de Michu Fit</div>` +
+                `<div style="padding:16px 18px;color:#1e293b;font-size:14px;line-height:1.5;">` +
+                `<p style="margin:0 0 8px;"><strong>De:</strong> ${newEntry.userName} (${newEntry.userEmail || "sin email"})</p>` +
+                `<p style="margin:0 0 8px;"><strong>Categoría:</strong> ${newEntry.categoryLabel} • <strong>Fecha:</strong> ${dateStr}</p>` +
+                `<div style="background:#f1f5f9;border-left:4px solid #0e9f77;padding:12px;border-radius:8px;margin-top:10px;">${safeMsgHtml}</div>` +
+                `</div></div>`,
+              nombre: `[Buzón] ${newEntry.userName}`,
+              emailUsuario: newEntry.userEmail || "-",
+              rol: newEntry.categoryLabel,
+              pesoMeta: msg.slice(0, 140),
+              fechaHora: dateStr,
+              linkAdmin: "https://michu-fit.github.io/michufit/"
+            };
+            _nativeFetch(hookUrl, {
+              method: "POST",
+              mode: "no-cors",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: JSON.stringify(mailPayload)
+            }).catch(() => {});
+          } catch (_) {}
+
+          return sbJsonResponse({ ok: true, item: newEntry });
+        }
+
+        // 5d. POST /api/admin/feedback-delete (Archivar sugerencia ya resuelta)
+        if (method === "POST" && path.endsWith("/api/admin/feedback-delete")) {
+          const users = await sbFetchAllUsers();
+          const actor = sbResolveAuthUser(users, init.headers);
+          if (!actor || actor.role !== "superadmin") {
+            return sbJsonResponse({ ok: false, error: "No autorizado" }, 403);
+          }
+          const targetFbId = String(body.feedbackId || "").trim();
+          const remaining = (window._cachedCloudFeedbackItems || []).filter(it => it && it.id !== targetFbId);
+          window._cachedCloudFeedbackItems = remaining;
+          const fbRow = {
+            id: "sys-feedback-box",
+            username: "_sys_feedback_box",
+            email: "feedback@michufit.system",
+            name: "Buzón de Sugerencias",
+            role: "system",
+            status: "system_catalog",
+            user_doc: { id: "sys-feedback-box", items: remaining },
+            updated_at: new Date().toISOString()
+          };
+          await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
+            method: "POST",
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`,
+              "Content-Type": "application/json",
+              "Prefer": "resolution=merge-duplicates,return=minimal"
+            },
+            body: JSON.stringify([fbRow])
+          }, 20000);
+          return sbJsonResponse({ ok: true, feedbackItems: remaining });
         }
 
         // 6. POST /api/data
@@ -9107,11 +9444,72 @@
       }
     }
 
+    function getQuickSuggestionsForMealSlot(slotKey, currentEatenItems) {
+      const eatenNamesToday = new Set(
+        (currentEatenItems || []).map(m => String(m.name || "").trim().toLowerCase()).filter(Boolean)
+      );
+      const dPrev = new Date((selectedDate || todayStr()) + "T12:00:00");
+      dPrev.setDate(dPrev.getDate() - 1);
+      const yestKey = `${dPrev.getFullYear()}-${String(dPrev.getMonth() + 1).padStart(2, "0")}-${String(dPrev.getDate()).padStart(2, "0")}`;
+
+      const yestDay = appData?.days?.[yestKey];
+      const yestMissingItems = Array.isArray(yestDay?.meals)
+        ? yestDay.meals.filter(m =>
+            m && m.mealType === slotKey && isMealConsumed(m) &&
+            !eatenNamesToday.has(String(m.name || "").trim().toLowerCase())
+          )
+        : [];
+
+      // Frecuentes históricos en este horario (últimos 45 días registrados)
+      const freqMap = new Map();
+      const sortedDates = Object.keys(appData?.days || {})
+        .filter(dk => dk !== selectedDate)
+        .sort()
+        .slice(-45);
+
+      for (const dk of sortedDates) {
+        const rec = appData.days[dk];
+        if (!rec || !Array.isArray(rec.meals)) continue;
+        for (const m of rec.meals) {
+          if (!m || m.mealType !== slotKey || !isMealConsumed(m)) continue;
+          const cleanName = String(m.name || "").trim();
+          const norm = cleanName.toLowerCase();
+          if (!norm || eatenNamesToday.has(norm)) continue;
+          const prev = freqMap.get(norm);
+          freqMap.set(norm, {
+            count: (prev ? prev.count : 0) + 1,
+            lastDate: dk,
+            item: {
+              name: cleanName,
+              kcal: Math.round(Number(m.kcal) || 0),
+              p: Math.round((Number(m.p) || 0) * 10) / 10,
+              c: Math.round((Number(m.c) || 0) * 10) / 10,
+              f: Math.round((Number(m.f) || 0) * 10) / 10,
+              emoji: m.emoji || "🍽️"
+            }
+          });
+        }
+      }
+
+      const singleYestNorm = yestMissingItems.length === 1
+        ? String(yestMissingItems[0].name || "").trim().toLowerCase()
+        : "";
+
+      const topFreq = Array.from(freqMap.values())
+        .filter(entry => entry.item.name.trim().toLowerCase() !== singleYestNorm)
+        .sort((a, b) => (b.count - a.count) || b.lastDate.localeCompare(a.lastDate))
+        .slice(0, 2)
+        .map(entry => entry.item);
+
+      return { yestMissingItems, topFreq };
+    }
+
     function renderMealSections() {
       renderDailyPlanProgressBanner();
       const day = ensureDayRecord(selectedDate);
       const grid = document.getElementById("mealsSectionsGrid");
       grid.innerHTML = "";
+      const quickSlotLookup = {};
 
       for (const sec of MEAL_SECTIONS) {
         const items = day.meals.filter(m => m.mealType === sec.key);
@@ -9164,6 +9562,35 @@
           }).join("");
         }
 
+        const quickData = getQuickSuggestionsForMealSlot(sec.key, eatenItems);
+        quickSlotLookup[sec.key] = quickData;
+        let quickChipsHtml = "";
+        if (quickData.yestMissingItems.length > 0 || quickData.topFreq.length > 0) {
+          const chipsParts = [];
+          if (quickData.yestMissingItems.length > 0) {
+            const yKcal = quickData.yestMissingItems.reduce((acc, m) => acc + Math.round(Number(m.kcal) || 0), 0);
+            const firstLabel = String(quickData.yestMissingItems[0].name || "").trim();
+            const shortFirst = firstLabel.length > 22 ? firstLabel.slice(0, 21) + "…" : firstLabel;
+            const ySummary = quickData.yestMissingItems.length === 1
+              ? `🔁 Ayer: ${escapeHtml(shortFirst)} (${yKcal} kcal)`
+              : `🔁 Igual que ayer (${quickData.yestMissingItems.length} ítems • ${yKcal} kcal)`;
+            chipsParts.push(`
+              <button type="button" class="meal-quick-chip yesterday" data-repeat-yesterday-slot="${sec.key}" title="Copiar en 1 toque lo que comiste ayer en ${sec.title}">
+                <span>${ySummary}</span>
+              </button>
+            `);
+          }
+          quickData.topFreq.forEach((fItem, idx) => {
+            const shortN = fItem.name.length > 22 ? fItem.name.slice(0, 21) + "…" : fItem.name;
+            chipsParts.push(`
+              <button type="button" class="meal-quick-chip" data-quick-freq-slot="${sec.key}" data-quick-freq-idx="${idx}" title="Sumar en 1 toque: ${escapeHtml(fItem.name)} (${fItem.kcal} kcal • ${fItem.p}g P)">
+                <span>${fItem.emoji || "⚡"} ${escapeHtml(shortN)} • ${fItem.kcal} kcal</span>
+              </button>
+            `);
+          });
+          quickChipsHtml = `<div class="meal-quick-chips-row">${chipsParts.join("")}</div>`;
+        }
+
         card.innerHTML = `
           <div class="meal-card-head">
             <div>
@@ -9178,12 +9605,74 @@
             </div>
           </div>
           <div class="meal-items">${itemsHtml}</div>
+          ${quickChipsHtml}
           <button type="button" class="btn btn-sm" data-open-add-meal="${sec.key}">
             + Agregar a ${sec.title.split(" ")[1]}
           </button>
         `;
         grid.appendChild(card);
       }
+
+      grid.querySelectorAll("[data-repeat-yesterday-slot]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const slotKey = btn.getAttribute("data-repeat-yesterday-slot");
+          const qData = quickSlotLookup[slotKey];
+          if (!qData || !qData.yestMissingItems.length) return;
+          const now = new Date();
+          const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+          const targetDate = selectedDate;
+          const targetDay = ensureDayRecord(targetDate);
+          const createdIds = [];
+          for (const src of qData.yestMissingItems) {
+            const newId = "m-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
+            createdIds.push(newId);
+            targetDay.meals.push({
+              id: newId,
+              mealType: slotKey,
+              name: src.name,
+              kcal: Math.round(Number(src.kcal) || 0),
+              p: Math.round((Number(src.p) || 0) * 10) / 10,
+              c: Math.round((Number(src.c) || 0) * 10) / 10,
+              f: Math.round((Number(src.f) || 0) * 10) / 10,
+              emoji: src.emoji || "🍽️",
+              time: timeStr
+            });
+          }
+          try { if (navigator.vibrate) navigator.vibrate(18); } catch (_) {}
+          saveToServer();
+          renderAll();
+          if (typeof window.showMichuUndoToast === "function") {
+            window.showMichuUndoToast(
+              `✅ Copiado de ayer (${createdIds.length} ${createdIds.length === 1 ? "ítem" : "ítems"})`,
+              () => {
+                const dRec = ensureDayRecord(targetDate);
+                dRec.meals = (dRec.meals || []).filter(m => !createdIds.includes(m.id));
+                appData.deletedItemIds = Array.from(new Set([...(appData.deletedItemIds || []), ...createdIds])).slice(-500);
+                saveToServer();
+                renderAll();
+              }
+            );
+          }
+        });
+      });
+
+      grid.querySelectorAll("[data-quick-freq-slot]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const slotKey = btn.getAttribute("data-quick-freq-slot");
+          const idx = Number(btn.getAttribute("data-quick-freq-idx")) || 0;
+          const fItem = quickSlotLookup[slotKey]?.topFreq?.[idx];
+          if (!fItem) return;
+          addFoodItemToDay(selectedDate, {
+            mealType: slotKey,
+            name: fItem.name,
+            kcal: fItem.kcal,
+            p: fItem.p,
+            c: fItem.c,
+            f: fItem.f,
+            emoji: fItem.emoji || "🍽️"
+          });
+        });
+      });
 
       grid.querySelectorAll("[data-toggle-plan-id]").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -9200,10 +9689,27 @@
       grid.querySelectorAll("[data-del-id]").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-del-id");
+          const delDate = selectedDate;
+          const removedIndex = day.meals.findIndex(m => m.id === id);
+          const removedClone = removedIndex >= 0 ? { ...day.meals[removedIndex] } : null;
           day.meals = day.meals.filter(m => m.id !== id);
           appData.deletedItemIds = Array.from(new Set([...(appData.deletedItemIds || []), id])).slice(-500);
+          try { if (navigator.vibrate) navigator.vibrate(12); } catch (_) {}
           saveToServer();
           renderAll();
+          if (removedClone && typeof window.showMichuUndoToast === "function") {
+            const shortDel = String(removedClone.name || "Alimento").slice(0, 26);
+            window.showMichuUndoToast(`🗑️ Eliminado: ${shortDel}`, () => {
+              const dRec = ensureDayRecord(delDate);
+              appData.deletedItemIds = (appData.deletedItemIds || []).filter(x => x !== id);
+              if (!dRec.meals.some(m => m.id === id)) {
+                const insertAt = Math.min(dRec.meals.length, Math.max(0, removedIndex));
+                dRec.meals.splice(insertAt, 0, removedClone);
+              }
+              saveToServer();
+              renderAll();
+            });
+          }
         });
       });
 
@@ -14274,6 +14780,9 @@
         if (Array.isArray(payload.churnEvents)) {
           window._cachedCloudChurnEvents = payload.churnEvents;
         }
+        if (Array.isArray(payload.feedbackItems)) {
+          window._cachedCloudFeedbackItems = payload.feedbackItems;
+        }
         if (payload.actor) {
           currentUserInfo = payload.actor;
         }
@@ -14326,6 +14835,62 @@
       }
       if (codeTxt) {
         codeTxt.textContent = currentUserInfo.inviteCode || "NUTRI-PRO";
+      }
+
+      // Renderizar Bandeja de Sugerencias y Pedidos (Super-Admin)
+      const fbInboxCard = document.getElementById("adminFeedbackInboxCard");
+      const fbInboxBody = document.getElementById("adminFeedbackInboxBody");
+      const fbCountBadge = document.getElementById("adminFeedbackCountBadge");
+      if (fbInboxCard && fbInboxBody) {
+        fbInboxCard.style.display = isSuper ? "block" : "none";
+        if (isSuper) {
+          const fbItems = Array.isArray(window._cachedCloudFeedbackItems) ? window._cachedCloudFeedbackItems : [];
+          if (fbCountBadge) {
+            fbCountBadge.textContent = `${fbItems.length} ${fbItems.length === 1 ? "mensaje" : "mensajes"}`;
+          }
+          if (fbItems.length === 0) {
+            fbInboxBody.innerHTML = `<div style="padding:12px;border-radius:11px;background:var(--bg-card);color:var(--text-muted);font-size:0.82rem;text-align:center;">Todavía no hay sugerencias ni pedidos pendientes en el buzón.</div>`;
+          } else {
+            fbInboxBody.innerHTML = fbItems.map(it => `
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                <div style="min-width:0;flex:1;">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+                    <span class="chip" style="font-size:0.7rem;font-weight:800;background:var(--accent-soft);color:var(--accent);">${escapeHtml(it.categoryLabel || "✨ Sugerencia")}</span>
+                    <strong style="font-size:0.82rem;color:var(--text);">${escapeHtml(it.userName || "Usuario")}</strong>
+                    ${it.userEmail ? `<a href="mailto:${encodeURIComponent(it.userEmail)}?subject=Respuesta%20de%20Michu%20Fit" style="font-size:0.73rem;color:var(--accent);text-decoration:underline;">${escapeHtml(it.userEmail)}</a>` : ""}
+                    <span style="font-size:0.7rem;color:var(--text-muted);">• ${escapeHtml(it.date || "")}</span>
+                  </div>
+                  <div style="font-size:0.82rem;color:var(--text);line-height:1.42;word-break:break-word;">${escapeHtml(it.message || "")}</div>
+                </div>
+                <button type="button" class="btn btn-sm" data-archive-fb-id="${escapeHtml(it.id || "")}" title="Marcar como resuelto / archivar" style="padding:4px 9px;font-size:0.72rem;flex-shrink:0;">
+                  ✓ Archivar
+                </button>
+              </div>
+            `).join("");
+            fbInboxBody.querySelectorAll("[data-archive-fb-id]").forEach(btn => {
+              btn.addEventListener("click", async () => {
+                const fbId = btn.getAttribute("data-archive-fb-id");
+                if (!fbId) return;
+                btn.disabled = true;
+                btn.textContent = "⏳";
+                try {
+                  await fetch("/api/admin/feedback-delete", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      ...(currentAuthToken ? { "X-Michu-Token": currentAuthToken } : {})
+                    },
+                    body: JSON.stringify({ feedbackId: fbId })
+                  });
+                  renderAdminCoachPanelDOM();
+                } catch (_) {
+                  btn.disabled = false;
+                  btn.textContent = "✓ Archivar";
+                }
+              });
+            });
+          }
+        }
       }
 
       // Renderizar Estadísticas de Bajas (Churn Analytics) para el Super-Admin
@@ -16511,13 +17076,19 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           stage.innerHTML = `
             <div class="bp-giant-input-wrap">
               <span class="bp-giant-label">Tu nombre o apodo</span>
-              <input type="text" id="bpUserNameInp" class="bp-giant-input" value="${bpState.userName}" placeholder="Tu nombre" maxlength="32" autocomplete="name" />
+              <input type="text" id="bpUserNameInp" class="bp-giant-input" value="${bpState.userName}" placeholder="Tu nombre" maxlength="32" autocomplete="name" enterkeyhint="next" />
             </div>
           `;
           const inp = document.getElementById("bpUserNameInp");
           if (inp) {
             inp.addEventListener("input", () => {
               bpState.userName = inp.value;
+            });
+            inp.addEventListener("keydown", (ev) => {
+              if (ev.key === "Enter") {
+                ev.preventDefault();
+                handleBpNextStep();
+              }
             });
             setTimeout(() => inp.focus(), 60);
           }
@@ -17689,10 +18260,10 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
               </div>
               <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:7px;">
                 <div class="field" style="grid-column:1 / -1;">
-                  <input type="email" id="bpFinalEmailInp" placeholder="Tu correo electrónico (ej: nombre@gmail.com)" value="${bpState.email}" autocomplete="email" />
+                  <input type="email" id="bpFinalEmailInp" placeholder="Tu correo electrónico (ej: nombre@gmail.com)" value="${bpState.email}" autocomplete="email" enterkeyhint="next" />
                 </div>
                 <div class="field">
-                  <input type="password" id="bpFinalPwdInp" placeholder="Contraseña (mín. 4)" value="${bpState.password}" autocomplete="new-password" />
+                  <input type="password" id="bpFinalPwdInp" placeholder="Contraseña (mín. 4)" value="${bpState.password}" autocomplete="new-password" enterkeyhint="go" />
                 </div>
                 <div class="field">
                   <select id="bpFinalRoleSel">
@@ -17718,8 +18289,18 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           const rlSel = document.getElementById("bpFinalRoleSel");
           const ivInp = document.getElementById("bpFinalInviteInp");
           const gWizBtn = document.getElementById("btnWizardGoogleSignup");
-          if (emInp) emInp.addEventListener("input", () => { bpState.email = emInp.value; });
-          if (pwInp) pwInp.addEventListener("input", () => { bpState.password = pwInp.value; });
+          if (emInp) {
+            emInp.addEventListener("input", () => { bpState.email = emInp.value; });
+            emInp.addEventListener("keydown", (ev) => {
+              if (ev.key === "Enter") { ev.preventDefault(); pwInp?.focus(); }
+            });
+          }
+          if (pwInp) {
+            pwInp.addEventListener("input", () => { bpState.password = pwInp.value; });
+            pwInp.addEventListener("keydown", (ev) => {
+              if (ev.key === "Enter") { ev.preventDefault(); submitBpRegistration(); }
+            });
+          }
           if (rlSel) rlSel.addEventListener("change", () => { bpState.roleRequested = rlSel.value; });
           if (ivInp) ivInp.addEventListener("input", () => { bpState.inviteCode = ivInp.value; });
           if (gWizBtn) {
@@ -23228,6 +23809,394 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
         });
       }
       window.renderDay1ChecklistAndMaybeTour = renderDay1ChecklistAndMaybeTour;
+    })();
+
+    // =========================================================================
+    // PULIDO NATIVO ANDROID (GESTO ATRÁS, TECLADO MÓVIL, DESHACER) + BUZÓN / 5 ⭐
+    // =========================================================================
+    (function () {
+      // 1. Toast flotante con botón «↩️ Deshacer» (5 seg)
+      let _undoTimer = null;
+      let _undoCallback = null;
+      const undoBar = document.getElementById("michuUndoToastBar");
+      const undoTxt = document.getElementById("michuUndoToastText");
+      const undoBtn = document.getElementById("michuUndoToastBtn");
+
+      window.showMichuUndoToast = function (label, onUndo) {
+        if (!undoBar || !undoTxt) return;
+        if (_undoTimer) clearTimeout(_undoTimer);
+        _undoCallback = typeof onUndo === "function" ? onUndo : null;
+        undoTxt.textContent = label || "Acción realizada";
+        if (undoBtn) undoBtn.style.display = _undoCallback ? "inline-flex" : "none";
+        undoBar.classList.add("visible");
+        _undoTimer = setTimeout(() => {
+          undoBar.classList.remove("visible");
+          _undoCallback = null;
+        }, 5200);
+      };
+
+      undoBtn?.addEventListener("click", () => {
+        if (_undoTimer) clearTimeout(_undoTimer);
+        undoBar?.classList.remove("visible");
+        const fn = _undoCallback;
+        _undoCallback = null;
+        try { if (navigator.vibrate) navigator.vibrate(14); } catch (_) {}
+        if (fn) fn();
+      });
+
+      // 2. Ajuste automático al teclado virtual móvil (visualViewport) para que nunca tape «Continuar ›»
+      function syncMobileKeyboardViewport() {
+        const vv = window.visualViewport;
+        if (!vv) return;
+        const vvh = Math.round(vv.height);
+        document.documentElement.style.setProperty("--michu-vvh", `${vvh}px`);
+        const fullH = window.innerHeight || document.documentElement.clientHeight || vvh;
+        const isKbOpen = (fullH - vvh) > 125;
+        document.documentElement.classList.toggle("michu-kb-open", isKbOpen);
+      }
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", syncMobileKeyboardViewport);
+        window.visualViewport.addEventListener("scroll", syncMobileKeyboardViewport);
+        syncMobileKeyboardViewport();
+      }
+
+      document.addEventListener("focusin", (ev) => {
+        const el = ev.target;
+        if (!el || !(el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
+        if (!el.closest(".custom-modal-overlay")) return;
+        setTimeout(() => {
+          syncMobileKeyboardViewport();
+          try {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+          } catch (_) {}
+        }, 200);
+      });
+
+      // 3. Gesto «Atrás» nativo de Android (history.pushState + popstate por capas)
+      let _hasBackGuard = Boolean(history.state && history.state.michuBackGuard);
+
+      function getTopmostOpenNonAuthModal() {
+        const openModals = Array.from(document.querySelectorAll(".custom-modal-overlay[open]"))
+          .filter(m => m.id !== "modalAuthOverlay");
+        if (openModals.length === 0) return null;
+        return openModals.sort((a, b) => {
+          const zA = parseInt(window.getComputedStyle(a).zIndex || "0", 10) || 0;
+          const zB = parseInt(window.getComputedStyle(b).zIndex || "0", 10) || 0;
+          return zB - zA;
+        })[0];
+      }
+
+      function hasDismissibleLayerOpen() {
+        const spotOv = document.getElementById("michuSpotlightOverlay");
+        if (spotOv && spotOv.style.display === "block") return true;
+        const hbDrop = document.getElementById("topHamburgerDropdown");
+        if (hbDrop && hbDrop.classList.contains("open")) return true;
+        if (getTopmostOpenNonAuthModal()) return true;
+
+        const authOv = document.getElementById("modalAuthOverlay");
+        if (authOv && authOv.hasAttribute("open")) {
+          const authMode = authOv.getAttribute("data-auth-mode") || "splash";
+          if (authMode !== "splash") return true;
+          return false;
+        }
+
+        const isLoggedOut = document.documentElement.getAttribute("data-auth-state") === "logged-out";
+        if (!isLoggedOut) {
+          const activePanel = document.querySelector(".tab-panel.active");
+          if (activePanel && activePanel.id !== "tab-diary") return true;
+        }
+        return false;
+      }
+
+      function ensureMichuBackGuard() {
+        if (hasDismissibleLayerOpen() && !_hasBackGuard) {
+          try {
+            history.pushState({ michuBackGuard: 1 }, "");
+            _hasBackGuard = true;
+          } catch (_) {}
+        }
+      }
+
+      const _origOpenModal = window.openModal || openModal;
+      openModal = window.openModal = function (id) {
+        _origOpenModal(id);
+        setTimeout(ensureMichuBackGuard, 25);
+      };
+
+      const _origSwitchTab = window.switchTab || switchTab;
+      switchTab = window.switchTab = function (tabId) {
+        _origSwitchTab(tabId);
+        setTimeout(ensureMichuBackGuard, 25);
+      };
+
+      const _origShowAuthModal = showAuthModal;
+      showAuthModal = function (mode = "login") {
+        _origShowAuthModal(mode);
+        setTimeout(ensureMichuBackGuard, 25);
+      };
+
+      ["btnToggleHamburger", "bpWizNextBtn", "btnOpenQuickGuideTop", "btnDay1StartSpotlight"].forEach(id => {
+        document.getElementById(id)?.addEventListener("click", () => setTimeout(ensureMichuBackGuard, 35));
+      });
+
+      window.addEventListener("popstate", () => {
+        _hasBackGuard = Boolean(history.state && history.state.michuBackGuard);
+
+        const spotOv = document.getElementById("michuSpotlightOverlay");
+        if (spotOv && spotOv.style.display === "block") {
+          document.getElementById("btnMichuSpotSkip")?.click();
+          setTimeout(ensureMichuBackGuard, 25);
+          return;
+        }
+
+        const hbDrop = document.getElementById("topHamburgerDropdown");
+        if (hbDrop && hbDrop.classList.contains("open")) {
+          hbDrop.classList.remove("open");
+          document.getElementById("btnToggleHamburger")?.setAttribute("aria-expanded", "false");
+          setTimeout(ensureMichuBackGuard, 25);
+          return;
+        }
+
+        const topModal = getTopmostOpenNonAuthModal();
+        if (topModal) {
+          closeModal(topModal.id);
+          setTimeout(ensureMichuBackGuard, 25);
+          return;
+        }
+
+        const authOv = document.getElementById("modalAuthOverlay");
+        if (authOv && authOv.hasAttribute("open")) {
+          const authMode = authOv.getAttribute("data-auth-mode") || "splash";
+          if (authMode === "register") {
+            const wizBack = document.getElementById("bpWizBackBtn");
+            if (wizBack && wizBack.style.visibility !== "hidden") {
+              wizBack.click();
+            } else {
+              showAuthModal("splash");
+            }
+            setTimeout(ensureMichuBackGuard, 25);
+            return;
+          }
+          if (authMode !== "splash") {
+            const otpView = document.getElementById("authVerifyOtpView");
+            if (otpView && otpView.style.display === "block") {
+              document.getElementById("btnBackFromOtpView")?.click();
+            } else {
+              showAuthModal("splash");
+            }
+            setTimeout(ensureMichuBackGuard, 25);
+            return;
+          }
+        }
+
+        const isLoggedOut = document.documentElement.getAttribute("data-auth-state") === "logged-out";
+        if (!isLoggedOut) {
+          const activePanel = document.querySelector(".tab-panel.active");
+          if (activePanel && activePanel.id !== "tab-diary") {
+            switchTab("tab-diary");
+            setTimeout(ensureMichuBackGuard, 25);
+            return;
+          }
+        }
+      });
+
+      // 4. Buzón Privado de Sugerencias + Filtro Inteligente de 5 ⭐ en Google Play
+      let selectedFbCategory = "food";
+      let milestoneCheckedThisSession = false;
+
+      function updateFbCategoryUI(cat) {
+        selectedFbCategory = ["food", "idea", "bug", "other"].includes(cat) ? cat : "idea";
+        const placeholders = {
+          food: "Ej: ¿Podrían sumar yogur proteico La Serenísima o chipa casera con sus macros?",
+          idea: "Contanos qué función o mejora te haría más cómodo usar Michu Fit todos los días...",
+          bug: "Contanos qué estabas tocando y qué pasó para que lo arreglemos rápido...",
+          other: "Escribile tu comentario directo al equipo de Michu Fit..."
+        };
+        const ta = document.getElementById("fbMessageTextarea");
+        if (ta) ta.placeholder = placeholders[selectedFbCategory] || placeholders.idea;
+        document.querySelectorAll("#fbCategoryChipsWrap .fb-cat-btn").forEach(btn => {
+          const active = btn.getAttribute("data-fb-cat") === selectedFbCategory;
+          btn.style.background = active ? "var(--accent)" : "var(--bg-card)";
+          btn.style.color = active ? "#ffffff" : "var(--text)";
+          btn.style.borderColor = active ? "var(--accent)" : "var(--border)";
+          btn.style.fontWeight = active ? "800" : "600";
+        });
+      }
+
+      function setFeedbackModalStep(stepName) {
+        const g = document.getElementById("fbStepGate");
+        const p = document.getElementById("fbStepPlayStore");
+        const f = document.getElementById("fbStepForm");
+        const h = document.getElementById("fbModalHeaderTitle");
+        if (g) g.style.display = stepName === "gate" ? "flex" : "none";
+        if (p) p.style.display = stepName === "playstore" ? "flex" : "none";
+        if (f) f.style.display = stepName === "form" ? "flex" : "none";
+        if (h) {
+          h.textContent = stepName === "playstore"
+            ? "⭐ ¡Gracias por bancar a Michu!"
+            : (stepName === "form" ? "💬 Buzón directo a Michu Fit" : "🐱 ¿Te viene ayudando Michu Fit?");
+        }
+      }
+
+      function markRatingMilestoneCompleted() {
+        const uid = (currentUserInfo && currentUserInfo.id) ? String(currentUserInfo.id) : "";
+        if (uid) {
+          try { localStorage.setItem("michufit_rating_done_" + uid, "1"); } catch (_) {}
+        }
+        if (appData && appData.profile && !appData.profile.ratingPromptCompleted) {
+          appData.profile.ratingPromptCompleted = true;
+          if (typeof saveToServer === "function") saveToServer();
+        }
+      }
+
+      window.openFeedbackRatingModal = function (startStep = "gate") {
+        const hbDrop = document.getElementById("topHamburgerDropdown");
+        if (hbDrop) hbDrop.classList.remove("open");
+        const alertEl = document.getElementById("fbFormStatusAlert");
+        if (alertEl) { alertEl.style.display = "none"; alertEl.textContent = ""; }
+        const ta = document.getElementById("fbMessageTextarea");
+        if (ta) ta.value = "";
+        updateFbCategoryUI("food");
+        setFeedbackModalStep(startStep);
+        openModal("modalFeedbackAndRating");
+      };
+
+      document.getElementById("btnFbSentimentLove")?.addEventListener("click", () => {
+        try { if (navigator.vibrate) navigator.vibrate(15); } catch (_) {}
+        markRatingMilestoneCompleted();
+        setFeedbackModalStep("playstore");
+      });
+
+      document.getElementById("btnOpenPlayStoreReview")?.addEventListener("click", () => {
+        markRatingMilestoneCompleted();
+        setTimeout(() => closeModal("modalFeedbackAndRating"), 350);
+      });
+
+      document.getElementById("btnFbSentimentIdea")?.addEventListener("click", () => {
+        markRatingMilestoneCompleted();
+        setFeedbackModalStep("form");
+        setTimeout(() => document.getElementById("fbMessageTextarea")?.focus(), 80);
+      });
+
+      document.getElementById("btnSwitchPlayToWrittenIdea")?.addEventListener("click", () => {
+        setFeedbackModalStep("form");
+        setTimeout(() => document.getElementById("fbMessageTextarea")?.focus(), 80);
+      });
+
+      document.getElementById("btnFbBackToGate")?.addEventListener("click", () => {
+        setFeedbackModalStep("gate");
+      });
+
+      document.getElementById("btnFbSnoozeLater")?.addEventListener("click", () => {
+        const uid = (currentUserInfo && currentUserInfo.id) ? String(currentUserInfo.id) : "";
+        if (uid) {
+          try { localStorage.setItem("michufit_rating_snooze_" + uid, String(Date.now() + 14 * 86400000)); } catch (_) {}
+        }
+        closeModal("modalFeedbackAndRating");
+      });
+
+      document.querySelectorAll("#fbCategoryChipsWrap .fb-cat-btn").forEach(btn => {
+        btn.addEventListener("click", () => updateFbCategoryUI(btn.getAttribute("data-fb-cat") || "idea"));
+      });
+
+      document.getElementById("btnSubmitUserFeedback")?.addEventListener("click", async () => {
+        const ta = document.getElementById("fbMessageTextarea");
+        const alertEl = document.getElementById("fbFormStatusAlert");
+        const sendBtn = document.getElementById("btnSubmitUserFeedback");
+        const msg = (ta ? ta.value : "").trim();
+        if (msg.length < 3) {
+          if (alertEl) {
+            alertEl.style.display = "block";
+            alertEl.style.background = "var(--danger-soft)";
+            alertEl.style.color = "var(--danger)";
+            alertEl.style.border = "1px solid var(--danger)";
+            alertEl.textContent = "Escribí tu sugerencia o el nombre del alimento antes de enviar.";
+          }
+          ta?.focus();
+          return;
+        }
+        if (sendBtn) {
+          sendBtn.disabled = true;
+          sendBtn.textContent = "⏳ Enviando...";
+        }
+        try {
+          const res = await fetch("/api/feedback/submit", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(currentAuthToken ? { "X-Michu-Token": currentAuthToken } : {})
+            },
+            body: JSON.stringify({
+              category: selectedFbCategory,
+              message: msg,
+              streak: typeof computeStreak === "function" ? computeStreak() : 0,
+              userName: currentUserInfo?.name || appData?.profile?.name || "Usuario"
+            })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || "No se pudo enviar.");
+          }
+          markRatingMilestoneCompleted();
+          if (typeof window.fireCartoonConfetti === "function") window.fireCartoonConfetti("normal");
+          if (alertEl) {
+            alertEl.style.display = "block";
+            alertEl.style.background = "var(--accent-soft)";
+            alertEl.style.color = "var(--accent)";
+            alertEl.style.border = "1px solid var(--accent)";
+            alertEl.textContent = "✅ ¡Recibido! Angel ya lo tiene en su buzón. ¡Mil gracias por ayudarnos a mejorar Michu Fit! 🐱💚";
+          }
+          if (ta) ta.value = "";
+          setTimeout(() => closeModal("modalFeedbackAndRating"), 2100);
+        } catch (err) {
+          if (alertEl) {
+            alertEl.style.display = "block";
+            alertEl.style.background = "var(--danger-soft)";
+            alertEl.style.color = "var(--danger)";
+            alertEl.style.border = "1px solid var(--danger)";
+            alertEl.textContent = err.message || "Error de conexión. Intentá nuevamente.";
+          }
+        } finally {
+          if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = "📨 Enviar directo a Michu";
+          }
+        }
+      });
+
+      // Disparo automático no invasivo 1 sola vez al cumplir 5+ días de racha o 5+ días activos
+      const _origDay1Hook = window.renderDay1ChecklistAndMaybeTour;
+      window.renderDay1ChecklistAndMaybeTour = function () {
+        if (typeof _origDay1Hook === "function") _origDay1Hook();
+        if (milestoneCheckedThisSession) return;
+        const uid = (currentUserInfo && currentUserInfo.id) ? String(currentUserInfo.id) : "";
+        if (!uid || uid === "u-owner" || uid === "u-google-play-demo" || uid === "u-demouser2026" || inspectedUserId) return;
+        if (document.documentElement.getAttribute("data-auth-state") === "logged-out") return;
+        if (appData?.profile?.ratingPromptCompleted || localStorage.getItem("michufit_rating_done_" + uid) === "1") {
+          milestoneCheckedThisSession = true;
+          return;
+        }
+        const snoozeUntil = Number(localStorage.getItem("michufit_rating_snooze_" + uid) || 0);
+        if (Date.now() < snoozeUntil) {
+          milestoneCheckedThisSession = true;
+          return;
+        }
+        const activeDays = Object.values(appData?.days || {}).filter(d =>
+          Array.isArray(d?.meals) && d.meals.some(m => typeof isMealConsumed === "function" ? isMealConsumed(m) : true)
+        ).length;
+        const curStreak = typeof computeStreak === "function" ? computeStreak() : 0;
+        if (curStreak >= 5 || activeDays >= 5) {
+          milestoneCheckedThisSession = true;
+          setTimeout(() => {
+            const anyOpen = document.querySelector(".custom-modal-overlay[open]") ||
+              document.getElementById("michuSpotlightOverlay")?.style.display === "block";
+            if (!anyOpen && document.documentElement.getAttribute("data-auth-state") !== "logged-out") {
+              window.openFeedbackRatingModal("gate");
+            }
+          }, 4200);
+        }
+      };
     })();
 
     // Inicializar aplicación
