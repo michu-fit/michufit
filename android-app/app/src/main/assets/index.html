@@ -3022,39 +3022,41 @@
           </div>
         </div>
 
-        <!-- Card Hidratación (Desplegable) + Catálogo Rápido -->
+        <!-- Card Hidratación (Desplegable) + Vitamina D + Catálogo Rápido -->
         <div style="display:flex;flex-direction:column;gap:18px;">
-          <div class="card" id="waterCardContainer" style="padding:12px 16px;">
-            <div class="card-header" id="waterCardHeaderToggle" onclick="window.toggleWaterCard && window.toggleWaterCard()" style="margin-bottom:0;cursor:pointer;user-select:none;">
-              <div class="card-title" style="display:flex;align-items:center;gap:6px;">
-                <span>💧 Hidratación Diaria</span>
+          <div id="waterAndVitDSpotlightGroup" style="display:flex;flex-direction:column;gap:18px;">
+            <div class="card" id="waterCardContainer" style="padding:12px 16px;">
+              <div class="card-header" id="waterCardHeaderToggle" onclick="window.toggleWaterCard && window.toggleWaterCard()" style="margin-bottom:0;cursor:pointer;user-select:none;">
+                <div class="card-title" style="display:flex;align-items:center;gap:6px;">
+                  <span>💧 Hidratación Diaria</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:0.84rem;font-weight:700;color:var(--info);" id="waterSummaryText">3 / 8 vasos (0.75 L)</span>
+                  <span id="waterCollapseChevron" style="font-size:0.75rem;color:var(--text-muted);background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;padding:2px 6px;line-height:1;">▼</span>
+                </div>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:0.84rem;font-weight:700;color:var(--info);" id="waterSummaryText">3 / 8 vasos (0.75 L)</span>
-                <span id="waterCollapseChevron" style="font-size:0.75rem;color:var(--text-muted);background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;padding:2px 6px;line-height:1;">▼</span>
+              <div id="waterCollapsibleBody" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+                <p style="font-size:0.8rem;color:var(--text-muted);">
+                  Tocá un vaso (250 ml) para sumar o quitar agua. Estar hidratado evita confundir sed con hambre.
+                </p>
+                <div class="water-cups" id="waterCupsGrid"></div>
               </div>
             </div>
-            <div id="waterCollapsibleBody" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
-              <p style="font-size:0.8rem;color:var(--text-muted);">
-                Tocá un vaso (250 ml) para sumar o quitar agua. Estar hidratado evita confundir sed con hambre.
-              </p>
-              <div class="water-cups" id="waterCupsGrid"></div>
-            </div>
-          </div>
 
-          <!-- Card Vitamina D & Cronómetro Solar en Tiempo Real -->
-          <div class="card" id="vitDCardContainer" style="padding:12px 16px;">
-            <div class="card-header" id="vitDCardHeaderToggle" onclick="window.toggleVitDCard && window.toggleVitDCard()" style="margin-bottom:0;cursor:pointer;user-select:none;">
-              <div class="card-title" style="display:flex;align-items:center;gap:6px;">
-                <span>☀️ Vitamina D & Sol</span>
+            <!-- Card Vitamina D & Cronómetro Solar en Tiempo Real -->
+            <div class="card" id="vitDCardContainer" style="padding:12px 16px;">
+              <div class="card-header" id="vitDCardHeaderToggle" onclick="window.toggleVitDCard && window.toggleVitDCard()" style="margin-bottom:0;cursor:pointer;user-select:none;">
+                <div class="card-title" style="display:flex;align-items:center;gap:6px;">
+                  <span>☀️ Vitamina D & Sol</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:0.79rem;font-weight:800;color:var(--warn);" id="vitDSummaryPill">Ventana solar • 12 min</span>
+                  <span id="vitDCollapseChevron" style="font-size:0.75rem;color:var(--text-muted);background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;padding:2px 6px;line-height:1;">▼</span>
+                </div>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:0.79rem;font-weight:800;color:var(--warn);" id="vitDSummaryPill">Ventana solar • 12 min</span>
-                <span id="vitDCollapseChevron" style="font-size:0.75rem;color:var(--text-muted);background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;padding:2px 6px;line-height:1;">▼</span>
+              <div id="vitDCollapsibleBody" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+                <div id="vitDModuleInner"></div>
               </div>
-            </div>
-            <div id="vitDCollapsibleBody" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-              <div id="vitDModuleInner"></div>
             </div>
           </div>
 
@@ -23628,7 +23630,7 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
           body: "Tocá <strong>+ Agregar</strong> en cualquier comida: sacale foto al plato, hablale al micrófono o escribí como en WhatsApp y calculo calorías y macros solo."
         },
         {
-          selector: "#waterCardContainer",
+          selector: "#waterAndVitDSpotlightGroup",
           title: "💧 Agua y ☀️ Alarma Solar de Vitamina D",
           body: "Sumá tus vasos de 250 ml con 1 toque y usá el cronómetro solar con <strong>alarma sonora</strong> según tu piel e índice UV en vivo."
         },
@@ -23920,7 +23922,11 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
             if (wBody && (wBody.style.display === "none" || !wBody.style.display) && typeof window.toggleWaterCard === "function") {
               window.toggleWaterCard();
             }
-            document.getElementById("waterCardContainer")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            const vBody = document.getElementById("vitDCollapsibleBody");
+            if (vBody && (vBody.style.display === "none" || !vBody.style.display) && typeof window.toggleVitDCard === "function") {
+              window.toggleVitDCard();
+            }
+            document.getElementById("waterAndVitDSpotlightGroup")?.scrollIntoView({ behavior: "smooth", block: "center" });
           } else if (act === "go-progress") {
             if (typeof switchTab === "function") switchTab("tab-progress");
           } else if (act === "go-report") {
