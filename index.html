@@ -16084,9 +16084,34 @@
       }
 
       let _activeGoogleHandoffPoll = null;
+      let _pendingNativeWizardPayload = null;
+      let _pendingNativeHandoffRowId = "";
+      let _nativeTokenAlreadyHandled = false;
+
+      window.receiveNativeGoogleToken = async function (accessToken) {
+        const cleanTok = String(accessToken || "").trim();
+        if (!cleanTok || _nativeTokenAlreadyHandled) return;
+        _nativeTokenAlreadyHandled = true;
+        if (_activeGoogleHandoffPoll) {
+          clearInterval(_activeGoogleHandoffPoll);
+          _activeGoogleHandoffPoll = null;
+        }
+        if (_pendingNativeHandoffRowId) {
+          const rid = _pendingNativeHandoffRowId;
+          _pendingNativeHandoffRowId = "";
+          sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.${encodeURIComponent(rid)}`, {
+            method: "DELETE",
+            headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+          }, 6000).catch(() => {});
+        }
+        const wiz = _pendingNativeWizardPayload;
+        _pendingNativeWizardPayload = null;
+        await exchangeGoogleAccessTokenForSession(cleanTok, wiz);
+      };
 
       async function triggerGoogleSignIn(wizardPayload = null) {
         showAuthAlert("");
+        _nativeTokenAlreadyHandled = false;
         const clientId = await resolveGoogleClientId();
         if (!clientId) {
           if (document.getElementById("modalAuthOverlay")?.getAttribute("data-auth-mode") === "splash") {
@@ -16100,9 +16125,11 @@
         const canonicalRedirectUri = "https://michu-fit.github.io/michufit/";
 
         if (isEmbeddedAndroidWebView) {
-          // En WebView de Google Play, abrimos Chrome externo seguro y sincronizamos el regreso por puente efímero
+          // En WebView de Google Play, abrimos Chrome externo seguro y regresamos por deep-link nativo michufit://auth (v16+) o puente cloud
           const handoffId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
           const rowId = `gh-${handoffId}`;
+          _pendingNativeWizardPayload = wizardPayload || null;
+          _pendingNativeHandoffRowId = rowId;
           try {
             await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
               method: "POST",
@@ -16149,11 +16176,14 @@
               if (!r.ok) return;
               const rows = await r.json();
               const doc = rows?.[0]?.user_doc;
-              if (doc && doc.completed && doc.accessToken) {
+              if (doc && doc.completed && doc.accessToken && !_nativeTokenAlreadyHandled) {
                 handoffResolved = true;
+                _nativeTokenAlreadyHandled = true;
                 clearInterval(_activeGoogleHandoffPoll);
                 document.removeEventListener("visibilitychange", onVisResume);
                 window.removeEventListener("focus", checkHandoffStatus);
+                _pendingNativeHandoffRowId = "";
+                _pendingNativeWizardPayload = null;
                 sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.${encodeURIComponent(rowId)}`, {
                   method: "DELETE",
                   headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
@@ -16244,8 +16274,32 @@
         triggerGoogleSignIn(null);
       });
 
-      // Procesar callback #access_token=... si venimos de una redirección OAuth de Google (Web o Puente Android)
+      // Procesar callback #access_token=... o pantalla puente ?michu_app_return=1
       (async function checkGoogleOAuthHashCallback() {
+        const rawSearch = window.location.search || "";
+        if (rawSearch.includes("michu_app_return=1")) {
+          window._googleOAuthInProgress = true;
+          try { history.replaceState(null, "", window.location.pathname); } catch (_) {}
+          const doneScreen = document.createElement("div");
+          doneScreen.style.cssText = "position:fixed;inset:0;z-index:100060;background:#0b1215;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff;";
+          doneScreen.innerHTML = `
+            <div style="max-width:340px;background:#131d21;border:2px solid #14bd8e;border-radius:22px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+              <div style="font-size:2.6rem;line-height:1;">✅📲</div>
+              <strong style="font-size:1.12rem;color:#ffffff;">¡Cuenta conectada en tu App!</strong>
+              <p style="font-size:0.85rem;color:#cbd5e1;font-weight:600;line-height:1.45;margin:0;">
+                Tu sesión ya está activa en <strong>Michu Fit</strong>.<br/>Deslizá <strong>«Atrás»</strong> una vez en tu celular para volver directo a la app.
+              </p>
+            </div>
+          `;
+          document.body.appendChild(doneScreen);
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") {
+              try { window.close(); } catch (_) {}
+            }
+          });
+          return;
+        }
+
         const rawHash = window.location.hash || "";
         if (!rawHash.includes("access_token=") && !rawHash.includes("error=")) return;
         const params = new URLSearchParams(rawHash.replace(/^#/, ""));
@@ -16311,18 +16365,20 @@
               }, 10000);
             } catch (_) {}
 
-            // NO iniciar sesión en el navegador web: devolver al usuario directo a la app nativa instalada (app.michufit)
-            const appReturnIntentUrl = "intent://#Intent;package=app.michufit;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;end";
+            // NO iniciar sesión en el navegador web: saltar directo al deep-link michufit://auth (con S.browser_fallback_url para que JAMÁS abra Google Play Store)
+            const fallbackStayUrl = "https://michu-fit.github.io/michufit/?michu_app_return=1";
+            const appReturnIntentUrl = `intent://auth?access_token=${encodeURIComponent(accessToken)}#Intent;scheme=michufit;package=app.michufit;S.browser_fallback_url=${encodeURIComponent(fallbackStayUrl)};end`;
             loadingToast.innerHTML = `
               <div style="max-width:340px;background:#131d21;border:2px solid #14bd8e;border-radius:22px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
                 <div style="font-size:2.6rem;line-height:1;">✅📲</div>
                 <strong style="font-size:1.12rem;color:#ffffff;">¡Cuenta verificada con éxito!</strong>
-                <p style="font-size:0.84rem;color:#94a3b8;font-weight:600;line-height:1.45;margin:0;">
-                  Tu sesión se activó exclusivamente en la <strong>app Michu Fit</strong>. Tocá abajo si no se abrió sola:
+                <p style="font-size:0.84rem;color:#cbd5e1;font-weight:600;line-height:1.45;margin:0;">
+                  Tu sesión ya quedó activa exclusivamente en tu <strong>app Michu Fit</strong>.
                 </p>
                 <a href="${appReturnIntentUrl}" id="btnReturnNativeMichuApp" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#14bd8e,#0d8f6b);color:#ffffff;text-decoration:none;font-weight:900;font-size:0.95rem;padding:14px 18px;border-radius:14px;box-shadow:0 8px 24px rgba(20,189,142,0.35);">
-                  🐾 Volver a la app Michu Fit
+                  🐾 Abrir Michu Fit ahora
                 </a>
+                <small style="font-size:0.75rem;color:#94a3b8;">O deslizá «Atrás» en tu celu para volver a la ventana abierta</small>
               </div>
             `;
             document.getElementById("btnReturnNativeMichuApp")?.addEventListener("click", () => {
