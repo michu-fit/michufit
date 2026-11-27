@@ -5531,7 +5531,9 @@
         ).trim();
 
         const prof = (newUser && newUser.trackerData && newUser.trackerData.profile) || {};
-        const roleLabel = newUser.role === "nutritionist" ? "Nutricionista" : "Paciente";
+        const roleLabel = newUser.role === "nutritionist"
+          ? "Nutricionista"
+          : (newUser.role === "coach" ? "Coach" : "Usuario final");
         const pesoMetaStr = `${prof.weight || 78} kg → Meta: ${prof.goalWeight || 72} kg`;
         const codigoNutriStr = newUser.coachName || newUser.inviteCode || "Sin código";
         const fechaHoraStr = newUser.createdAt || new Date().toLocaleString("es-AR");
@@ -5728,7 +5730,7 @@
       if (!actor || !target || actor.status !== "approved") return false;
       if (actor.id === target.id) return true;
       if (actor.role === "superadmin") return true;
-      if (actor.role === "nutritionist" && target.nutritionistId === actor.id) return true;
+      if (["nutritionist", "coach"].includes(actor.role) && target.nutritionistId === actor.id) return true;
       return false;
     }
 
@@ -5867,7 +5869,7 @@
         if (method === "GET" && path.endsWith("/api/admin/users")) {
           const users = await sbFetchAllUsers();
           const actor = sbResolveAuthUser(users, init.headers);
-          if (!actor || actor.status !== "approved" || !["superadmin", "nutritionist"].includes(actor.role)) {
+          if (!actor || actor.status !== "approved" || !["superadmin", "nutritionist", "coach"].includes(actor.role)) {
             return sbJsonResponse({ ok: false, error: "No autorizado" }, 403);
           }
           const visibleUsers = actor.role === "superadmin"
@@ -5875,8 +5877,8 @@
             : users.filter(u => u.nutritionistId === actor.id).map(u => sbSummarizeUserForPanel(users, u));
 
           const nutritionists = users
-            .filter(u => ["nutritionist", "superadmin"].includes(u.role) && u.status === "approved")
-            .map(u => ({ id: u.id, name: u.name, inviteCode: u.inviteCode || "" }));
+            .filter(u => ["nutritionist", "coach", "superadmin"].includes(u.role) && u.status === "approved")
+            .map(u => ({ id: u.id, name: u.name, role: u.role, inviteCode: u.inviteCode || "" }));
 
           return sbJsonResponse({
             ok: true,
@@ -6030,16 +6032,16 @@
             }
 
             const nutriUser = inviteCode
-              ? users.find(u => ["nutritionist", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === inviteCode)
+              ? users.find(u => ["nutritionist", "coach", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === inviteCode)
               : null;
 
             const cleanIdentSlug = email.replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "").slice(0, 48);
             const newId = cleanIdentSlug ? `u-${cleanIdentSlug}` : ("u-" + Date.now());
-            const roleToAssign = reqRole === "nutritionist" ? "nutritionist" : "patient";
+            const roleToAssign = ["nutritionist", "coach"].includes(reqRole) ? reqRole : "patient";
             let genCode = "";
-            if (roleToAssign === "nutritionist") {
+            if (roleToAssign === "nutritionist" || roleToAssign === "coach") {
               const cleanPrefix = name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PRO";
-              genCode = `NUTRI-${cleanPrefix}`;
+              genCode = `${roleToAssign === "coach" ? "COACH" : "NUTRI"}-${cleanPrefix}`;
             }
 
             const now = new Date();
@@ -6289,7 +6291,7 @@
             }
 
             const nutriUser = inviteCode
-              ? users.find(u => ["nutritionist", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === inviteCode)
+              ? users.find(u => ["nutritionist", "coach", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === inviteCode)
               : null;
             const cleanWizName = (wizardName || (wizardProf && wizardProf.name) || "").trim();
             const isValidHumanName = cleanWizName && !/^(campe[oó]n|usuario)$/i.test(cleanWizName) && !cleanWizName.includes("@");
@@ -6298,7 +6300,7 @@
               : (gInfo.given_name || (gInfo.name && !gInfo.name.includes("@") ? gInfo.name : "") || gEmail.split("@")[0]);
             const cleanSlug = gEmail.replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "").slice(0, 48);
             const newId = cleanSlug ? `u-${cleanSlug}` : ("u-" + Date.now());
-            const roleToAssign = reqRole === "nutritionist" ? "nutritionist" : "patient";
+            const roleToAssign = ["nutritionist", "coach"].includes(reqRole) ? reqRole : "patient";
             const now = new Date();
             const createdStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
             const pInit = wizardProf || {};
@@ -6314,7 +6316,9 @@
               role: roleToAssign,
               status: "approved",
               emailVerified: true,
-              inviteCode: roleToAssign === "nutritionist" ? `NUTRI-${displayName.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PRO"}` : "",
+              inviteCode: (roleToAssign === "nutritionist" || roleToAssign === "coach")
+                ? `${roleToAssign === "coach" ? "COACH" : "NUTRI"}-${displayName.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PRO"}`
+                : "",
               nutritionistId: nutriUser ? nutriUser.id : null,
               coachNote: "",
               coachNoteUpdatedAt: "",
@@ -6586,12 +6590,12 @@
 
           if (action === "approve") {
             target.status = "approved";
-            if (["patient", "nutritionist", "superadmin"].includes(body.role)) {
+            if (["patient", "nutritionist", "coach", "superadmin"].includes(body.role)) {
               target.role = body.role;
             }
-            if (target.role === "nutritionist" && !target.inviteCode) {
+            if ((target.role === "nutritionist" || target.role === "coach") && !target.inviteCode) {
               const cleanPrefix = (target.name || "PRO").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PRO";
-              target.inviteCode = `NUTRI-${cleanPrefix}`;
+              target.inviteCode = `${target.role === "coach" ? "COACH" : "NUTRI"}-${cleanPrefix}`;
             }
           } else if (action === "block") {
             if (target.id === "u-owner") {
@@ -6601,14 +6605,14 @@
           } else if (action === "pending") {
             if (target.id !== "u-owner") target.status = "pending";
           } else if (action === "set_role") {
-            if (["patient", "nutritionist", "superadmin"].includes(body.role)) {
+            if (["patient", "nutritionist", "coach", "superadmin"].includes(body.role)) {
               if (target.id === "u-owner" && body.role !== "superadmin") {
                 return sbJsonResponse({ ok: false, error: "La cuenta principal siempre conserva rol Super-Admin." }, 400);
               }
               target.role = body.role;
-              if (body.role === "nutritionist" && !target.inviteCode) {
+              if ((body.role === "nutritionist" || body.role === "coach") && !target.inviteCode) {
                 const cleanPrefix = (target.name || "PRO").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PRO";
-                target.inviteCode = `NUTRI-${cleanPrefix}`;
+                target.inviteCode = `${body.role === "coach" ? "COACH" : "NUTRI"}-${cleanPrefix}`;
               }
             }
           } else if (action === "assign_nutri") {
@@ -6710,15 +6714,15 @@
               actor.nutritionistId = null;
               actor.coachName = "";
             } else {
-              const nutri = users.find(u => ["nutritionist", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === code);
+              const nutri = users.find(u => ["nutritionist", "coach", "superadmin"].includes(u.role) && u.status === "approved" && (u.inviteCode || "").toUpperCase() === code);
               if (!nutri) {
-                return sbJsonResponse({ ok: false, error: `No se encontró ningún profesional con el código '${code}'.` }, 404);
+                return sbJsonResponse({ ok: false, error: `No se encontró ningún Nutricionista o Coach con el código '${code}'.` }, 404);
               }
               actor.nutritionistId = nutri.id;
               actor.coachName = nutri.name;
             }
           }
-          if ("myCustomInviteCode" in body && ["nutritionist", "superadmin"].includes(actor.role)) {
+          if ("myCustomInviteCode" in body && ["nutritionist", "coach", "superadmin"].includes(actor.role)) {
             const newCode = (body.myCustomInviteCode || "").trim().toUpperCase().replace(/[^A-Z0-9\-]/g, "").slice(0, 18);
             if (newCode.length >= 3) actor.inviteCode = newCode;
           }
@@ -13636,7 +13640,7 @@
         } else {
           navAdminTxt.textContent = (currentUserInfo && currentUserInfo.role === "nutritionist")
             ? "🩺 Pacientes"
-            : "👑 Admin";
+            : ((currentUserInfo && currentUserInfo.role === "coach") ? "🏋️ Alumnos" : "👑 Admin");
         }
       }
 
@@ -15330,7 +15334,8 @@
     function roleLabelHtml(role) {
       if (role === "superadmin") return "👑 Super-Admin";
       if (role === "nutritionist") return "🩺 Nutricionista";
-      return "🐱 Paciente";
+      if (role === "coach") return "🏋️ Coach";
+      return "🐱 Usuario final";
     }
 
     function renderUserSessionAndCoachUI() {
@@ -15379,7 +15384,9 @@
         if (appData && appData.profile && (!appData.profile.name || appData.profile.name === "Campeón" || appData.profile.name.includes("@")) && chosenDispName !== "Campeón") {
           appData.profile.name = chosenDispName;
         }
-        const shortRole = currentUserInfo.role === "superadmin" ? "👑 Admin" : (currentUserInfo.role === "nutritionist" ? "🩺 Nutri" : "🐱");
+        const shortRole = currentUserInfo.role === "superadmin"
+          ? "👑 Admin"
+          : (currentUserInfo.role === "nutritionist" ? "🩺 Nutri" : (currentUserInfo.role === "coach" ? "🏋️ Coach" : "🐱"));
         if (topLabel) topLabel.textContent = `${chosenDispName} (${shortRole})`;
         if (welcomeEl) {
           welcomeEl.style.display = "inline";
@@ -15400,24 +15407,24 @@
         if (accNutriStatus) {
           accNutriStatus.innerHTML = currentUserInfo.nutritionistName
             ? `✅ Vinculado actualmente con: <strong>${currentUserInfo.nutritionistName}</strong>`
-            : `Sin nutricionista vinculado actualmente. Ingresá el código de tu profesional si tenés uno.`;
+            : `Sin profesional vinculado actualmente. Ingresá el código de tu Nutricionista o Coach si tenés uno.`;
         }
         if (accOwnField) {
-          const isPro = currentUserInfo.role === "superadmin" || currentUserInfo.role === "nutritionist";
+          const isPro = ["superadmin", "nutritionist", "coach"].includes(currentUserInfo.role);
           accOwnField.style.display = isPro ? "flex" : "none";
           if (isPro && accOwnInput) accOwnInput.value = currentUserInfo.inviteCode || "";
         }
 
-        // Mostrar u ocultar pestaña de Admin / Nutricionista
+        // Mostrar u ocultar pestaña de Admin / Nutricionista / Coach
         if (navAdminBtn) {
-          if (currentUserInfo.role === "superadmin" || currentUserInfo.role === "nutritionist") {
+          if (["superadmin", "nutritionist", "coach"].includes(currentUserInfo.role)) {
             navAdminBtn.style.display = "inline-flex";
             if (navAdminTxt) {
               const adminPanel = document.getElementById("tab-admin-coach");
               const isAdminOpen = adminPanel && adminPanel.classList.contains("active");
               navAdminTxt.textContent = isAdminOpen
                 ? "⬅️ Volver"
-                : (currentUserInfo.role === "superadmin" ? "👑 Admin" : "🩺 Pacientes");
+                : (currentUserInfo.role === "superadmin" ? "👑 Admin" : (currentUserInfo.role === "coach" ? "🏋️ Alumnos" : "🩺 Pacientes"));
             }
             if (pendingBadge) {
               if (currentUserInfo.role === "superadmin" && pendingUsersCount > 0) {
@@ -16042,17 +16049,17 @@
                 <strong style="font-size:0.95rem;">${u.name}</strong>
                 <span style="font-size:0.78rem;color:var(--text-muted);margin-left:6px;">(${u.email || u.username})</span>
                 <div style="font-size:0.76rem;color:var(--text-muted);margin-top:2px;">
-                  Solicitó perfil: <strong>${u.role === "nutritionist" ? "🩺 Nutricionista" : "🐱 Paciente"}</strong> • Creado: ${u.createdAt}
-                  ${u.nutritionistName ? ` • Código Nutri: <strong>${u.nutritionistName}</strong>` : ""}
+                  Solicitó perfil: <strong>${roleLabelHtml(u.role)}</strong> • Creado: ${u.createdAt}
+                  ${u.nutritionistName ? ` • Código Prof.: <strong>${u.nutritionistName}</strong>` : ""}
                 </div>
               </div>
               <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                ${u.role === "nutritionist" ? `
-                <button type="button" class="btn btn-sm btn-purple" data-approve-uid="${u.id}" data-approve-role="nutritionist">
-                  🩺 Aprobar como Nutri
+                ${(u.role === "nutritionist" || u.role === "coach") ? `
+                <button type="button" class="btn btn-sm btn-purple" data-approve-uid="${u.id}" data-approve-role="${u.role}">
+                  ${u.role === "coach" ? "🏋️ Aprobar Coach" : "🩺 Aprobar Nutri"}
                 </button>` : `
                 <button type="button" class="btn btn-sm btn-primary" data-approve-uid="${u.id}" data-approve-role="patient">
-                  ✅ Aprobar Paciente
+                  ✅ Aprobar Usuario
                 </button>`}
                 <button type="button" class="btn btn-sm btn-danger" data-delete-uid="${u.id}">
                   ✕ Rechazar
@@ -16158,8 +16165,9 @@
               <div style="margin-top:11px;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:0.78rem;">
                 <label style="color:var(--text-muted);font-weight:700;">Rol:</label>
                 <select data-role-select-uid="${u.id}" ${u.id === "u-owner" ? "disabled" : ""} style="padding:4px 8px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.78rem;">
-                  <option value="patient" ${u.role === "patient" ? "selected" : ""}>🐱 Paciente</option>
+                  <option value="patient" ${u.role === "patient" ? "selected" : ""}>🐱 Usuario final</option>
                   <option value="nutritionist" ${u.role === "nutritionist" ? "selected" : ""}>🩺 Nutricionista</option>
+                  <option value="coach" ${u.role === "coach" ? "selected" : ""}>🏋️ Coach</option>
                   <option value="superadmin" ${u.role === "superadmin" ? "selected" : ""}>👑 Super-Admin</option>
                 </select>
 
@@ -19392,12 +19400,13 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
                 <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:7px;">
                   <div class="field">
                     <select id="bpFinalRoleSel">
-                      <option value="patient" ${bpState.roleRequested === "patient" ? "selected" : ""}>🐱 Paciente</option>
+                      <option value="patient" ${bpState.roleRequested === "patient" ? "selected" : ""}>🐱 Usuario final</option>
                       <option value="nutritionist" ${bpState.roleRequested === "nutritionist" ? "selected" : ""}>🩺 Nutricionista</option>
+                      <option value="coach" ${bpState.roleRequested === "coach" ? "selected" : ""}>🏋️ Coach</option>
                     </select>
                   </div>
                   <div class="field">
-                    <input type="text" id="bpFinalInviteInp" placeholder="🩺 Código Nutri (Opcional)" value="${bpState.inviteCode}" style="text-transform:uppercase;" />
+                    <input type="text" id="bpFinalInviteInp" placeholder="🔑 Código Nutri / Coach (Opcional)" value="${bpState.inviteCode}" style="text-transform:uppercase;" />
                   </div>
                 </div>
               ` : `
@@ -19420,12 +19429,13 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
                   </div>
                   <div class="field">
                     <select id="bpFinalRoleSel">
-                      <option value="patient" ${bpState.roleRequested === "patient" ? "selected" : ""}>🐱 Paciente</option>
+                      <option value="patient" ${bpState.roleRequested === "patient" ? "selected" : ""}>🐱 Usuario final</option>
                       <option value="nutritionist" ${bpState.roleRequested === "nutritionist" ? "selected" : ""}>🩺 Nutricionista</option>
+                      <option value="coach" ${bpState.roleRequested === "coach" ? "selected" : ""}>🏋️ Coach</option>
                     </select>
                   </div>
                   <div class="field" style="grid-column:1 / -1;">
-                    <input type="text" id="bpFinalInviteInp" placeholder="🩺 Código de Nutricionista (Opcional)" value="${bpState.inviteCode}" style="text-transform:uppercase;" />
+                    <input type="text" id="bpFinalInviteInp" placeholder="🔑 Código de Nutricionista / Coach (Opcional)" value="${bpState.inviteCode}" style="text-transform:uppercase;" />
                   </div>
                 </div>
               `}
