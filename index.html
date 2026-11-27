@@ -4561,6 +4561,28 @@
     </div>
   </div>
 
+  <!-- MODAL: CÁMARA EN VIVO DIRECTA (ESCÁNER IA) -->
+  <div class="custom-modal-overlay" id="modalLiveCameraCapture" role="dialog" aria-modal="true" style="z-index:10020;">
+    <div class="modal-inner" style="max-width:440px;padding:14px;">
+      <div class="card-header" style="margin-bottom:10px;">
+        <div class="card-title">📷 Apuntá a tu plato o etiqueta</div>
+        <button type="button" class="btn btn-sm" id="btnCloseLiveCamModal">✕</button>
+      </div>
+      <div style="position:relative;width:100%;border-radius:14px;overflow:hidden;background:#090d16;aspect-ratio:3/4;max-height:58vh;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--accent);">
+        <video id="michuLiveCamVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;"></video>
+        <div style="position:absolute;inset:14px;border:1.5px dashed rgba(255,255,255,0.45);border-radius:12px;pointer-events:none;"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center;">
+        <button type="button" class="btn btn-sm" id="btnFlipLiveCamera" title="Cambiar entre cámara trasera y frontal" style="padding:10px 12px;">
+          🔄 Girar
+        </button>
+        <button type="button" class="btn btn-primary" id="btnShutterLiveCamera" style="flex:1;justify-content:center;padding:11px 16px;font-weight:900;font-size:0.92rem;">
+          📸 Capturar foto
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: CONFIGURACIÓN IA & BACKUP -->
   <div class="custom-modal-overlay" id="modalSettings" role="dialog" aria-modal="true">
     <div class="modal-inner">
@@ -14771,15 +14793,102 @@
       img.src = rawDataUrl;
     };
 
+    let _liveCamStream = null;
+    let _liveCamFacing = "environment";
+
+    function stopLiveCameraStream() {
+      if (_liveCamStream) {
+        try {
+          _liveCamStream.getTracks().forEach(t => t.stop());
+        } catch (_) {}
+        _liveCamStream = null;
+      }
+      const vid = document.getElementById("michuLiveCamVideo");
+      if (vid) vid.srcObject = null;
+    }
+
+    async function openLiveBrowserCameraModal(facing = "environment") {
+      stopLiveCameraStream();
+      _liveCamFacing = facing;
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
+        cameraInput?.click();
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: facing },
+            width: { ideal: 1600 },
+            height: { ideal: 1200 }
+          },
+          audio: false
+        });
+        _liveCamStream = stream;
+        const vid = document.getElementById("michuLiveCamVideo");
+        if (vid) {
+          vid.srcObject = stream;
+          try { await vid.play(); } catch (_) {}
+        }
+        openModal("modalLiveCameraCapture");
+      } catch (_) {
+        stopLiveCameraStream();
+        if (window.MichuAndroidHealth && typeof window.MichuAndroidHealth.openDirectCamera !== "function") {
+          alert("Estás usando la versión 1.15.0 instalada desde Google Play (que solo abre la Galería). Subí y actualizá a la nueva versión 1.17.0 en Play Store para abrir la cámara directa, o sacá la foto con tu cámara y elegila desde «🖼️ Elegir de Galería».");
+        } else {
+          cameraInput?.click();
+        }
+      }
+    }
+
+    document.getElementById("btnCloseLiveCamModal")?.addEventListener("click", () => {
+      stopLiveCameraStream();
+      closeModal("modalLiveCameraCapture");
+    });
+
+    document.getElementById("btnFlipLiveCamera")?.addEventListener("click", () => {
+      const nextFacing = _liveCamFacing === "environment" ? "user" : "environment";
+      openLiveBrowserCameraModal(nextFacing);
+    });
+
+    document.getElementById("btnShutterLiveCamera")?.addEventListener("click", () => {
+      const vid = document.getElementById("michuLiveCamVideo");
+      if (!vid || !vid.videoWidth) return;
+      try {
+        const maxSide = 1024;
+        let w = vid.videoWidth;
+        let h = vid.videoHeight;
+        if (w > maxSide || h > maxSide) {
+          if (w >= h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+          else { w = Math.round((w * maxSide) / h); h = maxSide; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(vid, 0, 0, w, h);
+        const outUrl = canvas.toDataURL("image/jpeg", 0.82);
+        stopLiveCameraStream();
+        closeModal("modalLiveCameraCapture");
+        window.receiveNativeCameraPhoto(outUrl);
+      } catch (_) {
+        stopLiveCameraStream();
+        closeModal("modalLiveCameraCapture");
+      }
+    });
+
     btnCamCapture?.addEventListener("click", (e) => {
+      e.preventDefault();
       if (getPhotoScanQuotaInfo().remaining <= 0) {
-        e.preventDefault();
         return;
       }
       if (window.MichuAndroidHealth && typeof window.MichuAndroidHealth.openDirectCamera === "function") {
-        e.preventDefault();
         window.MichuAndroidHealth.openDirectCamera();
+        return;
       }
+      if (window.MichuAndroidHealth && typeof window.MichuAndroidHealth.openDirectCamera !== "function") {
+        alert("Estás en la versión 1.15.0 instalada desde Google Play (que solo abre Galería). Al actualizar a la versión 1.17.0 en Play Store abre la cámara directa en 1 toque; mientras tanto podés usar la web en Chrome o elegir la foto desde «🖼️ Elegir de Galería».");
+        return;
+      }
+      openLiveBrowserCameraModal("environment");
     });
 
     btnGalPicker?.addEventListener("click", (e) => {
@@ -25246,6 +25355,9 @@ Respondé en español rioplatense ("vos"), en 2 a 3 oraciones cortas y contunden
 
       const _origCloseModal = window.closeModal || closeModal;
       closeModal = window.closeModal = function (id) {
+        if (id === "modalLiveCameraCapture" && typeof stopLiveCameraStream === "function") {
+          stopLiveCameraStream();
+        }
         _origCloseModal(id);
         setTimeout(ensureMichuBackGuard, 25);
       };
