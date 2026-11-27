@@ -6821,6 +6821,7 @@
     const BASE_CATALOG = [
       { id: "c0", name: "Medallón Hamburguesa Blend (150g: Lomo/Bondiola/Corazón)", kcal: 241, p: 29.5, c: 0.5, f: 13.1, emoji: "🍔" },
       { id: "c_leche_prot", name: "Leche proteica 0% Las Tres Niñas Vida Activa (1 vaso 200ml)", kcal: 82, p: 11, c: 9.6, f: 0, emoji: "🥛" },
+      { id: "c_griego_casero", name: "Griego casero (170g - 3 Niñas Prot + Leche polvo)", kcal: 107, p: 11, c: 10.8, f: 2.1, emoji: "🥣" },
       { id: "c_cafe_leche_prot", name: "Café con leche proteica 0% (taza 200ml)", kcal: 87, p: 11.3, c: 10.2, f: 0, emoji: "☕" },
       { id: "c1", name: "Huevo entero cocido/revuelto (1 u)", kcal: 78, p: 6.5, c: 0.6, f: 5.3, emoji: "🥚" },
       { id: "c2", name: "Pechuga de pollo grillada (150g)", kcal: 248, p: 46, c: 0, f: 5.4, emoji: "🍗" },
@@ -8964,8 +8965,13 @@
         const mUi = nm.match(/(\d{3,5})\s*ui/);
         ui += mUi ? Number(mUi[1]) : 1000;
       }
-      // Leche proteica Vida Activa Las Tres Niñas (2.0 ug = 80 UI cada 200ml según envase)
-      if (/leche proteica|vida activa|las tres ni/.test(nm)) {
+      // Griego casero (2L Las Tres Niñas Vida Activa + 100g Leche en polvo La Serenísima = 1000 UI en 2100g -> ~81 UI cada 170g)
+      if (/griego casero/.test(nm)) {
+        const mGr = nm.match(/(\d{2,4})\s*g/);
+        const multGr = mGr ? (Number(mGr[1]) / 170) : 1;
+        ui += Math.round(81 * multGr);
+      } else if (/leche proteica|vida activa|las tres ni/.test(nm)) {
+        // Leche proteica Vida Activa Las Tres Niñas (2.0 ug = 80 UI cada 200ml según envase)
         const mMl = nm.match(/(\d{2,4})\s*(?:ml|cc)/);
         const mult = mMl ? (Number(mMl[1]) / 200) : 1;
         ui += Math.round(80 * mult);
@@ -9100,7 +9106,7 @@
       // Analizar sinergia alimentaria de Vitamina D + Grasas en las comidas de hoy
       const eatenMeals = Array.isArray(dayRec.meals) ? dayRec.meals.filter(m => isMealConsumed(m)) : [];
       const allMealNames = eatenMeals.map(m => String(m.name || "").toLowerCase()).join(" | ");
-      const hasDietaryVitD = /leche proteica|vida activa|las tres ni|huevo|atun|atún|salmon|salmón|caballa|sardina|champi|hongos/.test(allMealNames);
+      const hasDietaryVitD = /griego casero|leche proteica|vida activa|las tres ni|huevo|atun|atún|salmon|salmón|caballa|sardina|champi|hongos/.test(allMealNames);
       const totalFatToday = eatenMeals.reduce((acc, m) => acc + (Number(m.f) || 0), 0);
       const hasGoodFatForAbs = totalFatToday >= 10;
 
@@ -10414,6 +10420,8 @@
       { keys: ["ricota", "ricotta", "queso cottage"], name: "Ricota / Queso cottage", kcal: 135, p: 12, c: 3.5, f: 8, emoji: "🧀", isUnit: true, unitG: 100 },
       { keys: ["queso rallado", "reggianito", "parmesano", "sardo", "provolone", "provoleta"], name: "Queso duro / Provolone", kcal: 115, p: 9.5, c: 0.5, f: 8.5, emoji: "🧀", isUnit: true, unitG: 30 },
       { keys: ["queso", "muzzarella", "mozzarella", "port salut", "por salut", "cremoso", "cuartirolo", "tybo", "danbo", "cheddar", "feta de queso"], name: "Queso (Port Salut / Cremoso / Muzza)", kcal: 148, p: 11.5, c: 1.0, f: 11, emoji: "🧀", isUnit: true, unitG: 50, pieceG: 25 },
+      { keys: ["griego casero colado", "griego casero desuerado", "yogur griego casero colado", "yogurt griego casero colado", "yogourt griego casero colado"], name: "Griego casero colado (3 Niñas + Leche polvo)", kcal: 151, p: 18.6, c: 10.3, f: 3.8, emoji: "🥣", isUnit: true, unitG: 170 },
+      { keys: ["griego casero", "yogur griego casero", "yogurt griego casero", "yogourt griego casero", "yogur casero proteico", "yogurt casero proteico"], name: "Griego casero (3 Niñas Prot + Leche polvo)", kcal: 107, p: 11.0, c: 10.8, f: 2.1, emoji: "🥣", isUnit: true, unitG: 170 },
       { keys: ["yogur griego", "yogurt griego", "yogur proteico", "kay"], name: "Yogur griego / proteico", kcal: 135, p: 15, c: 11, f: 3.2, emoji: "🥣", isUnit: true, unitG: 170 },
       { keys: ["yogur descremado", "yogurt descremado", "yogur ser", "yogur light"], name: "Yogur descremado", kcal: 78, p: 5.8, c: 11, f: 0.8, emoji: "🥣", isUnit: true, unitG: 160 },
       { keys: ["yogur", "yogurt", "yogourt"], name: "Yogur natural / bebible", kcal: 125, p: 6.5, c: 16, f: 3.2, emoji: "🥣", isUnit: true, unitG: 170 },
