@@ -1,4 +1,4 @@
-const CACHE_NAME = 'michufit-cloud-v84';
+const CACHE_NAME = 'michufit-cloud-v85';
 const ASSETS = ['./', './index.html', './privacidad.html', './terminos.html', './eliminar-cuenta.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -46,7 +46,8 @@ function fetchWithTimeout(urlStr, ms = 12000) {
 }
 
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET' || e.request.url.includes('/api/') || e.request.url.includes('supabase.co') || e.request.url.includes('openfoodfacts.org') || e.request.url.includes('open-meteo.com') || e.request.url.includes('geojs.io') || e.request.url.includes('ipwho.is') || e.request.url.includes('.apk')) return;
+  // Jamás interceptar ni reescribir peticiones cross-origin (Google OAuth, Supabase, APIs externas) ni llamadas POST/API
+  if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin) || e.request.url.includes('/api/') || e.request.url.includes('.apk')) return;
   e.respondWith(
     fetchWithTimeout(e.request.url, 12000)
       .then((res) => {

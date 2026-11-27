@@ -5849,9 +5849,8 @@
           if (!accessToken) {
             return sbJsonResponse({ ok: false, error: "No se recibió el token de Google." }, 400);
           }
-          const gRes = await _nativeFetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-            headers: { "Authorization": `Bearer ${accessToken}` }
-          });
+          // Usamos query param ?access_token= para evitar preflight CORS y ser 100% inmune incluso si un Service Worker anterior interceptara la petición
+          const gRes = await _nativeFetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${encodeURIComponent(accessToken)}`);
           if (!gRes.ok) {
             return sbJsonResponse({ ok: false, error: "No se pudo verificar la sesión con Google. Intentá nuevamente." }, 401);
           }
@@ -5879,6 +5878,25 @@
             if (gInfo.sub && target.googleSub !== gInfo.sub) {
               target.googleSub = gInfo.sub;
               changed = true;
+            }
+            // Si venía recién del Wizard en una cuenta nueva sin comidas cargadas, aplicar las metas del Wizard
+            if (wizardProf && Object.keys(wizardProf).length > 0) {
+              const existingDays = target.trackerData?.days || {};
+              const hasLoggedMeals = Object.values(existingDays).some(d => Array.isArray(d?.meals) && d.meals.length > 0);
+              if (!hasLoggedMeals) {
+                const updName = wizardName || target.name || gInfo.given_name || gEmail.split("@")[0];
+                target.name = updName;
+                target.trackerData = sbCreateEmptyTrackerData(
+                  updName,
+                  wizardProf.sex,
+                  wizardProf.age,
+                  wizardProf.weight,
+                  wizardProf.goalWeight,
+                  wizardProf.height,
+                  wizardProf
+                );
+                changed = true;
+              }
             }
             if (changed) await sbUpsertUser(target);
           } else {
@@ -7283,6 +7301,9 @@
     }
 
     async function loadFromServer() {
+      if (window._googleOAuthInProgress) {
+        return;
+      }
       if (!currentAuthToken) {
         document.documentElement.setAttribute("data-auth-state", "logged-out");
         showAuthModal("login");
@@ -7316,6 +7337,7 @@
           hasGeminiKeyOnServer = Boolean(payload.hasGeminiKey);
 
           if (payload.authRequired) {
+            if (currentAuthToken || window._googleOAuthInProgress) return;
             if (localBackup) appData = localBackup;
             renderAll();
             showAuthModal("login");
@@ -15487,9 +15509,11 @@
         });
         const data = await res.json();
         if (!res.ok || !data.ok) {
+          window._googleOAuthInProgress = false;
           showAuthAlert(data.error || "No se pudo iniciar sesión con Google.");
           return false;
         }
+        window._googleOAuthInProgress = false;
         completeSessionLoginFromData(data);
         return true;
       }
@@ -15530,7 +15554,7 @@
                 name: "Google Auth Handoff",
                 role: "system",
                 status: "system_catalog",
-                user_doc: { id: rowId, completed: false, createdAt: Date.now() },
+                user_doc: { id: rowId, completed: false, createdAt: Date.now(), wizardPayload: wizardPayload || null },
                 updated_at: new Date().toISOString()
               }])
             }, 10000);
@@ -15568,7 +15592,7 @@
                   method: "DELETE",
                   headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
                 }, 6000).catch(() => {});
-                await exchangeGoogleAccessTokenForSession(doc.accessToken, wizardPayload);
+                await exchangeGoogleAccessTokenForSession(doc.accessToken, wizardPayload || doc.wizardPayload || null);
               }
             } catch (_) {}
           };
@@ -15587,8 +15611,14 @@
         // En Web / PWA móvil o escritorio: usar Google Identity Services popup (con fallback a redirección OAuth2)
         const launchRedirectFallback = () => {
           try {
-            if (wizardPayload) sessionStorage.setItem("michufit_pending_google_wizard", JSON.stringify(wizardPayload));
-            else sessionStorage.removeItem("michufit_pending_google_wizard");
+            if (wizardPayload) {
+              const wizJson = JSON.stringify(wizardPayload);
+              sessionStorage.setItem("michufit_pending_google_wizard", wizJson);
+              localStorage.setItem("michufit_pending_google_wizard", wizJson);
+            } else {
+              sessionStorage.removeItem("michufit_pending_google_wizard");
+              localStorage.removeItem("michufit_pending_google_wizard");
+            }
           } catch (_) {}
           const redirectTarget = window.location.origin.includes("github.io")
             ? canonicalRedirectUri
@@ -15650,57 +15680,93 @@
       // Procesar callback #access_token=... si venimos de una redirección OAuth de Google (Web o Puente Android)
       (async function checkGoogleOAuthHashCallback() {
         const rawHash = window.location.hash || "";
-        if (!rawHash.includes("access_token=")) return;
+        if (!rawHash.includes("access_token=") && !rawHash.includes("error=")) return;
         const params = new URLSearchParams(rawHash.replace(/^#/, ""));
+        const oauthErr = params.get("error") || "";
         const accessToken = params.get("access_token") || "";
         const stateParam = params.get("state") || "";
         try {
           history.replaceState(null, "", window.location.pathname + window.location.search);
         } catch (_) {}
-        if (!accessToken) return;
 
-        if (stateParam.startsWith("gh_")) {
-          const handoffId = stateParam.slice(3);
-          const rowId = `gh-${handoffId}`;
-          try {
-            await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
-              method: "POST",
-              headers: {
-                "apikey": SUPABASE_KEY,
-                "Authorization": `Bearer ${SUPABASE_KEY}`,
-                "Content-Type": "application/json",
-                "Prefer": "resolution=merge-duplicates,return=minimal"
-              },
-              body: JSON.stringify([{
-                id: rowId,
-                username: `_${rowId}`,
-                email: `${rowId}@michufit.system`,
-                name: "Google Auth Handoff",
-                role: "system",
-                status: "system_catalog",
-                user_doc: { id: rowId, completed: true, accessToken, completedAt: Date.now() },
-                updated_at: new Date().toISOString()
-              }])
-            }, 10000);
-          } catch (_) {}
-          await exchangeGoogleAccessTokenForSession(accessToken, null);
-          const banner = document.createElement("div");
-          banner.style.cssText = "position:fixed;inset:14px 14px auto 14px;z-index:99999;background:#0e9f77;color:#fff;padding:14px 16px;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,0.35);font-weight:800;font-size:0.9rem;text-align:center;";
-          banner.innerHTML = "✅ ¡Cuenta de Google conectada! Ya podés volver a la app <strong>Michu Fit</strong>.";
-          document.body.appendChild(banner);
-          setTimeout(() => banner.remove(), 9000);
+        if (oauthErr && !accessToken) {
+          setTimeout(() => {
+            showAuthModal("login-form");
+            showAuthAlert(oauthErr === "access_denied"
+              ? "Google canceló el acceso (si probaste otra cuenta, verificá haber tocado «Publicar app» en Google Cloud → Público)."
+              : `No se pudo conectar con Google (${oauthErr}).`);
+          }, 120);
           return;
         }
+        if (!accessToken) return;
 
-        let savedWiz = null;
+        window._googleOAuthInProgress = true;
+        const loadingToast = document.createElement("div");
+        loadingToast.style.cssText = "position:fixed;inset:0;z-index:100060;background:rgba(10,16,24,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#fff;font-weight:800;font-size:1rem;text-align:center;padding:24px;";
+        loadingToast.innerHTML = "<div style='font-size:2.4rem;'>🐱✨</div><div>Activando tu cuenta con Google...</div>";
+        document.body.appendChild(loadingToast);
+
         try {
-          const rawWiz = sessionStorage.getItem("michufit_pending_google_wizard");
-          if (rawWiz) {
-            savedWiz = JSON.parse(rawWiz);
-            sessionStorage.removeItem("michufit_pending_google_wizard");
+          if (stateParam.startsWith("gh_")) {
+            const handoffId = stateParam.slice(3);
+            const rowId = `gh-${handoffId}`;
+            let existingWizFromApp = null;
+            try {
+              const rGet = await sbFetchWithTimeout(`${SUPABASE_TABLE_URL}?id=eq.${encodeURIComponent(rowId)}&select=user_doc`, {
+                headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Cache-Control": "no-store" }
+              }, 6000);
+              if (rGet.ok) {
+                const rRows = await rGet.json();
+                existingWizFromApp = rRows?.[0]?.user_doc?.wizardPayload || null;
+              }
+            } catch (_) {}
+            try {
+              await sbFetchWithTimeout(SUPABASE_TABLE_URL, {
+                method: "POST",
+                headers: {
+                  "apikey": SUPABASE_KEY,
+                  "Authorization": `Bearer ${SUPABASE_KEY}`,
+                  "Content-Type": "application/json",
+                  "Prefer": "resolution=merge-duplicates,return=minimal"
+                },
+                body: JSON.stringify([{
+                  id: rowId,
+                  username: `_${rowId}`,
+                  email: `${rowId}@michufit.system`,
+                  name: "Google Auth Handoff",
+                  role: "system",
+                  status: "system_catalog",
+                  user_doc: { id: rowId, completed: true, accessToken, wizardPayload: existingWizFromApp, completedAt: Date.now() },
+                  updated_at: new Date().toISOString()
+                }])
+              }, 10000);
+            } catch (_) {}
+            await exchangeGoogleAccessTokenForSession(accessToken, existingWizFromApp);
+            const banner = document.createElement("div");
+            banner.style.cssText = "position:fixed;inset:14px 14px auto 14px;z-index:100055;background:#0e9f77;color:#fff;padding:14px 16px;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,0.35);font-weight:800;font-size:0.9rem;text-align:center;";
+            banner.innerHTML = "✅ ¡Cuenta de Google conectada! Ya podés seguir acá o volver a la app <strong>Michu Fit</strong>.";
+            document.body.appendChild(banner);
+            setTimeout(() => banner.remove(), 9000);
+            return;
           }
-        } catch (_) {}
-        await exchangeGoogleAccessTokenForSession(accessToken, savedWiz);
+
+          let savedWiz = null;
+          try {
+            const rawWiz = sessionStorage.getItem("michufit_pending_google_wizard") || localStorage.getItem("michufit_pending_google_wizard");
+            if (rawWiz) {
+              savedWiz = JSON.parse(rawWiz);
+              sessionStorage.removeItem("michufit_pending_google_wizard");
+              localStorage.removeItem("michufit_pending_google_wizard");
+            }
+          } catch (_) {}
+          const okLogin = await exchangeGoogleAccessTokenForSession(accessToken, savedWiz);
+          if (!okLogin) {
+            showAuthModal("login-form");
+          }
+        } finally {
+          window._googleOAuthInProgress = false;
+          loadingToast.remove();
+        }
       })();
 
       async function performLogin(identifier, password) {
