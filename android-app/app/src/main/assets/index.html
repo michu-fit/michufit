@@ -3175,9 +3175,9 @@
             Sacale una foto a tu plato o tabla nutricional, o escribí con tus palabras lo que comiste. Michu calcula calorías, proteínas, carbos y grasas al instante.
           </p>
 
-          <div class="dropzone" id="photoDropzone" style="cursor:default;padding:14px;">
-            <input type="file" id="cameraCaptureInput" accept="image/*" capture="environment" style="display:none;" />
-            <input type="file" id="photoFileInput" accept="image/*" style="display:none;" />
+          <div class="dropzone" id="photoDropzone" style="cursor:default;padding:14px;position:relative;overflow:hidden;">
+            <input type="file" id="cameraCaptureInput" accept="image/*" capture="environment" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" />
+            <input type="file" id="photoFileInput" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" />
 
             <!-- Barra de intentos diarios de foto (ej: 10/10, 4/10) -->
             <div id="aiPhotoQuotaBarWrap" style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 11px;margin-bottom:12px;text-align:left;">
@@ -3207,12 +3207,12 @@
             </div>
 
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-              <button type="button" class="btn btn-primary" id="btnTriggerCameraCapture" style="flex:1;min-width:140px;justify-content:center;">
+              <label for="cameraCaptureInput" class="btn btn-primary" id="btnTriggerCameraCapture" style="flex:1;min-width:140px;justify-content:center;cursor:pointer;margin:0;">
                 📷 Sacar foto
-              </button>
-              <button type="button" class="btn" id="btnTriggerGalleryPicker" style="flex:1;min-width:140px;justify-content:center;">
+              </label>
+              <label for="photoFileInput" class="btn" id="btnTriggerGalleryPicker" style="flex:1;min-width:140px;justify-content:center;cursor:pointer;margin:0;">
                 🖼️ Elegir de Galería
-              </button>
+              </label>
             </div>
           </div>
 
@@ -10916,12 +10916,12 @@
           : `Usaste tus ${q.limit}/${q.limit} fotos de hoy (se renuevan a las 00:00 hs) • Podés seguir describiendo con texto sin límite ∞`;
       }
       if (btnCam) {
-        btnCam.disabled = q.remaining <= 0;
         btnCam.style.opacity = q.remaining <= 0 ? "0.48" : "1";
+        btnCam.style.pointerEvents = q.remaining <= 0 ? "none" : "auto";
       }
       if (btnGal) {
-        btnGal.disabled = q.remaining <= 0;
         btnGal.style.opacity = q.remaining <= 0 ? "0.48" : "1";
+        btnGal.style.pointerEvents = q.remaining <= 0 ? "none" : "auto";
       }
     }
     window.updateAiPhotoQuotaUI = updateAiPhotoQuotaUI;
@@ -14735,16 +14735,53 @@
       } catch (_) {}
     }
 
+    window.receiveNativeCameraPhoto = function (rawDataUrl) {
+      if (!rawDataUrl) return;
+      const infoBadge = document.getElementById("photoOptimizedInfoBadge");
+      if (infoBadge) infoBadge.textContent = "⏳ Optimizando foto capturada...";
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxSide = 1024;
+          let w = img.naturalWidth || img.width || 800;
+          let h = img.naturalHeight || img.height || 600;
+          if (w > maxSide || h > maxSide) {
+            if (w >= h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+            else { w = Math.round((w * maxSide) / h); h = maxSide; }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          const outUrl = canvas.toDataURL("image/jpeg", 0.80);
+          const kb = Math.max(1, Math.round((outUrl.length * 0.75) / 1024));
+          uploadedPhotoBase64 = outUrl;
+          uploadedPhotoMime = "image/jpeg";
+          document.getElementById("photoPreviewImg").src = uploadedPhotoBase64;
+          document.getElementById("photoPreviewContainer").style.display = "block";
+          const promptBox = document.getElementById("photoPromptText");
+          if (promptBox) promptBox.style.display = "none";
+          if (infoBadge) infoBadge.textContent = `✅ Foto optimizada (${kb} KB) • Tocá «Analizar plato con Michu» abajo`;
+        } catch (_) {}
+      };
+      img.src = rawDataUrl;
+    };
+
     btnCamCapture?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (getPhotoScanQuotaInfo().remaining <= 0) return;
-      cameraInput?.click();
+      if (getPhotoScanQuotaInfo().remaining <= 0) {
+        e.preventDefault();
+        return;
+      }
+      if (window.MichuAndroidHealth && typeof window.MichuAndroidHealth.openDirectCamera === "function") {
+        e.preventDefault();
+        window.MichuAndroidHealth.openDirectCamera();
+      }
     });
 
     btnGalPicker?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (getPhotoScanQuotaInfo().remaining <= 0) return;
-      fileInput?.click();
+      if (getPhotoScanQuotaInfo().remaining <= 0) {
+        e.preventDefault();
+      }
     });
 
     cameraInput?.addEventListener("change", (e) => {
